@@ -18,6 +18,5 @@
         "type": "commonjs",
         "strict": true,
         "noInterop": true
-    },
-    "exclude": [".*\\.spec|test\\.ts$"]
+    }
 }
