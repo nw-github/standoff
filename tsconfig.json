@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "es2019",
+        "declaration": true,
+        "outDir": "dist",
+        "noImplicitAny": true,
+        "strict": true,
+        "sourceMap": true,
+
+        // swc
+        "isolatedModules": true,
+        "esModuleInterop": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["src/**/*.test.ts"]
+}
