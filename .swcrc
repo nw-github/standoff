@@ -18,5 +18,6 @@
         "type": "commonjs",
         "strict": true,
         "noInterop": true
-    }
+    },
+    "sourceMaps": true
 }
