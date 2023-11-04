@@ -33,6 +33,7 @@ type DamageEvent = {
     target: PlayerId;
     hpBefore: number;
     hpAfter: number;
+    maxHp: number;
     eff: number;
     isCrit: boolean;
 };

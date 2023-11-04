@@ -1,5 +1,6 @@
-import { Battle, Player, type Turn } from "./battle";
-import { PlayerId } from "./events";
+import { type Turn } from "./battle";
+import { type PlayerId } from "./events";
+import { Lobby } from "./lobby";
 import { DamagingMove } from "./move";
 import { Pokemon, type Status } from "./pokemon";
 import { mewtwo } from "./species";
@@ -13,8 +14,12 @@ type ClientPokemon = {
 };
 
 class LogClient {
-    turn = 0;
     players: { [key: PlayerId]: { active: ClientPokemon | null; name: string } } = {};
+    me: PlayerId;
+
+    constructor(me: PlayerId) {
+        this.me = me;
+    }
 
     logEvents({ turn, events }: Turn) {
         if (turn) {
@@ -47,9 +52,9 @@ class LogClient {
                         const target = this.players[event.target].active!;
 
                         console.log(
-                            `${src.name} dealt ${event.hpBefore - event.hpAfter} damage to ${
-                                target.name
-                            } (${event.hpAfter} remaining)`
+                            `${src.name} dealt ${event.hpBefore - event.hpAfter}${
+                                event.target === this.me ? " damage" : "%"
+                            } to ${target.name} (${event.hpAfter} remaining)`
                         );
                         if (event.isCrit) {
                             console.log(` - A critical hit!`);
@@ -86,11 +91,9 @@ class LogClient {
                     console.log(`${this.players[event.id].name} wins!`);
                     break;
                 default:
-                    throw new Error(`unhandled event: ${event}`);
+                    throw new Error(`unhandled event: ${JSON.stringify(event)}`);
             }
         }
-
-        this.turn++;
     }
 }
 
@@ -100,26 +103,30 @@ const quickAttack = new DamagingMove("Quick Attack", 40, "normal", 40, 100, +1);
 const pokemon1 = new Pokemon(mewtwo, { spe: 15 }, {}, 100, [earthquake, quickAttack], "Mewtwo 1");
 const pokemon2 = new Pokemon(mewtwo, {}, {}, 100, [earthquake, quickAttack], "Mewtwo 2");
 
-const [battle, events] = Battle.start(
-    new Player("Player 1", 0, [pokemon1]),
-    new Player("Player 2", 1, [pokemon2])
-);
+const lobby = new Lobby();
 
-let client = new LogClient();
-client.logEvents(events);
+const player1 = lobby.join("Player 1", [pokemon1]);
+const player2 = lobby.join("Player 2", [pokemon2]);
 
-while (!battle.victor) {
-    battle.choose(0, {
+const client = new LogClient(player1);
+
+lobby.on("turn", (id, turn, events) => {
+    if (id === client.me) {
+        client.logEvents({ turn, events: JSON.parse(events) });
+    }
+});
+
+lobby.on("endTurn", (id, turn, validMoves) => {
+    if (!lobby.isPlaying()) {
+        return;
+    }
+
+    const { canSwitch: _, moves } = JSON.parse(validMoves);
+    lobby.chooseFor(id, {
         type: "move",
-        index: randRangeInclusive(0, pokemon1.moves.length - 1),
-        turn: client.turn,
+        index: randRangeInclusive(0, moves.length - 1),
+        turn: turn + 1,
     });
+});
 
-    client.logEvents(
-        battle.choose(1, {
-            type: "move",
-            index: randRangeInclusive(0, pokemon1.moves.length - 1),
-            turn: client.turn,
-        })!
-    );
-}
+lobby.startBattle();

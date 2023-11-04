@@ -8,6 +8,10 @@ export const randChance255 = (num: number) => {
     return randRangeInclusive(0, 255) < Math.floor(Math.min(num, 255));
 };
 
+export const hpPercent = (current: number, max: number) => {
+    return Math.round(current / max * 100);
+};
+
 export const stageMultipliers: { [key: number]: number } = {
     "-6": 25,
     "-5": 28,

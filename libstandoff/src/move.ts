@@ -65,6 +65,7 @@ export class DamagingMove implements Move {
             type: "damage",
             src: user.owner.id,
             target: target.owner.id,
+            maxHp: target.base.stats.hp,
             hpAfter: target.base.hp,
             hpBefore,
             eff,

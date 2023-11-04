@@ -13,6 +13,19 @@ type ChosenMove = {
     target: ActivePokemon;
 };
 
+export class SelectionError extends Error {
+    constructor(
+        readonly type:
+            | "cancel_too_late"
+            | "choose_too_late"
+            | "invalid_id"
+            | "game_over"
+            | "invalid_choice"
+    ) {
+        super();
+    }
+}
+
 export type Turn = {
     turn: number;
     events: BattleEvent[];
@@ -30,6 +43,13 @@ export class Player {
         this.team = team;
         this.name = name;
         this.id = id;
+    }
+
+    validMoves() {
+        return {
+            canSwitch: true,
+            moves: this.active.base.moves.map((move, i) => ({ move: move.name, i }))
+        }
     }
 }
 
@@ -65,49 +85,48 @@ export class Battle {
         return [self, self.endTurn()];
     }
 
-    cancel(idx: number, turn: number) {
-        const player = this.players[idx];
+    cancel(id: number, turn: number) {
+        const player = this.players.find(p => p.id === id);
         if (!player) {
-            console.warn("attempt to choose for invalid player", idx);
-            return;
+            throw new SelectionError("invalid_id");
         }
 
         if (turn !== this.turn) {
-            console.warn("too late to cancel", idx);
-            return;
+            throw new SelectionError("cancel_too_late");
         }
 
         player.choice = null;
     }
 
-    choose(idx: number, choice: Choice) {
+    choose(id: number, choice: Choice) {
         if (this.victor) {
-            console.warn("attempt to choose in finished battle", idx);
-            return null;
+            throw new SelectionError("game_over");
         }
 
-        const player = this.players[idx];
-        // TODO: instead of logging, send warnings back to the client that issued the command
+        const player = this.players.find(p => p.id === id);
         if (!player) {
-            console.warn("attempt to choose for invalid player", idx);
-            return null;
+            throw new SelectionError("invalid_id");
         }
 
         if (choice.turn !== this.turn) {
-            console.warn("cannot choose for turn ", choice.turn);
-            return null;
+            throw new SelectionError("choose_too_late");
         }
 
         if (choice.type === "move") {
+            const move = player.active.base.moves[choice.index];
+            if (move === undefined) {
+                throw new SelectionError("invalid_choice");
+            }
+
             player.choice = {
-                move: player.active.base.moves[choice.index],
+                move,
                 user: player.active,
                 target: this.opponentOf(player).active,
             };
         } else if (choice.type === "switch") {
             throw new Error("TODO: switch moves");
         } else {
-            throw new Error("invalid choice type");
+            throw new SelectionError("invalid_choice");
         }
 
         if (!this.players.every(player => player.choice !== null)) {
