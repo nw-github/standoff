@@ -36,7 +36,7 @@ export type OptStats = {
 };
 
 export type Species = {
-    readonly id: number;
+    readonly dexId: number;
     readonly types: [Type, ...Type[]];
     readonly moves: string[];
     readonly stats: Stats;
@@ -60,7 +60,7 @@ export class Pokemon {
         statexp: OptStats,
         level: number,
         moves: Move[],
-        name?: string,
+        name?: string
     ) {
         dvs.atk ??= 0;
         dvs.def ??= 0;

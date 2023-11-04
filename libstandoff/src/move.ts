@@ -27,9 +27,9 @@ export class DamagingMove implements Move {
         // https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_I
         const eff = DamagingMove.getEffectiveness(this.type, target.base.species.types);
         if (eff === 0) {
-            battle.events.push({
+            battle.pushEvent({
                 type: "failed",
-                src: target,
+                src: target.owner.id,
                 why: "immune",
             });
             return false;
@@ -47,9 +47,9 @@ export class DamagingMove implements Move {
         dmg *= eff;
 
         if (dmg === 0) {
-            battle.events.push({
+            battle.pushEvent({
                 type: "failed",
-                src: user,
+                src: user.owner.id,
                 why: "miss",
             });
             return false;
@@ -61,12 +61,12 @@ export class DamagingMove implements Move {
         const hpBefore = target.base.hp;
         target.base.hp = Math.max(target.base.hp - dmg, 0);
 
-        battle.events.push({
+        battle.pushEvent({
             type: "damage",
-            src: user,
+            src: user.owner.id,
+            target: target.owner.id,
             hpAfter: target.base.hp,
             hpBefore,
-            target,
             eff,
             isCrit,
         });

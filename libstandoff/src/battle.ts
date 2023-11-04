@@ -1,4 +1,4 @@
-import { EventSystem, type Turn } from "./event";
+import { type BattleEvent, type PlayerId } from "./events";
 import { type Move } from "./move";
 import { type Pokemon, type Type } from "./pokemon";
 import { randChance255, stageMultipliers } from "./utils";
@@ -13,23 +13,30 @@ type ChosenMove = {
     target: ActivePokemon;
 };
 
+export type Turn = {
+    turn: number;
+    events: BattleEvent[];
+};
+
 export class Player {
     readonly active: ActivePokemon;
     readonly name: string;
     readonly team: Pokemon[];
     choice: ChosenMove | null = null;
+    id: PlayerId;
 
-    constructor(name: string, team: Pokemon[]) {
+    constructor(name: string, id: PlayerId, team: Pokemon[]) {
         this.active = new ActivePokemon(team[0], this);
         this.team = team;
         this.name = name;
+        this.id = id;
     }
 }
 
 export class Battle {
     private readonly players: [Player, Player];
     private turn = 0;
-    readonly events: EventSystem = new EventSystem();
+    private readonly events: BattleEvent[] = [];
     victor: Player | null = null;
 
     private constructor(player1: Player, player2: Player) {
@@ -39,12 +46,23 @@ export class Battle {
     static start(player1: Player, player2: Player): [Battle, Turn] {
         const self = new Battle(player1, player2);
 
+        self.pushEvent({
+            type: "init",
+            me: player1.id,
+            opponent: { id: player2.id, name: player2.name },
+        });
+        self.pushEvent({
+            type: "init",
+            me: player2.id,
+            opponent: { id: player1.id, name: player1.name },
+        });
+
         // TODO: is the initial switch order determined by speed?
         for (const player of self.players) {
-            player.active.switchTo(player.active.base, self.events);
+            player.active.switchTo(player.active.base, self);
         }
 
-        return [self, self.events.finish(self.turn++)];
+        return [self, self.endTurn()];
     }
 
     cancel(idx: number, turn: number) {
@@ -99,6 +117,14 @@ export class Battle {
         return this.runTurn();
     }
 
+    pushEvent(event: BattleEvent) {
+        this.events.push(event);
+    }
+
+    private opponentOf(player: Player): Player {
+        return this.players[0] === player ? this.players[1] : this.players[0];
+    }
+
     private runTurn() {
         const choices = this.players
             .map(player => player.choice!)
@@ -125,18 +151,18 @@ export class Battle {
                     user.getStat("acc", false) *
                     target.getStat("eva", false);
                 if (!randChance255(chance)) {
-                    this.events.push({
+                    this.pushEvent({
                         type: "failed",
-                        src: user,
+                        src: user.owner.id,
                         why: "miss",
                     });
                     continue;
                 }
             }
 
-            this.events.push({
+            this.pushEvent({
                 type: "move",
-                src: user,
+                src: user.owner.id,
                 move,
             });
             // A pokemon has died, skip all end of turn events
@@ -159,17 +185,20 @@ export class Battle {
         }
 
         if (this.victor) {
-            this.events.push({
+            this.pushEvent({
                 type: "victory",
-                player: this.victor,
+                id: this.victor.id,
             });
         }
 
-        return this.events.finish(this.turn++);
+        return this.endTurn();
     }
 
-    private opponentOf(player: Player): Player {
-        return this.players[0] === player ? this.players[1] : this.players[0];
+    private endTurn(): Turn {
+        return {
+            turn: this.turn++,
+            events: this.events.splice(0),
+        };
     }
 }
 
@@ -187,11 +216,15 @@ export class ActivePokemon {
         this.owner = owner;
     }
 
-    switchTo(base: Pokemon, events: EventSystem) {
-        events.push({
+    switchTo(base: Pokemon, battle: Battle) {
+        battle.pushEvent({
             type: "switch",
-            src: this.base,
-            target: base,
+            dexId: base.species.dexId,
+            status: base.status,
+            hp: base.hp,
+            maxHp: base.stats.hp,
+            src: this.owner.id,
+            name: base.name,
         });
 
         this.base = base;

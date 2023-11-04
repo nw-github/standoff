@@ -1,7 +1,7 @@
 import type { Species } from "./pokemon";
 
 export const mewtwo: Species = {
-    id: 150,
+    dexId: 150,
     name: "Mewtwo",
     types: ["psychic"],
     moves: [],
