@@ -1,4 +1,4 @@
-import { type Player, type FieldPokemon } from "./battle";
+import { type Player, type ActivePokemon } from "./battle";
 import { type Move } from "./move";
 import { type Pokemon } from "./pokemon";
 
@@ -32,8 +32,8 @@ type SwitchEvent = {
 
 type DamageEvent = {
     type: "damage";
-    src: FieldPokemon;
-    target: FieldPokemon;
+    src: ActivePokemon;
+    target: ActivePokemon;
     hpBefore: number;
     hpAfter: number;
     eff: number;
@@ -42,13 +42,13 @@ type DamageEvent = {
 
 type FailureEvent = {
     type: "failed";
-    src: FieldPokemon;
+    src: ActivePokemon;
     why: "immune" | "miss";
 };
 
 type UseMoveEvent = {
     type: "move";
-    src: FieldPokemon;
+    src: ActivePokemon;
     move: Move;
 };
 

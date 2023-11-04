@@ -48,11 +48,11 @@ export class Pokemon {
     public readonly stats: Stats;
     public readonly species: Species;
     public readonly level: number;
-    public status: Status | null;
-    public hp: number;
-    public name: string;
-    public moves: Move[];
+    public readonly name: string;
+    public readonly moves: Move[];
     public pp: number[];
+    public hp: number;
+    public status: Status | null;
 
     constructor(
         species: Species,
@@ -69,7 +69,7 @@ export class Pokemon {
         dvs.hp = ((dvs.atk & 1) << 3) | ((dvs.def & 1) << 2) | ((dvs.spc & 1) << 1) | (dvs.spe & 1);
 
         const calcStatBase = (stat: keyof Stats) => {
-            let s = Math.min(Math.ceil(Math.sqrt(statexp[stat] ?? 0)), 255);
+            const s = Math.min(Math.ceil(Math.sqrt(statexp[stat] ?? 0)), 255);
             return Math.floor((((species.stats[stat] + dvs[stat]!) * 2 + s / 4) * level) / 100);
         };
 

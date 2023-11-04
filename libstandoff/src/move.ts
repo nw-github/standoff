@@ -1,4 +1,4 @@
-import type { FieldPokemon, Battle } from "./battle";
+import type { ActivePokemon, Battle } from "./battle";
 import type { Type } from "./pokemon";
 import { randChance255, randRangeInclusive, typeChart } from "./utils";
 
@@ -9,7 +9,7 @@ export interface Move {
     readonly acc?: number;
     readonly priority?: number;
 
-    execute(battle: Battle, user: FieldPokemon, target: FieldPokemon): boolean;
+    execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean;
 }
 
 export class DamagingMove implements Move {
@@ -20,10 +20,10 @@ export class DamagingMove implements Move {
         readonly power: number,
         readonly acc?: number,
         readonly priority?: number,
-        readonly highCrit?: true,
+        readonly highCrit?: true
     ) {}
 
-    execute(battle: Battle, user: FieldPokemon, target: FieldPokemon): boolean {
+    execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
         // https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_I
         const eff = DamagingMove.getEffectiveness(this.type, target.base.species.types);
         if (eff === 0) {
@@ -79,8 +79,8 @@ export class DamagingMove implements Move {
         return false;
     }
 
-    private critChance(user: FieldPokemon) {
-        let baseSpeed = user.base.species.stats.spe;
+    private critChance(user: ActivePokemon) {
+        const baseSpeed = user.base.species.stats.spe;
         if (this.highCrit) {
             return user.focus ? 4 * (baseSpeed / 4) : 8 * (baseSpeed / 2);
         } else {
@@ -89,11 +89,7 @@ export class DamagingMove implements Move {
     }
 
     private static getEffectiveness(atk: Type, def: Type[]) {
-        let eff = 1;
-        for (const type of def) {
-            eff *= typeChart[atk][type] ?? 1;
-        }
-        return eff;
+        return def.reduce((eff, def) => eff * (typeChart[atk][def] ?? 1), 1);
     }
 
     private static isSpecial(atk: Type) {

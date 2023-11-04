@@ -3,6 +3,7 @@ import { type Turn } from "./event";
 import { DamagingMove } from "./move";
 import { Pokemon } from "./pokemon";
 import { mewtwo } from "./species";
+import { randRangeInclusive } from "./utils";
 
 const logEvents = ({ turn, events }: Turn) => {
     if (turn) {
@@ -56,10 +57,10 @@ const logEvents = ({ turn, events }: Turn) => {
 };
 
 const earthquake = new DamagingMove("Earthquake", 10, "ground", 100, 100);
-const quickAttack = new DamagingMove("Quick Attack", 40, "normal", 100, 100, +1);
+const quickAttack = new DamagingMove("Quick Attack", 40, "normal", 40, 100, +1);
 
-const pokemon1 = new Pokemon(mewtwo, { spe: 15 }, {}, 100, [earthquake], "Mewtwo 1");
-const pokemon2 = new Pokemon(mewtwo, {}, {}, 100, [earthquake], "Mewtwo 2");
+const pokemon1 = new Pokemon(mewtwo, { spe: 15 }, {}, 100, [earthquake, quickAttack], "Mewtwo 1");
+const pokemon2 = new Pokemon(mewtwo, {}, {}, 100, [earthquake, quickAttack], "Mewtwo 2");
 
 const [battle, events] = Battle.start(
     new Player("Player 1", [pokemon1]),
@@ -72,14 +73,14 @@ let turn = 1;
 while (!battle.victor) {
     battle.choose(0, {
         type: "move",
-        index: 0,
+        index: randRangeInclusive(0, pokemon1.moves.length - 1),
         turn,
     });
 
     logEvents(
         battle.choose(1, {
             type: "move",
-            index: 0,
+            index: randRangeInclusive(0, pokemon1.moves.length - 1),
             turn,
         })!,
     );

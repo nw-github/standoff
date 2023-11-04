@@ -1,4 +1,4 @@
-import { type Species, Pokemon } from "./pokemon";
+import { Pokemon } from "./pokemon";
 import { mewtwo } from "./species";
 
 describe("mewtwo stats", () => {

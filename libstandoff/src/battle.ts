@@ -9,27 +9,27 @@ export type Choice =
 
 type ChosenMove = {
     move: Move;
-    user: FieldPokemon;
-    target: FieldPokemon;
+    user: ActivePokemon;
+    target: ActivePokemon;
 };
 
 export class Player {
-    active: FieldPokemon;
-    team: Pokemon[];
+    readonly active: ActivePokemon;
+    readonly name: string;
+    readonly team: Pokemon[];
     choice: ChosenMove | null = null;
-    name: string;
 
     constructor(name: string, team: Pokemon[]) {
-        this.active = new FieldPokemon(team[0], this);
+        this.active = new ActivePokemon(team[0], this);
         this.team = team;
         this.name = name;
     }
 }
 
 export class Battle {
-    private players: [Player, Player];
-    readonly events: EventSystem = new EventSystem();
+    private readonly players: [Player, Player];
     private turn = 0;
+    readonly events: EventSystem = new EventSystem();
     victor: Player | null = null;
 
     private constructor(player1: Player, player2: Player) {
@@ -56,7 +56,7 @@ export class Battle {
 
         if (turn !== this.turn) {
             console.warn("too late to cancel", idx);
-            return null;
+            return;
         }
 
         player.choice = null;
@@ -173,13 +173,13 @@ export class Battle {
     }
 }
 
-export type Stages = keyof FieldPokemon["stages"];
+export type Stages = keyof ActivePokemon["stages"];
 
-export class FieldPokemon {
+export class ActivePokemon {
     base: Pokemon;
-    owner: Player;
-    types: Type[] = [];
     focus = false;
+    readonly owner: Player;
+    readonly types: Type[] = [];
     readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };
 
     constructor(base: Pokemon, owner: Player) {
