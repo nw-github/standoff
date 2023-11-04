@@ -1,20 +1,7 @@
 import { type Species, Pokemon } from "./pokemon";
+import { mewtwo } from "./species";
 
 describe("mewtwo stats", () => {
-    const mewtwo: Species = {
-        id: 150,
-        types: ["psychic"],
-        moves: [],
-        weight: 1220,
-        stats: {
-            hp: 106,
-            atk: 110,
-            def: 90,
-            spc: 154,
-            spe: 130,
-        },
-    };
-
     test("level 100", () => {
         const res = new Pokemon(mewtwo, {}, {}, 100);
         expect(res.stats).toEqual({
