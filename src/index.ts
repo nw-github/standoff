@@ -68,18 +68,21 @@ const [battle, events] = Battle.start(
 console.log("battle start: ");
 logEvents(events);
 
+let turn = 1;
 while (!battle.victor) {
     battle.choose(0, {
         type: "move",
         index: 0,
-        turn: 1,
+        turn,
     });
 
     logEvents(
         battle.choose(1, {
             type: "move",
             index: 0,
-            turn: 1,
+            turn,
         })!,
     );
+
+    turn++;
 }

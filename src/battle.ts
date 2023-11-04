@@ -55,7 +55,8 @@ export class Battle {
         }
 
         if (turn !== this.turn) {
-            // TODO: warn player
+            console.warn("too late to cancel", idx);
+            return null;
         }
 
         player.choice = null;
@@ -75,7 +76,7 @@ export class Battle {
         }
 
         if (choice.turn !== this.turn) {
-            console.warn("too late to cancel", idx);
+            console.warn("cannot choose for turn ", choice.turn);
             return null;
         }
 
