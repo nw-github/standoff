@@ -2,11 +2,11 @@ import { type Type } from "./pokemon";
 
 export const randRangeInclusive = (min: number, max: number) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+};
 
 export const randChance255 = (num: number) => {
     return randRangeInclusive(0, 255) < Math.floor(Math.min(num, 255));
-}
+};
 
 export const stageMultipliers: { [key: number]: number } = {
     "-6": 25,
@@ -60,4 +60,3 @@ export const typeChart: { [key in Type]: { [key in Type]?: number } } = {
     psychic: { poison: 2, fight: 2, psychic: 0.5 },
     dragon: { dragon: 2 },
 };
-

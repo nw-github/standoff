@@ -3,9 +3,9 @@ import { type Move } from "./move";
 import { type Pokemon } from "./pokemon";
 
 export type Turn = {
-    turn: number,
-    events: BattleEvent[],
-}
+    turn: number;
+    events: BattleEvent[];
+};
 
 export class EventSystem {
     private events: BattleEvent[] = [];
@@ -47,12 +47,12 @@ type FailureEvent = {
 };
 
 type UseMoveEvent = {
-    type: "move",
-    src: FieldPokemon,
-    move: Move,
-}
+    type: "move";
+    src: FieldPokemon;
+    move: Move;
+};
 
 type VictoryEvent = {
-    type: "victory",
-    player: Player,
-}
+    type: "victory";
+    player: Player;
+};

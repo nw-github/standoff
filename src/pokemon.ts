@@ -77,7 +77,7 @@ export class Pokemon {
         this.name = name ?? this.species.name;
         this.status = null;
         this.moves = moves;
-        this.pp    = moves.map(move => move.pp);
+        this.pp = moves.map(move => move.pp);
         this.level = level;
         // https://bulbapedia.bulbagarden.net/wiki/Individual_values#Usage
         this.stats = {

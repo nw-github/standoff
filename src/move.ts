@@ -20,7 +20,7 @@ export class DamagingMove implements Move {
         readonly power: number,
         readonly acc?: number,
         readonly priority?: number,
-        readonly highCrit?: true
+        readonly highCrit?: true,
     ) {}
 
     execute(battle: Battle, user: FieldPokemon, target: FieldPokemon): boolean {

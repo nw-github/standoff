@@ -6,7 +6,7 @@ import { mewtwo } from "./species";
 
 const logEvents = ({ turn, events }: Turn) => {
     if (turn) {
-        console.log(`Turn ${turn}:`)
+        console.log(`Turn ${turn}:`);
     }
 
     for (const event of events) {
@@ -22,14 +22,14 @@ const logEvents = ({ turn, events }: Turn) => {
                 console.log(
                     `${event.src.base.name} dealt ${event.hpBefore - event.hpAfter} damage to ${
                         event.target.base.name
-                    } (${event.hpAfter} remaining)`
+                    } (${event.hpAfter} remaining)`,
                 );
                 if (event.isCrit) {
                     console.log(` - A critical hit!`);
                 }
                 if (event.eff !== 1) {
                     console.log(
-                        ` - It was ${event.eff > 1 ? "supereffective!" : "not very effective..."}`
+                        ` - It was ${event.eff > 1 ? "supereffective!" : "not very effective..."}`,
                     );
                 }
                 break;
@@ -63,7 +63,7 @@ const pokemon2 = new Pokemon(mewtwo, {}, {}, 100, [earthquake], "Mewtwo 2");
 
 const [battle, events] = Battle.start(
     new Player("Player 1", [pokemon1]),
-    new Player("Player 2", [pokemon2])
+    new Player("Player 2", [pokemon2]),
 );
 console.log("battle start: ");
 logEvents(events);
@@ -80,6 +80,6 @@ while (!battle.victor) {
             type: "move",
             index: 0,
             turn: 1,
-        })!
+        })!,
     );
 }

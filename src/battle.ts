@@ -66,7 +66,7 @@ export class Battle {
             console.warn("attempt to choose in finished battle", idx);
             return null;
         }
-        
+
         const player = this.players[idx];
         // TODO: instead of logging, send warnings back to the client that issued the command
         if (!player) {
