@@ -1,8 +1,17 @@
 import { WebSocketServer } from "ws";
 
+declare global {
+    var wss: WebSocketServer;
+}
+
 export function wsInit(server: any) {
-    console.log("initializing global wss...");
-    const wss = new WebSocketServer({ server, path: "/ws" });
+    if (global.wss) {
+        return;
+    }
+
+    console.log("initializing wss...");
+    const wss = global.wss = new WebSocketServer({ server, path: "/ws" });
+    console.log("initialized wss!");
 
     wss.on("error", console.error);
 
@@ -26,6 +35,4 @@ export function wsInit(server: any) {
             console.log(`lost a connection!`);
         })
     });
-
-    return wss;
 }
