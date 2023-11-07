@@ -13,15 +13,39 @@ export interface Move {
 }
 
 export class DamagingMove implements Move {
-    constructor(
-        readonly name: string,
-        readonly pp: number,
-        readonly type: Type,
-        readonly power: number,
-        readonly acc?: number,
-        readonly priority?: number,
-        readonly highCrit?: true
-    ) {}
+    readonly name: string;
+    readonly pp: number;
+    readonly type: Type;
+    readonly power: number;
+    readonly acc?: number;
+    readonly priority?: number;
+    readonly highCrit?: true;
+
+    constructor({
+        name,
+        pp,
+        type,
+        power,
+        acc,
+        priority,
+        highCrit,
+    }: {
+        name: string;
+        pp: number;
+        type: Type;
+        power: number;
+        acc?: number;
+        priority?: number;
+        highCrit?: true;
+    }) {
+        this.name = name;
+        this.pp = pp;
+        this.type = type;
+        this.power = power;
+        this.acc = acc;
+        this.priority = priority;
+        this.highCrit = highCrit;
+    }
 
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
         // https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_I
@@ -69,7 +93,6 @@ export class DamagingMove implements Move {
             return dead;
         }
 
-
         // TODO: status effects, stat drops, etc.
         return dead;
     }
@@ -115,9 +138,21 @@ export type MoveId = keyof typeof moveList;
 const tsEnsureMove = <T extends Move>(t: T) => t;
 
 export const moveList = {
-    earthquake: new DamagingMove("Earthquake", 10, "ground", 100, 100),
-    quickattack: new DamagingMove("Quick Attack", 40, "normal", 40, 100, +1),
-    testmove: new DamagingMove("Test Move", 40, "bug", 40, 100, +1),
+    earthquake: new DamagingMove({
+        name: "Earthquake",
+        pp: 10,
+        type: "ground",
+        power: 100,
+        acc: 100,
+    }),
+    quickattack: new DamagingMove({
+        name: "Quick Attack",
+        pp: 40,
+        type: "normal",
+        power: 40,
+        acc: 100,
+        priority: +1,
+    }),
     substitute: tsEnsureMove({
         name: "Substitute",
         pp: 10,
