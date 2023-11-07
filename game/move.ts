@@ -8,6 +8,7 @@ export interface Move {
     readonly acc?: number;
     readonly priority?: number;
 
+    use?(battle: Battle, user: ActivePokemon): void;
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean;
 }
 
@@ -55,28 +56,22 @@ export class DamagingMove implements Move {
         }
 
         const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
-        dmg = Math.trunc(dmg * (rand / 255));
-
-        const hpBefore = target.base.hp;
-        target.base.hp = Math.max(target.base.hp - dmg, 0);
-
-        battle.pushEvent({
-            type: "damage",
-            src: user.owner.id,
-            target: target.owner.id,
-            maxHp: target.base.stats.hp,
-            hpAfter: target.base.hp,
-            hpBefore,
-            eff,
+        const hasSubstitute = target.substitute !== 0;
+        const dead = target.dealDamage(
+            Math.trunc(dmg * (rand / 255)),
+            user,
+            battle,
             isCrit,
-        });
-
-        if (target.base.hp === 0) {
-            return true;
+            "attacked",
+            eff
+        );
+        if (dead || (hasSubstitute && target.substitute === 0)) {
+            return dead;
         }
 
+
         // TODO: status effects, stat drops, etc.
-        return false;
+        return dead;
     }
 
     private critChance(user: ActivePokemon) {
@@ -117,8 +112,40 @@ export class DamagingMove implements Move {
 
 export type MoveId = keyof typeof moveList;
 
+const tsEnsureMove = <T extends Move>(t: T) => t;
+
 export const moveList = {
-    "earthquake": new DamagingMove("Earthquake", 10, "ground", 100, 100),
-    "quickattack": new DamagingMove("Quick Attack", 40, "normal", 40, 100, +1),
-    "testmove": new DamagingMove("Test Move", 40, "bug", 40, 100, +1),
+    earthquake: new DamagingMove("Earthquake", 10, "ground", 100, 100),
+    quickattack: new DamagingMove("Quick Attack", 40, "normal", 40, 100, +1),
+    testmove: new DamagingMove("Test Move", 40, "bug", 40, 100, +1),
+    substitute: tsEnsureMove({
+        name: "Substitute",
+        pp: 10,
+        type: "normal",
+        execute(battle: Battle, user: ActivePokemon, _: ActivePokemon) {
+            if (user.substitute > 0) {
+                battle.pushEvent({
+                    type: "failed",
+                    src: user.owner.id,
+                    why: "has_substitute",
+                });
+                return false;
+            }
+
+            const hp = Math.floor(user.base.stats.hp / 4);
+            // Gen 1 bug, if you have exactly 25% hp you can create a substitute and instantly die
+            if (hp > user.base.hp) {
+                battle.pushEvent({
+                    type: "failed",
+                    src: user.owner.id,
+                    why: "cant_substitute",
+                });
+                return false;
+            }
+
+            const dead = user.dealDamage(hp, user, battle, false, "substitute");
+            user.substitute = hp + 1;
+            return dead;
+        },
+    }),
 };

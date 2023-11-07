@@ -1,4 +1,4 @@
-import { type BattleEvent, type PlayerId } from "./events";
+import { type BattleEvent, type DamageEvent, type PlayerId } from "./events";
 import { moveList, type Move } from "./move";
 import { type Pokemon } from "./pokemon";
 import { randChance255, stageMultipliers, type Type } from "./utils";
@@ -49,8 +49,8 @@ export class Player {
     validMoves() {
         return {
             canSwitch: true,
-            moves: this.active.base.moves.map((move, i) => ({ move, i }))
-        }
+            moves: this.active.base.moves.map((move, i) => ({ move, i })),
+        };
     }
 }
 
@@ -169,11 +169,16 @@ export class Battle {
                 }
             }
 
-            this.pushEvent({
-                type: "move",
-                src: user.owner.id,
-                move: move.name, // FIXME: send an ID instead, this prevents localization
-            });
+            if (move.use) {
+                move.use(this, user);
+            } else {
+                this.pushEvent({
+                    type: "move",
+                    src: user.owner.id,
+                    move: move.name, // FIXME: send an ID instead, this prevents localization
+                });
+            }
+
             // A pokemon has died, skip all end of turn events
             if (move.execute(this, user, target)) {
                 if (target.owner.team.every(poke => poke.hp <= 0) && !this.victor) {
@@ -216,6 +221,7 @@ export type Stages = keyof ActivePokemon["stages"];
 export class ActivePokemon {
     base: Pokemon;
     focus = false;
+    substitute = 0;
     readonly owner: Player;
     readonly types: Type[] = [];
     readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };
@@ -244,6 +250,7 @@ export class ActivePokemon {
         this.focus = false;
         this.types.length = 0;
         this.types.push(...base.species.types);
+        this.substitute = 0;
     }
 
     getStat(stat: Stages, isCrit: boolean): number {
@@ -254,5 +261,42 @@ export class ActivePokemon {
 
         // TODO: apply stages, par/brn, stat duplication bug
         return this.base.stats[stat];
+    }
+
+    dealDamage(
+        dmg: number,
+        src: ActivePokemon,
+        battle: Battle,
+        isCrit: boolean,
+        why: DamageEvent["why"],
+        eff?: number,
+    ): boolean {
+        if (this.substitute !== 0) {
+            this.substitute = Math.max(this.substitute - dmg, 0);
+            battle.pushEvent({
+                type: "hit_sub",
+                src: src.owner.id,
+                target: this.owner.id,
+                broken: this.substitute === 0,
+            });
+
+            return false;
+        } else {
+            const hpBefore = this.base.hp;
+            this.base.hp = Math.max(this.base.hp - dmg, 0);
+            battle.pushEvent({
+                type: "damage",
+                src: src.owner.id,
+                target: this.owner.id,
+                maxHp: this.base.stats.hp,
+                hpAfter: this.base.hp,
+                hpBefore,
+                why,
+                eff,
+                isCrit,
+            });
+    
+            return this.base.hp === 0;
+        }
     }
 }

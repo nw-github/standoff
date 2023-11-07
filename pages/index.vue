@@ -153,13 +153,19 @@ const stringifyEvents = (events: BattleEvent[]) => {
             }
 
             res.push(
-                `${src.name} dealt ${hpBefore - hpAfter}% to ${target.name} (${hpAfter}% remaining)`
+                `${target.name} lost ${hpBefore - hpAfter}% of its health. (${hpAfter}% remaining)`
             );
-            if (e.isCrit) {
-                res.push(` - A critical hit!`);
-            }
-            if (e.eff !== 1) {
-                res.push(` - It was ${e.eff > 1 ? "supereffective!" : "not very effective..."}`);
+
+            if (e.why === "substitute") {
+                res.push(`${src.name} put in a substitute!`);
+            } else if (e.why === "attacked") {
+                if (e.isCrit) {
+                    res.push(` - A critical hit!`);
+                }
+                const eff = e.eff ?? 1;
+                if (eff !== 1) {
+                    res.push(` - It was ${eff > 1 ? "supereffective!" : "not very effective..."}`);
+                }
             }
         } else if (e.type === "failed") {
             const src = players[e.src].active!;
@@ -173,8 +179,13 @@ const stringifyEvents = (events: BattleEvent[]) => {
             res.push(`${players[e.src].active!.name} used ${e.move}!`);
         } else if (e.type === "victory") {
             res.push(`${players[e.id].name} wins!`);
+        } else if (e.type === "hit_sub") {
+            res.push(`${players[e.src].active!.name}'s substitute took the hit!`);
+            if (e.broken) {
+                res.push(`${players[e.src].active!.name}'s substitute broke!`);
+            }
         } else {
-            res.push("unhandled event: " + JSON.stringify(e));
+            res.push(JSON.stringify(e));
         }
     }
     return res;
