@@ -6,6 +6,6 @@ export default defineEventHandler(event => {
     // only once during server startup, but I can't find a way to do this at the moment.
     if (prod) {
         // @ts-ignore
-        wsInit(event.node.res.socket?.server);
+        wsInit(event.node.res.socket?.server, false);
     }
 });

@@ -1,31 +1,7 @@
-import type { Move } from "./move";
-
-export type Type =
-    | "normal"
-    | "rock"
-    | "ground"
-    | "ghost"
-    | "poison"
-    | "bug"
-    | "flying"
-    | "fight"
-    | "water"
-    | "grass"
-    | "fire"
-    | "electric"
-    | "ice"
-    | "psychic"
-    | "dragon";
+import { moveList, type MoveId } from "./move";
+import { speciesList, type Stats, type SpeciesId } from "./species";
 
 export type Status = "psn" | "par" | "slp" | "frz" | "tox";
-
-export type Stats = {
-    hp: number;
-    atk: number;
-    def: number;
-    spc: number;
-    spe: number;
-};
 
 export type OptStats = {
     hp?: number;
@@ -35,31 +11,22 @@ export type OptStats = {
     spe?: number;
 };
 
-export type Species = {
-    readonly dexId: number;
-    readonly types: [Type, ...Type[]];
-    readonly moves: string[];
-    readonly stats: Stats;
-    readonly weight: number;
-    readonly name: string;
-};
-
 export class Pokemon {
     public readonly stats: Stats;
-    public readonly species: Species;
+    public readonly speciesId: SpeciesId;
     public readonly level: number;
     public readonly name: string;
-    public readonly moves: Move[];
+    public readonly moves: MoveId[];
     public pp: number[];
     public hp: number;
     public status: Status | null;
 
     constructor(
-        species: Species,
+        speciesId: SpeciesId,
         dvs: OptStats,
         statexp: OptStats,
         level: number,
-        moves: Move[],
+        moves: MoveId[],
         name?: string
     ) {
         dvs.atk ??= 0;
@@ -70,14 +37,14 @@ export class Pokemon {
 
         const calcStatBase = (stat: keyof Stats) => {
             const s = Math.min(Math.ceil(Math.sqrt(statexp[stat] ?? 0)), 255);
-            return Math.floor((((species.stats[stat] + dvs[stat]!) * 2 + s / 4) * level) / 100);
+            return Math.floor((((this.species.stats[stat] + dvs[stat]!) * 2 + s / 4) * level) / 100);
         };
 
-        this.species = species;
+        this.speciesId = speciesId;
         this.name = name ?? this.species.name;
         this.status = null;
         this.moves = moves;
-        this.pp = moves.map(move => move.pp);
+        this.pp = moves.map(move => moveList[move].pp);
         this.level = level;
         // https://bulbapedia.bulbagarden.net/wiki/Individual_values#Usage
         this.stats = {
@@ -88,5 +55,9 @@ export class Pokemon {
             spe: calcStatBase("spe") + 5,
         };
         this.hp = this.stats.hp;
+    }
+
+    get species() {
+        return speciesList[this.speciesId];
     }
 }

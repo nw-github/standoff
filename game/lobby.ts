@@ -5,9 +5,16 @@ import { EventEmitter } from "events";
 import { hpPercent } from "./utils";
 
 export declare interface Lobby {
-    on(event: "turn", listener: (id: PlayerId, turn: number, events: string) => void): this;
-    on(event: "endTurn", listener: (id: PlayerId, turn: number, validMoves: string) => void): this;
-    on(event: "join", listener: (id: PlayerId, name: string) => void): this;
+    on(
+        event: "turn",
+        listener: (
+            id: PlayerId,
+            turn: number,
+            events: string,
+            validMoves?: ReturnType<Player["validMoves"]>
+        ) => void
+    ): this;
+    on(event: "join", listener: (id: PlayerId, name: string, isSpectator: boolean) => void): this;
     on(event: "leave", listener: (id: PlayerId) => void): this;
     on(event: string, listener: Function): this;
 }
@@ -15,19 +22,19 @@ export declare interface Lobby {
 export class Lobby extends EventEmitter {
     private readonly players: Player[] = [];
     private readonly spectators: Player[] = [];
-    private nextId = 0;
     private battle: Battle | null = null;
 
-    join(name: string, team?: Pokemon[]): PlayerId {
-        const id = this.nextId++;
+    join(id: PlayerId, name: string, team?: Pokemon[]): Pokemon[] | undefined {
+        let resultTeam;
         if (team && this.players.length !== 2) {
             this.players.push(new Player(name, id, team));
+            resultTeam = team;
         } else {
             this.spectators.push(new Player(name, id, []));
         }
 
-        this.emit("join", id, name);
-        return id;
+        this.emit("join", id, name, resultTeam === undefined);
+        return resultTeam;
     }
 
     leave(id: PlayerId) {
@@ -36,6 +43,8 @@ export class Lobby extends EventEmitter {
             const [player] = this.players.splice(playerIdx, 1);
             this.emit("leave", player.id);
             // TODO: end the game
+
+            this.battle = null;
             return;
         }
 
@@ -60,11 +69,9 @@ export class Lobby extends EventEmitter {
         return true;
     }
 
-    chooseFor(id: PlayerId, choice: Choice) {
+    chooseFor(id: PlayerId, choice: Choice): SelectionError["type"] | undefined {
         if (!this.battle) {
-            // TODO: warn
-            console.log("attempt to choose move before the battle started");
-            return;
+            return "battle_not_started";
         }
 
         try {
@@ -74,25 +81,21 @@ export class Lobby extends EventEmitter {
             }
         } catch (err) {
             if (err instanceof SelectionError) {
-                // TODO: respond
-                console.warn("error choosing:", err.type);
+                return err.type;
             }
         }
     }
 
     cancelFor(id: PlayerId, turn: number) {
         if (!this.battle) {
-            // TODO: warn
-            console.log("attempt to cancel move before the battle started");
-            return;
+            return "battle_not_started";
         }
 
         try {
             this.battle.cancel(id, turn);
         } catch (err) {
             if (err instanceof SelectionError) {
-                // TODO: respond
-                console.warn("error cancelling:", err.type);
+                return err.type;
             }
         }
     }
@@ -103,7 +106,13 @@ export class Lobby extends EventEmitter {
 
     broadcastTurn({ turn, events }: Turn) {
         for (const player of this.players) {
-            this.emit("turn", player.id, turn, Lobby.stringifyEventsFor(player, events));
+            this.emit(
+                "turn",
+                player.id,
+                turn,
+                Lobby.stringifyEventsFor(player, events),
+                this.battle?.victor ? undefined : player.validMoves()
+            );
         }
 
         let spectatorEvents;
@@ -114,10 +123,6 @@ export class Lobby extends EventEmitter {
 
         if (this.battle?.victor) {
             this.battle = null;
-        }
-
-        for (const player of this.players) {
-            this.emit("endTurn", player.id, turn, JSON.stringify(player.validMoves()));
         }
     }
 
@@ -137,6 +142,7 @@ export class Lobby extends EventEmitter {
                     ...val,
                     hpBefore: hpPercent(val.hpBefore, val.maxHp),
                     hpAfter: hpPercent(val.hpAfter, val.maxHp),
+                    maxHp: 100,
                 };
             } else if (type === "switch" && val.src !== player.id) {
                 return {

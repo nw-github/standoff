@@ -1,7 +1,7 @@
 import { type BattleEvent, type PlayerId } from "./events";
-import { type Move } from "./move";
-import { type Pokemon, type Type } from "./pokemon";
-import { randChance255, stageMultipliers } from "./utils";
+import { moveList, type Move } from "./move";
+import { type Pokemon } from "./pokemon";
+import { randChance255, stageMultipliers, type Type } from "./utils";
 
 export type Choice =
     | { type: "switch"; turn: number; to: number }
@@ -21,6 +21,7 @@ export class SelectionError extends Error {
             | "invalid_id"
             | "game_over"
             | "invalid_choice"
+            | "battle_not_started"
     ) {
         super();
     }
@@ -48,7 +49,7 @@ export class Player {
     validMoves() {
         return {
             canSwitch: true,
-            moves: this.active.base.moves.map((move, i) => ({ move: move.name, i }))
+            moves: this.active.base.moves.map((move, i) => ({ move, i }))
         }
     }
 }
@@ -66,17 +67,6 @@ export class Battle {
     static start(player1: Player, player2: Player): [Battle, Turn] {
         const self = new Battle(player1, player2);
 
-        self.pushEvent({
-            type: "init",
-            me: player1.id,
-            opponent: { id: player2.id, name: player2.name },
-        });
-        self.pushEvent({
-            type: "init",
-            me: player2.id,
-            opponent: { id: player1.id, name: player1.name },
-        });
-
         // TODO: is the initial switch order determined by speed?
         for (const player of self.players) {
             player.active.switchTo(player.active.base, self);
@@ -85,7 +75,7 @@ export class Battle {
         return [self, self.endTurn()];
     }
 
-    cancel(id: number, turn: number) {
+    cancel(id: PlayerId, turn: number) {
         const player = this.players.find(p => p.id === id);
         if (!player) {
             throw new SelectionError("invalid_id");
@@ -98,7 +88,7 @@ export class Battle {
         player.choice = null;
     }
 
-    choose(id: number, choice: Choice) {
+    choose(id: PlayerId, choice: Choice) {
         if (this.victor) {
             throw new SelectionError("game_over");
         }
@@ -119,7 +109,7 @@ export class Battle {
             }
 
             player.choice = {
-                move,
+                move: moveList[move],
                 user: player.active,
                 target: this.opponentOf(player).active,
             };
@@ -182,7 +172,7 @@ export class Battle {
             this.pushEvent({
                 type: "move",
                 src: user.owner.id,
-                move,
+                move: move.name, // FIXME: send an ID instead, this prevents localization
             });
             // A pokemon has died, skip all end of turn events
             if (move.execute(this, user, target)) {

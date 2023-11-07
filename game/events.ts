@@ -1,21 +1,8 @@
-import { type Move } from "./move";
-import { Status } from "./pokemon";
+import { type Status } from "./pokemon";
 
-export type BattleEvent =
-    | InitEvent
-    | SwitchEvent
-    | DamageEvent
-    | FailureEvent
-    | UseMoveEvent
-    | VictoryEvent;
+export type BattleEvent = SwitchEvent | DamageEvent | FailureEvent | UseMoveEvent | VictoryEvent;
 
-export type PlayerId = number;
-
-type InitEvent = {
-    type: "init";
-    me: PlayerId;
-    opponent: { id: PlayerId; name: string };
-};
+export type PlayerId = string;
 
 type SwitchEvent = {
     type: "switch";
@@ -47,7 +34,7 @@ type FailureEvent = {
 type UseMoveEvent = {
     type: "move";
     src: PlayerId;
-    move: Move;
+    move: string;
 };
 
 type VictoryEvent = {

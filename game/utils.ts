@@ -1,4 +1,19 @@
-import { type Type } from "./pokemon";
+export type Type =
+    | "normal"
+    | "rock"
+    | "ground"
+    | "ghost"
+    | "poison"
+    | "bug"
+    | "flying"
+    | "fight"
+    | "water"
+    | "grass"
+    | "fire"
+    | "electric"
+    | "ice"
+    | "psychic"
+    | "dragon";
 
 export const randRangeInclusive = (min: number, max: number) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -12,7 +27,7 @@ export const hpPercent = (current: number, max: number) => {
     return Math.round(current / max * 100);
 };
 
-export const stageMultipliers: { [key: number]: number } = {
+export const stageMultipliers: Record<number, number> = {
     "-6": 25,
     "-5": 28,
     "-4": 33,
@@ -28,7 +43,7 @@ export const stageMultipliers: { [key: number]: number } = {
     "6": 400,
 };
 
-export const typeChart: { [key in Type]: { [key in Type]?: number } } = {
+export const typeChart: Record<Type, { [key in Type]?: number }> = {
     normal: { ghost: 0 },
     rock: { bug: 2, fire: 2, flying: 2, ice: 2, fight: 0.5, ground: 0.5 },
     ground: { rock: 2, poison: 2, bug: 0.5, flying: 0, grass: 0.5, fire: 2, electric: 2 },

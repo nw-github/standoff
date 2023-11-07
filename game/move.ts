@@ -1,6 +1,5 @@
 import type { ActivePokemon, Battle } from "./battle";
-import type { Type } from "./pokemon";
-import { randChance255, randRangeInclusive, typeChart } from "./utils";
+import { randChance255, randRangeInclusive, typeChart, type Type } from "./utils";
 
 export interface Move {
     readonly name: string;
@@ -115,3 +114,11 @@ export class DamagingMove implements Move {
         }
     }
 }
+
+export type MoveId = keyof typeof moveList;
+
+export const moveList = {
+    "earthquake": new DamagingMove("Earthquake", 10, "ground", 100, 100),
+    "quickattack": new DamagingMove("Quick Attack", 40, "normal", 40, 100, +1),
+    "testmove": new DamagingMove("Test Move", 40, "bug", 40, 100, +1),
+};
