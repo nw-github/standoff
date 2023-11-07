@@ -184,6 +184,16 @@ const stringifyEvents = (events: BattleEvent[]) => {
             if (e.broken) {
                 res.push(`${players[e.src].active!.name}'s substitute broke!`);
             }
+        } else if (e.type === "status") {
+            const table: Record<Status, string> = {
+                psn: "was poisoned",
+                par: "was paralyzed",
+                slp: "fell asleep",
+                frz: "was frozen",
+                tox: "was badly poisoned",
+            };
+
+            res.push(`${players[e.id].active!.name} ${table[e.status]}!`);
         } else {
             res.push(JSON.stringify(e));
         }

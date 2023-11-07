@@ -1,5 +1,6 @@
 import type { ActivePokemon, Battle } from "./battle";
-import { randChance255, randRangeInclusive, typeChart, type Type } from "./utils";
+import type { Status } from "./pokemon";
+import { randChance255, randRangeInclusive, typeChart, type Type, floatTo255 } from "./utils";
 
 export interface Move {
     readonly name: string;
@@ -20,6 +21,7 @@ export class DamagingMove implements Move {
     readonly acc?: number;
     readonly priority?: number;
     readonly highCrit?: true;
+    readonly effect?: [number, Status];
 
     constructor({
         name,
@@ -29,6 +31,7 @@ export class DamagingMove implements Move {
         acc,
         priority,
         highCrit,
+        effect,
     }: {
         name: string;
         pp: number;
@@ -37,6 +40,7 @@ export class DamagingMove implements Move {
         acc?: number;
         priority?: number;
         highCrit?: true;
+        effect?: [number, Status];
     }) {
         this.name = name;
         this.pp = pp;
@@ -45,6 +49,7 @@ export class DamagingMove implements Move {
         this.acc = acc;
         this.priority = priority;
         this.highCrit = highCrit;
+        this.effect = effect;
     }
 
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
@@ -80,7 +85,7 @@ export class DamagingMove implements Move {
         }
 
         const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
-        const hasSubstitute = target.substitute !== 0;
+        const hadSubstitute = target.substitute !== 0;
         const dead = target.dealDamage(
             Math.trunc(dmg * (rand / 255)),
             user,
@@ -89,11 +94,23 @@ export class DamagingMove implements Move {
             "attacked",
             eff
         );
-        if (dead || (hasSubstitute && target.substitute === 0)) {
+        if (dead || (hadSubstitute && target.substitute === 0)) {
             return dead;
         }
 
-        // TODO: status effects, stat drops, etc.
+        if (
+            this.effect &&
+            !target.base.status &&
+            !target.types.includes(this.type) &&
+            !hadSubstitute
+        ) {
+            const [chance, status] = this.effect;
+            if (randChance255(floatTo255(chance))) {
+                target.inflictStatus(status, battle);
+            }
+        }
+
+        // TODO: stat drops
         return dead;
     }
 
@@ -138,6 +155,14 @@ export type MoveId = keyof typeof moveList;
 const tsEnsureMove = <T extends Move>(t: T) => t;
 
 export const moveList = {
+    bodyslam: new DamagingMove({
+        name: "Body Slam",
+        pp: 15,
+        type: "normal",
+        power: 85,
+        acc: 100,
+        effect: [30.1, "par"]
+    }),
     earthquake: new DamagingMove({
         name: "Earthquake",
         pp: 10,
@@ -153,6 +178,8 @@ export const moveList = {
         acc: 100,
         priority: +1,
     }),
+
+
     substitute: tsEnsureMove({
         name: "Substitute",
         pp: 10,

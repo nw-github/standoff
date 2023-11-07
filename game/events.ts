@@ -6,7 +6,8 @@ export type BattleEvent =
     | FailureEvent
     | UseMoveEvent
     | VictoryEvent
-    | HitSubstituteEvent;
+    | HitSubstituteEvent
+    | StatusEvent;
 
 export type PlayerId = string;
 
@@ -55,3 +56,9 @@ type VictoryEvent = {
     type: "victory";
     id: PlayerId;
 };
+
+type StatusEvent = {
+    type: "status";
+    id: PlayerId;
+    status: Status;
+}

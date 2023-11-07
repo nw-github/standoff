@@ -1,7 +1,7 @@
 import { type BattleEvent, type DamageEvent, type PlayerId } from "./events";
 import { moveList, type Move } from "./move";
-import { type Pokemon } from "./pokemon";
-import { randChance255, stageMultipliers, type Type } from "./utils";
+import { type Pokemon, type Status } from "./pokemon";
+import { floatTo255, randChance255, stageMultipliers, type Type } from "./utils";
 
 export type Choice =
     | { type: "switch"; turn: number; to: number }
@@ -156,7 +156,7 @@ export class Battle {
             // https://bulbapedia.bulbagarden.net/wiki/Accuracy#Generation_I_and_II
             if (move.acc) {
                 const chance =
-                    Math.floor((move.acc / 100) * 255) *
+                    floatTo255(move.acc) *
                     user.getStat("acc", false) *
                     target.getStat("eva", false);
                 if (!randChance255(chance)) {
@@ -269,7 +269,7 @@ export class ActivePokemon {
         battle: Battle,
         isCrit: boolean,
         why: DamageEvent["why"],
-        eff?: number,
+        eff?: number
     ): boolean {
         if (this.substitute !== 0) {
             this.substitute = Math.max(this.substitute - dmg, 0);
@@ -295,8 +295,17 @@ export class ActivePokemon {
                 eff,
                 isCrit,
             });
-    
+
             return this.base.hp === 0;
         }
+    }
+
+    inflictStatus(status: Status, battle: Battle) {
+        this.base.status = status;
+        battle.pushEvent({
+            type: "status",
+            id: this.owner.id,
+            status,
+        });
     }
 }

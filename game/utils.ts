@@ -23,6 +23,10 @@ export const randChance255 = (num: number) => {
     return randRangeInclusive(0, 255) < Math.floor(Math.min(num, 255));
 };
 
+export const floatTo255 = (num: number) => {
+    return Math.floor((num / 100) * 255);
+};
+
 export const hpPercent = (current: number, max: number) => {
     return Math.round(current / max * 100);
 };
