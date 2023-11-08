@@ -222,6 +222,8 @@ const stringifyEvents = (events: BattleEvent[]) => {
                     }${Math.abs(amount) > 1 ? " sharply" : ""}!`
                 );
             }
+        } else if (e.type === "confusion") {
+            res.push(`${players[e.id].active!.name} became confused!`)
         } else {
             res.push(JSON.stringify(e));
         }

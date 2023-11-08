@@ -13,6 +13,8 @@ export interface Move {
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean;
 }
 
+type Effect = Status | [Stages, number][] | "confusion";
+
 export class DamagingMove implements Move {
     readonly name: string;
     readonly pp: number;
@@ -21,7 +23,7 @@ export class DamagingMove implements Move {
     readonly acc?: number;
     readonly priority?: number;
     readonly highCrit?: true;
-    readonly effect?: [number, Status | [Stages, number][]];
+    readonly effect?: [number, Effect];
 
     constructor({
         name,
@@ -40,7 +42,7 @@ export class DamagingMove implements Move {
         acc?: number;
         priority?: number;
         highCrit?: true;
-        effect?: [number, Status | [Stages, number][]];
+        effect?: [number, Effect];
     }) {
         this.name = name;
         this.pp = pp;
@@ -86,7 +88,7 @@ export class DamagingMove implements Move {
 
         const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
         const hadSubstitute = target.substitute !== 0;
-        const dead = target.dealDamage(
+        const dead = target.inflictDamage(
             Math.trunc(dmg * (rand / 255)),
             user,
             battle,
@@ -117,6 +119,12 @@ export class DamagingMove implements Move {
 
         if (Array.isArray(effect)) {
             target.inflictStages(effect, battle);
+        } else if (effect === "confusion") {
+            if (target.confusion !== 0) {
+                return;
+            }
+
+            target.inflictConfusion(battle);
         } else {
             if (!target.base.status || target.types.includes(this.type)) {
                 return;
@@ -182,17 +190,25 @@ export const moveList = {
         power: 100,
         acc: 100,
     }),
+    psybeam: new DamagingMove({
+        name: "Psybeam",
+        pp: 20,
+        type: "psychic",
+        power: 65,
+        acc: 100,
+        effect: [10.2, "confusion"]
+    }),
     psychic: new DamagingMove({
         name: "Psychic",
         pp: 10,
         type: "psychic",
         power: 90,
         acc: 100,
-        effect: [100 /* 33.2 */, [["spc", -1]]]
+        effect: [33.2, [["spc", -1]]]
     }),
     quickattack: new DamagingMove({
         name: "Quick Attack",
-        pp: 40,
+        pp: 30,
         type: "normal",
         power: 40,
         acc: 100,
@@ -223,10 +239,9 @@ export const moveList = {
                 return false;
             }
 
-            const dead = user.dealDamage(hp, user, battle, false, "substitute");
+            const dead = user.inflictDamage(hp, user, battle, false, "substitute");
             user.substitute = hp + 1;
             return dead;
         },
     }),
-    
 };

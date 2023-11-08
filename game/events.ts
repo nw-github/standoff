@@ -9,7 +9,8 @@ export type BattleEvent =
     | VictoryEvent
     | HitSubstituteEvent
     | StatusEvent
-    | StagesEvent;
+    | StagesEvent
+    | ConfusionEvent;
 
 export type PlayerId = string;
 
@@ -69,4 +70,9 @@ type StagesEvent = {
     type: "stages";
     id: PlayerId;
     stages: [Stages, number][];
+}
+
+type ConfusionEvent = {
+    type: "confusion";
+    id: PlayerId;
 }

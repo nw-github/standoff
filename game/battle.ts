@@ -1,7 +1,7 @@
 import { type BattleEvent, type DamageEvent, type PlayerId } from "./events";
 import { moveList, type Move } from "./move";
 import { type Pokemon, type Status } from "./pokemon";
-import { floatTo255, randChance255, stageMultipliers, type Type } from "./utils";
+import { floatTo255, randChance255, randRangeInclusive, stageMultipliers, type Type } from "./utils";
 
 export type Choice =
     | { type: "switch"; turn: number; to: number }
@@ -222,6 +222,7 @@ export class ActivePokemon {
     base: Pokemon;
     focus = false;
     substitute = 0;
+    confusion = 0;
     readonly owner: Player;
     readonly types: Type[] = [];
     readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };
@@ -263,7 +264,7 @@ export class ActivePokemon {
         return this.base.stats[stat];
     }
 
-    dealDamage(
+    inflictDamage(
         dmg: number,
         src: ActivePokemon,
         battle: Battle,
@@ -316,6 +317,14 @@ export class ActivePokemon {
             type: "stages",
             id: this.owner.id,
             stages,
+        });
+    }
+
+    inflictConfusion(battle: Battle) {
+        this.confusion = randRangeInclusive(1, 4);
+        battle.pushEvent({
+            type: "confusion",
+            id: this.owner.id,
         });
     }
 }
