@@ -25,6 +25,7 @@ export class DamagingMove implements Move {
     readonly highCrit?: true;
     readonly effect?: [number, Effect];
     readonly recoil?: number;
+    readonly drain?: true;
 
     constructor({
         name,
@@ -36,6 +37,7 @@ export class DamagingMove implements Move {
         highCrit,
         effect,
         recoil,
+        drain,
     }: {
         name: string;
         pp: number;
@@ -46,6 +48,7 @@ export class DamagingMove implements Move {
         effect?: [number, Effect];
         highCrit?: true;
         recoil?: number;
+        drain?: true;
     }) {
         this.name = name;
         this.pp = pp;
@@ -56,6 +59,7 @@ export class DamagingMove implements Move {
         this.highCrit = highCrit;
         this.effect = effect;
         this.recoil = recoil;
+        this.drain = drain;
     }
 
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
@@ -102,15 +106,28 @@ export class DamagingMove implements Move {
             eff
         );
         const brokeSub = hadSubstitute && target.substitute === 0;
-        if (this.recoil && !brokeSub) {
-            [damage, dead] = user.inflictDamage(
-                Math.max(Math.floor(damage / this.recoil), 1),
-                user,
-                battle,
-                false,
-                "recoil",
-                true
-            );
+        if (!brokeSub) {
+            if (this.recoil) {
+                [damage, dead] = user.inflictDamage(
+                    Math.max(Math.floor(damage / this.recoil), 1),
+                    user,
+                    battle,
+                    false,
+                    "recoil",
+                    true
+                );
+            }
+
+            if (this.drain) {
+                user.inflictDamage(
+                    -Math.max(Math.floor(damage / 2), 1),
+                    target,
+                    battle,
+                    false,
+                    "drain",
+                    true
+                );
+            }
         }
 
         if (dead || brokeSub) {
@@ -214,6 +231,14 @@ export const moveList = {
         type: "ground",
         power: 100,
         acc: 100,
+    }),
+    megadrain: new DamagingMove({
+        name: "Mega Drain",
+        pp: 10,
+        type: "grass",
+        power: 40,
+        acc: 100,
+        drain: true,
     }),
     psybeam: new DamagingMove({
         name: "Psybeam",

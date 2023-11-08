@@ -154,10 +154,15 @@ const stringifyEvents = (events: BattleEvent[]) => {
 
             if (e.why === "recoil") {
                 res.push(`${src.name} was hurt by recoil!`);
+            } else if (e.why === "drain") {
+                res.push(`${src.name} had it's energy drained!`);
             }
 
+            const diff = hpBefore - hpAfter;
             res.push(
-                `${target.name} lost ${hpBefore - hpAfter}% of its health. (${hpAfter}% remaining)`
+                `${target.name} ${diff > 0 ? "lost" : "gained"} ${Math.abs(
+                    diff
+                )}% of its health. (${hpAfter}% remaining)`
             );
 
             if (e.why === "substitute") {
@@ -227,7 +232,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 );
             }
         } else if (e.type === "confusion") {
-            res.push(`${players[e.id].active!.name} became confused!`)
+            res.push(`${players[e.id].active!.name} became confused!`);
         } else {
             res.push(JSON.stringify(e));
         }

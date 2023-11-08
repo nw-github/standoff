@@ -1,7 +1,13 @@
 import { type BattleEvent, type DamageEvent, type PlayerId } from "./events";
 import { moveList, type Move } from "./move";
 import { type Pokemon, type Status } from "./pokemon";
-import { floatTo255, randChance255, randRangeInclusive, stageMultipliers, type Type } from "./utils";
+import {
+    floatTo255,
+    randChance255,
+    randRangeInclusive,
+    stageMultipliers,
+    type Type,
+} from "./utils";
 
 export type Choice =
     | { type: "switch"; turn: number; to: number }
@@ -271,7 +277,7 @@ export class ActivePokemon {
         isCrit: boolean,
         why: DamageEvent["why"],
         direct?: boolean,
-        eff?: number,
+        eff?: number
     ): [number, boolean] {
         let damage: number;
         if (this.substitute !== 0 && !direct) {
@@ -286,7 +292,14 @@ export class ActivePokemon {
             damage = hpBefore - this.substitute;
         } else {
             const hpBefore = this.base.hp;
-            this.base.hp = Math.max(this.base.hp - dmg, 0);
+            this.base.hp =
+                dmg > 0
+                    ? Math.max(this.base.hp - dmg, 0)
+                    : Math.min(this.base.hp - dmg, this.base.stats.hp);
+            if (this.base.hp === hpBefore) {
+                return [0, false];
+            }
+
             battle.pushEvent({
                 type: "damage",
                 src: src.owner.id,
@@ -298,10 +311,10 @@ export class ActivePokemon {
                 eff,
                 isCrit,
             });
-            damage = hpBefore - this.base.hp; 
+            damage = hpBefore - this.base.hp;
         }
 
-        return [damage, this.base.hp === 0]
+        return [damage, this.base.hp === 0];
     }
 
     inflictStatus(status: Status, battle: Battle) {
