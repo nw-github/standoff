@@ -172,22 +172,6 @@ export class Battle {
                 continue;
             }
 
-            // https://bulbapedia.bulbagarden.net/wiki/Accuracy#Generation_I_and_II
-            if (move.acc) {
-                const chance =
-                    floatTo255(move.acc) *
-                    user.getStat("acc", false) *
-                    target.getStat("eva", false);
-                if (!randChance255(chance)) {
-                    this.pushEvent({
-                        type: "failed",
-                        src: user.owner.id,
-                        why: "miss",
-                    });
-                    continue;
-                }
-            }
-
             if (move.use) {
                 move.use(this, user);
             } else {

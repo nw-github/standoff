@@ -161,7 +161,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
             if (e.why !== "explosion") {
                 const diff = hpBefore - hpAfter;
                 res.push(
-                    `${target.name} ${diff > 0 ? "lost" : "gained"} ${Math.abs(
+                    `${target.name} ${diff < 0 ? "gained" : "lost"} ${Math.abs(
                         diff
                     )}% of its health. (${hpAfter}% remaining)`
                 );

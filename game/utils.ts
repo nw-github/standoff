@@ -1,3 +1,5 @@
+import type { ActivePokemon, Battle } from "./battle";
+
 export type Type =
     | "normal"
     | "rock"
@@ -28,7 +30,26 @@ export const floatTo255 = (num: number) => {
 };
 
 export const hpPercent = (current: number, max: number) => {
-    return Math.round(current / max * 100);
+    return Math.round((current / max) * 100);
+};
+
+export const checkAccuracy = (
+    acc: number,
+    battle: Battle,
+    user: ActivePokemon,
+    target: ActivePokemon,
+) => {
+    // https://bulbapedia.bulbagarden.net/wiki/Accuracy#Generation_I_and_II
+    const chance = floatTo255(acc) * user.getStat("acc", false) * target.getStat("eva", false);
+    if (!randChance255(chance)) {
+        battle.pushEvent({
+            type: "failed",
+            src: user.owner.id,
+            why: "miss",
+        });
+        return false;
+    }
+    return true;
 };
 
 export const stageMultipliers: Record<number, number> = {

@@ -1,6 +1,6 @@
 import type { ActivePokemon, Battle, Stages } from "./battle";
 import type { Status } from "./pokemon";
-import { randChance255, randRangeInclusive, typeChart, type Type, floatTo255 } from "./utils";
+import { randChance255, randRangeInclusive, typeChart, type Type, floatTo255, checkAccuracy } from "./utils";
 
 export interface Move {
     readonly name: string;
@@ -14,7 +14,7 @@ export interface Move {
 }
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
-type Flag = "high_crit" | "drain" | "explosion" | "recharge";
+type Flag = "high_crit" | "drain" | "explosion" | "recharge" | "crash";
 
 export class DamagingMove implements Move {
     readonly name: string;
@@ -68,6 +68,12 @@ export class DamagingMove implements Move {
                 src: target.owner.id,
                 why: "immune",
             });
+            this.crashDamage(battle, user, target);
+            return false;
+        }
+
+        if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
+            this.crashDamage(battle, user, target);
             return false;
         }
 
@@ -175,6 +181,17 @@ export class DamagingMove implements Move {
         }
     }
 
+    private crashDamage(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
+        if (this.flag === "crash") {
+            // https://www.smogon.com/dex/rb/moves/high-jump-kick/
+            if (user.substitute && target.substitute) {
+                target.inflictDamage(1, user, battle, false, "attacked");
+            } else if (!user.substitute) {
+                user.inflictDamage(1, user, battle, false, "crash", true);
+            }
+        }
+    }
+
     private static getEffectiveness(atk: Type, def: Type[]) {
         return def.reduce((eff, def) => eff * (typeChart[atk][def] ?? 1), 1);
     }
@@ -254,6 +271,14 @@ export const moveList = {
         acc: 100,
         effect: [30.1, "flinch"],
     }),
+    hijumpkick: new DamagingMove({
+        name: "Hi Jump Kick",
+        pp: 20,
+        type: "fight",
+        power: 85,
+        acc: 90,
+        flag: "crash"
+    }),
     hyperbeam: new DamagingMove({
         name: "Hyper Beam",
         pp: 5,
@@ -261,6 +286,14 @@ export const moveList = {
         power: 150,
         acc: 90,
         flag: "recharge",
+    }),
+    jumpkick: new DamagingMove({
+        name: "Jump Kick",
+        pp: 25,
+        type: "fight",
+        power: 70,
+        acc: 95,
+        flag: "crash"
     }),
     megadrain: new DamagingMove({
         name: "Mega Drain",
