@@ -32,7 +32,7 @@ export type DamageEvent = {
     hpAfter: number;
     maxHp: number;
     isCrit: boolean;
-    why: "attacked" | "substitute";
+    why: "attacked" | "substitute" | "recoil";
     eff?: number;
 };
 

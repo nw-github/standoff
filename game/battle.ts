@@ -270,9 +270,12 @@ export class ActivePokemon {
         battle: Battle,
         isCrit: boolean,
         why: DamageEvent["why"],
-        eff?: number
-    ): boolean {
-        if (this.substitute !== 0) {
+        direct?: boolean,
+        eff?: number,
+    ): [number, boolean] {
+        let damage: number;
+        if (this.substitute !== 0 && !direct) {
+            const hpBefore = this.substitute;
             this.substitute = Math.max(this.substitute - dmg, 0);
             battle.pushEvent({
                 type: "hit_sub",
@@ -280,8 +283,7 @@ export class ActivePokemon {
                 target: this.owner.id,
                 broken: this.substitute === 0,
             });
-
-            return false;
+            damage = hpBefore - this.substitute;
         } else {
             const hpBefore = this.base.hp;
             this.base.hp = Math.max(this.base.hp - dmg, 0);
@@ -296,9 +298,10 @@ export class ActivePokemon {
                 eff,
                 isCrit,
             });
-
-            return this.base.hp === 0;
+            damage = hpBefore - this.base.hp; 
         }
+
+        return [damage, this.base.hp === 0]
     }
 
     inflictStatus(status: Status, battle: Battle) {

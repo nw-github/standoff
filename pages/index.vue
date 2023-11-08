@@ -152,6 +152,10 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 hpAfter = hpPercent(hpAfter, e.maxHp);
             }
 
+            if (e.why === "recoil") {
+                res.push(`${src.name} was hurt by recoil!`);
+            }
+
             res.push(
                 `${target.name} lost ${hpBefore - hpAfter}% of its health. (${hpAfter}% remaining)`
             );
@@ -191,9 +195,9 @@ const stringifyEvents = (events: BattleEvent[]) => {
         } else if (e.type === "victory") {
             res.push(`${players[e.id].name} wins!`);
         } else if (e.type === "hit_sub") {
-            res.push(`${players[e.src].active!.name}'s substitute took the hit!`);
+            res.push(`${players[e.target].active!.name}'s substitute took the hit!`);
             if (e.broken) {
-                res.push(`${players[e.src].active!.name}'s substitute broke!`);
+                res.push(`${players[e.target].active!.name}'s substitute broke!`);
             }
         } else if (e.type === "status") {
             const table: Record<Status, string> = {

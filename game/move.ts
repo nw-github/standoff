@@ -24,6 +24,7 @@ export class DamagingMove implements Move {
     readonly priority?: number;
     readonly highCrit?: true;
     readonly effect?: [number, Effect];
+    readonly recoil?: number;
 
     constructor({
         name,
@@ -34,6 +35,7 @@ export class DamagingMove implements Move {
         priority,
         highCrit,
         effect,
+        recoil,
     }: {
         name: string;
         pp: number;
@@ -41,8 +43,9 @@ export class DamagingMove implements Move {
         power: number;
         acc?: number;
         priority?: number;
-        highCrit?: true;
         effect?: [number, Effect];
+        highCrit?: true;
+        recoil?: number;
     }) {
         this.name = name;
         this.pp = pp;
@@ -52,6 +55,7 @@ export class DamagingMove implements Move {
         this.priority = priority;
         this.highCrit = highCrit;
         this.effect = effect;
+        this.recoil = recoil;
     }
 
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
@@ -88,15 +92,28 @@ export class DamagingMove implements Move {
 
         const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
         const hadSubstitute = target.substitute !== 0;
-        const dead = target.inflictDamage(
+        let [damage, dead] = target.inflictDamage(
             Math.trunc(dmg * (rand / 255)),
             user,
             battle,
             isCrit,
             "attacked",
+            false,
             eff
         );
-        if (dead || (hadSubstitute && target.substitute === 0)) {
+        const brokeSub = hadSubstitute && target.substitute === 0;
+        if (this.recoil && !brokeSub) {
+            [damage, dead] = user.inflictDamage(
+                Math.max(Math.floor(damage / this.recoil), 1),
+                user,
+                battle,
+                false,
+                "recoil",
+                true
+            );
+        }
+
+        if (dead || brokeSub) {
             return dead;
         }
 
@@ -181,7 +198,15 @@ export const moveList = {
         type: "normal",
         power: 85,
         acc: 100,
-        effect: [30.1, "par"]
+        effect: [30.1, "par"],
+    }),
+    doubleedge: new DamagingMove({
+        name: "Double Edge",
+        pp: 15,
+        type: "normal",
+        power: 100,
+        acc: 100,
+        recoil: 4, // 1 / 4
     }),
     earthquake: new DamagingMove({
         name: "Earthquake",
@@ -196,7 +221,7 @@ export const moveList = {
         type: "psychic",
         power: 65,
         acc: 100,
-        effect: [10.2, "confusion"]
+        effect: [10.2, "confusion"],
     }),
     psychic: new DamagingMove({
         name: "Psychic",
@@ -204,7 +229,7 @@ export const moveList = {
         type: "psychic",
         power: 90,
         acc: 100,
-        effect: [33.2, [["spc", -1]]]
+        effect: [33.2, [["spc", -1]]],
     }),
     quickattack: new DamagingMove({
         name: "Quick Attack",
@@ -239,7 +264,7 @@ export const moveList = {
                 return false;
             }
 
-            const dead = user.inflictDamage(hp, user, battle, false, "substitute");
+            const [__, dead] = user.inflictDamage(hp, user, battle, false, "substitute");
             user.substitute = hp + 1;
             return dead;
         },
