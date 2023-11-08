@@ -14,7 +14,7 @@ export interface Move {
 }
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
-type Flag = "high_crit" | "drain" | "explosion";
+type Flag = "high_crit" | "drain" | "explosion" | "recharge";
 
 export class DamagingMove implements Move {
     readonly name: string;
@@ -74,16 +74,13 @@ export class DamagingMove implements Move {
         const isCrit = randChance255(this.critChance(user));
         const isSpecial = DamagingMove.isSpecial(this.type);
         const isStab = user.types.includes(this.type);
-        const atk = user.getStat(isSpecial ? "spc" : "atk", isCrit);
-        const def = Math.floor(
-            target.getStat(isSpecial ? "spc" : "def", isCrit) / (this.flag === "explosion" ? 2 : 1)
-        );
+        const [atks, defs] = (isSpecial ? ["spc", "spc"] : ["atk", "def"]) as [Stages, Stages];
+        const atk = user.getStat(atks, isCrit);
+        const def = Math.floor(target.getStat(defs, isCrit) / (this.flag === "explosion" ? 2 : 1));
         const lvl = user.base.level;
-
-        let dmg = (((2 * lvl * (isCrit ? 2 : 1)) / 5 + 2) * this.power * (atk / def)) / 50 + 2;
-        dmg *= isStab ? 1.5 : 1;
-        dmg *= eff;
-
+        const crit = isCrit ? 2 : 1;
+        const stab = isStab ? 1.5 : 1;
+        const dmg = ((((2 * lvl * crit) / 5 + 2) * this.power * (atk / def)) / 50 + 2) * stab * eff;
         if (dmg === 0) {
             battle.pushEvent({
                 type: "failed",
@@ -137,40 +134,36 @@ export class DamagingMove implements Move {
             return dead;
         }
 
-        if (!hadSubstitute) {
-            this.processEffect(battle, target);
+        if (this.flag === "recharge") {
+            user.recharge = this;
+        }
+
+        if (!hadSubstitute && this.effect) {
+            const [chance, effect] = this.effect;
+            if (!randChance255(floatTo255(chance))) {
+                return dead;
+            }
+
+            if (Array.isArray(effect)) {
+                target.inflictStages(effect, battle);
+            } else if (effect === "confusion") {
+                if (target.confusion !== 0) {
+                    return dead;
+                }
+
+                target.inflictConfusion(battle);
+            } else if (effect === "flinch") {
+                target.flinch = battle.turn;
+            } else {
+                if (!target.base.status || target.types.includes(this.type)) {
+                    return dead;
+                }
+
+                target.inflictStatus(effect, battle);
+            }
         }
 
         return dead;
-    }
-
-    private processEffect(battle: Battle, target: ActivePokemon) {
-        if (!this.effect) {
-            return;
-        }
-
-        const [chance, effect] = this.effect;
-        if (!randChance255(floatTo255(chance))) {
-            return;
-        }
-
-        if (Array.isArray(effect)) {
-            target.inflictStages(effect, battle);
-        } else if (effect === "confusion") {
-            if (target.confusion !== 0) {
-                return;
-            }
-
-            target.inflictConfusion(battle);
-        } else if (effect === "flinch") {
-            target.flinch = battle.turn;
-        } else {
-            if (!target.base.status || target.types.includes(this.type)) {
-                return;
-            }
-
-            target.inflictStatus(effect, battle);
-        }
     }
 
     private critChance(user: ActivePokemon) {
@@ -259,7 +252,15 @@ export const moveList = {
         type: "normal",
         power: 70,
         acc: 100,
-        effect: [30.1, "flinch"]
+        effect: [30.1, "flinch"],
+    }),
+    hyperbeam: new DamagingMove({
+        name: "Hyper Beam",
+        pp: 5,
+        type: "normal",
+        power: 150,
+        acc: 90,
+        flag: "recharge",
     }),
     megadrain: new DamagingMove({
         name: "Mega Drain",

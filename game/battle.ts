@@ -247,6 +247,7 @@ export class ActivePokemon {
     substitute = 0;
     confusion = 0;
     flinch = 0;
+    recharge?: Move;
     readonly owner: Player;
     readonly types: Type[] = [];
     readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };
