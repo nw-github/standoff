@@ -156,6 +156,8 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 res.push(`${src.name} was hurt by recoil!`);
             } else if (e.why === "drain") {
                 res.push(`${src.name} had it's energy drained!`);
+            } else if (e.why === "crash") {
+                res.push(`${src.name} kept going and crashed!`);
             }
 
             if (e.why !== "explosion") {
