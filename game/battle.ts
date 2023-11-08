@@ -308,4 +308,14 @@ export class ActivePokemon {
             status,
         });
     }
+
+    inflictStages(stages: [Stages, number][], battle: Battle) {
+        // TODO: update stats/stages
+
+        battle.pushEvent({
+            type: "stages",
+            id: this.owner.id,
+            stages,
+        });
+    }
 }

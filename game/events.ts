@@ -1,3 +1,4 @@
+import type { Stages } from "./battle";
 import { type Status } from "./pokemon";
 
 export type BattleEvent =
@@ -7,7 +8,8 @@ export type BattleEvent =
     | UseMoveEvent
     | VictoryEvent
     | HitSubstituteEvent
-    | StatusEvent;
+    | StatusEvent
+    | StagesEvent;
 
 export type PlayerId = string;
 
@@ -61,4 +63,10 @@ type StatusEvent = {
     type: "status";
     id: PlayerId;
     status: Status;
+}
+
+type StagesEvent = {
+    type: "stages";
+    id: PlayerId;
+    stages: [Stages, number][];
 }

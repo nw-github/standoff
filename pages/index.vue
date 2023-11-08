@@ -26,7 +26,7 @@
 
 <script setup lang="ts">
 import type { BattleEvent } from "../game/events";
-import type { Player } from "../game/battle";
+import type { Player, Stages } from "../game/battle";
 import type { Status } from "../game/pokemon";
 import { moveList } from "../game/move";
 import { hpPercent } from "~/game/utils";
@@ -172,8 +172,19 @@ const stringifyEvents = (events: BattleEvent[]) => {
             switch (e.why) {
                 case "immune":
                     res.push(`It doesn't affect ${src.name}...`);
+                    break;
                 case "miss":
                     res.push(`${src.name} missed!`);
+                    break;
+                case "cant_substitute":
+                    res.push(`${src.name} doesn't have enough HP to create a substitute!`);
+                    break;
+                case "has_substitute":
+                    res.push(`${src.name} already has a substitute!`);
+                    break;
+                case "generic":
+                    res.push(`But it failed!`);
+                    break;
             }
         } else if (e.type === "move") {
             res.push(`${players[e.src].active!.name} used ${e.move}!`);
@@ -194,6 +205,23 @@ const stringifyEvents = (events: BattleEvent[]) => {
             };
 
             res.push(`${players[e.id].active!.name} ${table[e.status]}!`);
+        } else if (e.type === "stages") {
+            const table: Record<Stages, string> = {
+                atk: "Attack",
+                def: "Defense",
+                spc: "Special",
+                spe: "Speed",
+                acc: "Accuracy",
+                eva: "Evasion",
+            };
+
+            for (const [stage, amount] of e.stages) {
+                res.push(
+                    `${players[e.id].active!.name}'s ${table[stage]} ${
+                        amount > 0 ? "rose" : "fell"
+                    }${Math.abs(amount) > 1 ? " sharply" : ""}!`
+                );
+            }
         } else {
             res.push(JSON.stringify(e));
         }

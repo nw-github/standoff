@@ -1,4 +1,4 @@
-import type { ActivePokemon, Battle } from "./battle";
+import type { ActivePokemon, Battle, Stages } from "./battle";
 import type { Status } from "./pokemon";
 import { randChance255, randRangeInclusive, typeChart, type Type, floatTo255 } from "./utils";
 
@@ -21,7 +21,7 @@ export class DamagingMove implements Move {
     readonly acc?: number;
     readonly priority?: number;
     readonly highCrit?: true;
-    readonly effect?: [number, Status];
+    readonly effect?: [number, Status | [Stages, number][]];
 
     constructor({
         name,
@@ -40,7 +40,7 @@ export class DamagingMove implements Move {
         acc?: number;
         priority?: number;
         highCrit?: true;
-        effect?: [number, Status];
+        effect?: [number, Status | [Stages, number][]];
     }) {
         this.name = name;
         this.pp = pp;
@@ -98,20 +98,32 @@ export class DamagingMove implements Move {
             return dead;
         }
 
-        if (
-            this.effect &&
-            !target.base.status &&
-            !target.types.includes(this.type) &&
-            !hadSubstitute
-        ) {
-            const [chance, status] = this.effect;
-            if (randChance255(floatTo255(chance))) {
-                target.inflictStatus(status, battle);
-            }
+        if (!hadSubstitute) {
+            this.processEffect(battle, target);
         }
 
-        // TODO: stat drops
         return dead;
+    }
+
+    private processEffect(battle: Battle, target: ActivePokemon) {
+        if (!this.effect) {
+            return;
+        }
+
+        const [chance, effect] = this.effect;
+        if (!randChance255(floatTo255(chance))) {
+            return;
+        }
+
+        if (Array.isArray(effect)) {
+            target.inflictStages(effect, battle);
+        } else {
+            if (!target.base.status || target.types.includes(this.type)) {
+                return;
+            }
+
+            target.inflictStatus(effect, battle);
+        }
     }
 
     private critChance(user: ActivePokemon) {
@@ -170,6 +182,14 @@ export const moveList = {
         power: 100,
         acc: 100,
     }),
+    psychic: new DamagingMove({
+        name: "Psychic",
+        pp: 10,
+        type: "psychic",
+        power: 90,
+        acc: 100,
+        effect: [100 /* 33.2 */, [["spc", -1]]]
+    }),
     quickattack: new DamagingMove({
         name: "Quick Attack",
         pp: 40,
@@ -178,8 +198,6 @@ export const moveList = {
         acc: 100,
         priority: +1,
     }),
-
-
     substitute: tsEnsureMove({
         name: "Substitute",
         pp: 10,
@@ -210,4 +228,5 @@ export const moveList = {
             return dead;
         },
     }),
+    
 };
