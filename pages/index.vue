@@ -158,12 +158,14 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 res.push(`${src.name} had it's energy drained!`);
             }
 
-            const diff = hpBefore - hpAfter;
-            res.push(
-                `${target.name} ${diff > 0 ? "lost" : "gained"} ${Math.abs(
-                    diff
-                )}% of its health. (${hpAfter}% remaining)`
-            );
+            if (e.why !== "explosion") {
+                const diff = hpBefore - hpAfter;
+                res.push(
+                    `${target.name} ${diff > 0 ? "lost" : "gained"} ${Math.abs(
+                        diff
+                    )}% of its health. (${hpAfter}% remaining)`
+                );
+            }
 
             if (e.why === "substitute") {
                 res.push(`${src.name} put in a substitute!`);
@@ -175,6 +177,10 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 if (eff !== 1) {
                     res.push(` - It was ${eff > 1 ? "supereffective!" : "not very effective..."}`);
                 }
+            }
+
+            if (hpAfter === 0) {
+                res.push(`${target.name} fainted!`);
             }
         } else if (e.type === "failed") {
             const src = players[e.src].active!;

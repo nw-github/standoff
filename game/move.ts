@@ -26,6 +26,7 @@ export class DamagingMove implements Move {
     readonly effect?: [number, Effect];
     readonly recoil?: number;
     readonly drain?: true;
+    readonly explosion?: true;
 
     constructor({
         name,
@@ -38,6 +39,7 @@ export class DamagingMove implements Move {
         effect,
         recoil,
         drain,
+        explosion,
     }: {
         name: string;
         pp: number;
@@ -49,6 +51,7 @@ export class DamagingMove implements Move {
         highCrit?: true;
         recoil?: number;
         drain?: true;
+        explosion?: true;
     }) {
         this.name = name;
         this.pp = pp;
@@ -60,6 +63,7 @@ export class DamagingMove implements Move {
         this.effect = effect;
         this.recoil = recoil;
         this.drain = drain;
+        this.explosion = explosion;
     }
 
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
@@ -78,7 +82,9 @@ export class DamagingMove implements Move {
         const isSpecial = DamagingMove.isSpecial(this.type);
         const isStab = user.types.includes(this.type);
         const atk = user.getStat(isSpecial ? "spc" : "atk", isCrit);
-        const def = target.getStat(isSpecial ? "spc" : "def", isCrit);
+        const def = Math.floor(
+            target.getStat(isSpecial ? "spc" : "def", isCrit) / (this.explosion ? 2 : 1)
+        );
         const lvl = user.base.level;
 
         let dmg = (((2 * lvl * (isCrit ? 2 : 1)) / 5 + 2) * this.power * (atk / def)) / 50 + 2;
@@ -108,7 +114,7 @@ export class DamagingMove implements Move {
         const brokeSub = hadSubstitute && target.substitute === 0;
         if (!brokeSub) {
             if (this.recoil) {
-                [damage, dead] = user.inflictDamage(
+                [, dead] = user.inflictDamage(
                     Math.max(Math.floor(damage / this.recoil), 1),
                     user,
                     battle,
@@ -127,6 +133,10 @@ export class DamagingMove implements Move {
                     "drain",
                     true
                 );
+            }
+
+            if (this.explosion) {
+                [, dead] = user.inflictDamage(user.base.hp, user, battle, false, "explosion", true);
             }
         }
 
@@ -232,6 +242,14 @@ export const moveList = {
         power: 100,
         acc: 100,
     }),
+    explosion: new DamagingMove({
+        name: "Explosion",
+        pp: 5,
+        type: "normal",
+        power: 170,
+        acc: 100,
+        explosion: true,
+    }),
     megadrain: new DamagingMove({
         name: "Mega Drain",
         pp: 10,
@@ -263,6 +281,14 @@ export const moveList = {
         power: 40,
         acc: 100,
         priority: +1,
+    }),
+    selfdestruct: new DamagingMove({
+        name: "Self-Destruct",
+        pp: 5,
+        type: "normal",
+        power: 130,
+        acc: 100,
+        explosion: true,
     }),
     substitute: tsEnsureMove({
         name: "Substitute",

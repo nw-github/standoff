@@ -187,8 +187,12 @@ export class Battle {
 
             // A pokemon has died, skip all end of turn events
             if (move.execute(this, user, target)) {
-                if (target.owner.team.every(poke => poke.hp <= 0) && !this.victor) {
-                    this.victor = user.owner;
+                if (!this.victor) {
+                    if (target.owner.team.every(poke => poke.hp <= 0)) {
+                        this.victor = user.owner;
+                    } else if (user.owner.team.every(poke => poke.hp <= 0)) {
+                        this.victor = target.owner;
+                    }
                 }
 
                 skipEnd = true;
