@@ -1,6 +1,13 @@
 import type { ActivePokemon, Battle, Stages } from "./battle";
 import type { Status } from "./pokemon";
-import { randChance255, randRangeInclusive, typeChart, type Type, floatTo255, checkAccuracy } from "./utils";
+import {
+    randChance255,
+    randRangeInclusive,
+    typeChart,
+    type Type,
+    floatTo255,
+    checkAccuracy,
+} from "./utils";
 
 export interface Move {
     readonly name: string;
@@ -16,7 +23,7 @@ export interface Move {
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
 type Flag = "high_crit" | "drain" | "explosion" | "recharge" | "crash";
 
-export class DamagingMove implements Move {
+class DamagingMove implements Move {
     readonly name: string;
     readonly pp: number;
     readonly type: Type;
@@ -219,6 +226,34 @@ export class DamagingMove implements Move {
     }
 }
 
+class LevelMove implements Move {
+    readonly name: string;
+    readonly pp: number;
+    readonly type: Type;
+    readonly acc?: number;
+
+    constructor({ name, pp, type, acc }: {
+        name: string;
+        pp: number;
+        type: Type;
+        acc?: number;
+    }) {
+        this.name = name;
+        this.pp = pp;
+        this.type = type;
+        this.acc = acc;
+    }
+
+    execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        // Night Shade/Seismic Toss are not affected by type immunity in Gen 1
+        if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
+            return false;
+        }
+
+        return target.inflictDamage(user.base.level, user, battle, false, "attacked")[1];
+    }
+}
+
 export type MoveId = keyof typeof moveList;
 
 const tsEnsureMove = <T extends Move>(t: T) => t;
@@ -277,7 +312,7 @@ export const moveList = {
         type: "fight",
         power: 85,
         acc: 90,
-        flag: "crash"
+        flag: "crash",
     }),
     hyperbeam: new DamagingMove({
         name: "Hyper Beam",
@@ -293,7 +328,7 @@ export const moveList = {
         type: "fight",
         power: 70,
         acc: 95,
-        flag: "crash"
+        flag: "crash",
     }),
     megadrain: new DamagingMove({
         name: "Mega Drain",
@@ -302,6 +337,12 @@ export const moveList = {
         power: 40,
         acc: 100,
         flag: "drain",
+    }),
+    nightshade: new LevelMove({
+        name: "Night Shade",
+        pp: 15,
+        type: "ghost",
+        acc: 100,
     }),
     psybeam: new DamagingMove({
         name: "Psybeam",
@@ -326,6 +367,12 @@ export const moveList = {
         power: 40,
         acc: 100,
         priority: +1,
+    }),
+    seismictoss: new LevelMove({
+        name: "Seismic Toss",
+        pp: 20,
+        type: "normal",
+        acc: 100,
     }),
     selfdestruct: new DamagingMove({
         name: "Self-Destruct",
