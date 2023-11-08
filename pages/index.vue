@@ -200,6 +200,9 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 case "generic":
                     res.push(`But it failed!`);
                     break;
+                case "flinch":
+                    res.push(`${src.name} flinched!`);
+                    break;
             }
         } else if (e.type === "move") {
             res.push(`${players[e.src].active!.name} used ${e.move}!`);

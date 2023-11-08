@@ -62,7 +62,7 @@ export class Player {
 
 export class Battle {
     private readonly players: [Player, Player];
-    private turn = 0;
+    private _turn = 0;
     private readonly events: BattleEvent[] = [];
     victor: Player | null = null;
 
@@ -81,13 +81,17 @@ export class Battle {
         return [self, self.endTurn()];
     }
 
+    get turn() {
+        return this._turn;
+    }
+
     cancel(id: PlayerId, turn: number) {
         const player = this.players.find(p => p.id === id);
         if (!player) {
             throw new SelectionError("invalid_id");
         }
 
-        if (turn !== this.turn) {
+        if (turn !== this._turn) {
             throw new SelectionError("cancel_too_late");
         }
 
@@ -104,7 +108,7 @@ export class Battle {
             throw new SelectionError("invalid_id");
         }
 
-        if (choice.turn !== this.turn) {
+        if (choice.turn !== this._turn) {
             throw new SelectionError("choose_too_late");
         }
 
@@ -159,6 +163,15 @@ export class Battle {
 
         let skipEnd = false;
         for (const { move, user, target } of choices) {
+            if (user.flinch === this._turn) {
+                this.pushEvent({
+                    type: "failed",
+                    src: user.owner.id,
+                    why: "flinch",
+                });
+                continue;
+            }
+
             // https://bulbapedia.bulbagarden.net/wiki/Accuracy#Generation_I_and_II
             if (move.acc) {
                 const chance =
@@ -220,7 +233,7 @@ export class Battle {
 
     private endTurn(): Turn {
         return {
-            turn: this.turn++,
+            turn: this._turn++,
             events: this.events.splice(0),
         };
     }
@@ -233,6 +246,7 @@ export class ActivePokemon {
     focus = false;
     substitute = 0;
     confusion = 0;
+    flinch = 0;
     readonly owner: Player;
     readonly types: Type[] = [];
     readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };

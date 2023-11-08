@@ -13,7 +13,7 @@ export interface Move {
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean;
 }
 
-type Effect = Status | [Stages, number][] | "confusion";
+type Effect = Status | [Stages, number][] | "confusion" | "flinch";
 type Flag = "high_crit" | "drain" | "explosion";
 
 export class DamagingMove implements Move {
@@ -162,6 +162,8 @@ export class DamagingMove implements Move {
             }
 
             target.inflictConfusion(battle);
+        } else if (effect === "flinch") {
+            target.flinch = battle.turn;
         } else {
             if (!target.base.status || target.types.includes(this.type)) {
                 return;
@@ -250,6 +252,14 @@ export const moveList = {
         power: 170,
         acc: 100,
         flag: "explosion",
+    }),
+    headbutt: new DamagingMove({
+        name: "Headbutt",
+        pp: 15,
+        type: "normal",
+        power: 70,
+        acc: 100,
+        effect: [30.1, "flinch"]
     }),
     megadrain: new DamagingMove({
         name: "Mega Drain",
