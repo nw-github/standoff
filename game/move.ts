@@ -14,19 +14,18 @@ export interface Move {
 }
 
 type Effect = Status | [Stages, number][] | "confusion";
+type Flag = "high_crit" | "drain" | "explosion";
 
 export class DamagingMove implements Move {
     readonly name: string;
     readonly pp: number;
     readonly type: Type;
     readonly power: number;
+    readonly flag?: Flag;
     readonly acc?: number;
     readonly priority?: number;
-    readonly highCrit?: true;
     readonly effect?: [number, Effect];
     readonly recoil?: number;
-    readonly drain?: true;
-    readonly explosion?: true;
 
     constructor({
         name,
@@ -35,11 +34,9 @@ export class DamagingMove implements Move {
         power,
         acc,
         priority,
-        highCrit,
         effect,
         recoil,
-        drain,
-        explosion,
+        flag,
     }: {
         name: string;
         pp: number;
@@ -48,10 +45,8 @@ export class DamagingMove implements Move {
         acc?: number;
         priority?: number;
         effect?: [number, Effect];
-        highCrit?: true;
         recoil?: number;
-        drain?: true;
-        explosion?: true;
+        flag?: Flag;
     }) {
         this.name = name;
         this.pp = pp;
@@ -59,11 +54,9 @@ export class DamagingMove implements Move {
         this.power = power;
         this.acc = acc;
         this.priority = priority;
-        this.highCrit = highCrit;
+        this.flag = flag;
         this.effect = effect;
         this.recoil = recoil;
-        this.drain = drain;
-        this.explosion = explosion;
     }
 
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
@@ -83,7 +76,7 @@ export class DamagingMove implements Move {
         const isStab = user.types.includes(this.type);
         const atk = user.getStat(isSpecial ? "spc" : "atk", isCrit);
         const def = Math.floor(
-            target.getStat(isSpecial ? "spc" : "def", isCrit) / (this.explosion ? 2 : 1)
+            target.getStat(isSpecial ? "spc" : "def", isCrit) / (this.flag === "explosion" ? 2 : 1)
         );
         const lvl = user.base.level;
 
@@ -124,7 +117,7 @@ export class DamagingMove implements Move {
                 );
             }
 
-            if (this.drain) {
+            if (this.flag === "drain") {
                 user.inflictDamage(
                     -Math.max(Math.floor(damage / 2), 1),
                     target,
@@ -135,7 +128,7 @@ export class DamagingMove implements Move {
                 );
             }
 
-            if (this.explosion) {
+            if (this.flag === "explosion") {
                 [, dead] = user.inflictDamage(user.base.hp, user, battle, false, "explosion", true);
             }
         }
@@ -180,7 +173,7 @@ export class DamagingMove implements Move {
 
     private critChance(user: ActivePokemon) {
         const baseSpeed = user.base.species.stats.spe;
-        if (this.highCrit) {
+        if (this.flag === "high_crit") {
             return user.focus ? 4 * (baseSpeed / 4) : 8 * (baseSpeed / 2);
         } else {
             return user.focus ? baseSpeed / 8 : baseSpeed / 2;
@@ -227,6 +220,14 @@ export const moveList = {
         acc: 100,
         effect: [30.1, "par"],
     }),
+    crabhammer: new DamagingMove({
+        name: "Crabhammer",
+        pp: 10,
+        type: "water",
+        power: 90,
+        acc: 85,
+        flag: "high_crit",
+    }),
     doubleedge: new DamagingMove({
         name: "Double Edge",
         pp: 15,
@@ -248,7 +249,7 @@ export const moveList = {
         type: "normal",
         power: 170,
         acc: 100,
-        explosion: true,
+        flag: "explosion",
     }),
     megadrain: new DamagingMove({
         name: "Mega Drain",
@@ -256,7 +257,7 @@ export const moveList = {
         type: "grass",
         power: 40,
         acc: 100,
-        drain: true,
+        flag: "drain",
     }),
     psybeam: new DamagingMove({
         name: "Psybeam",
@@ -288,7 +289,7 @@ export const moveList = {
         type: "normal",
         power: 130,
         acc: 100,
-        explosion: true,
+        flag: "explosion",
     }),
     substitute: tsEnsureMove({
         name: "Substitute",
