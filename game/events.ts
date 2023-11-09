@@ -41,6 +41,7 @@ type HitSubstituteEvent = {
     src: PlayerId;
     target: PlayerId;
     broken: boolean;
+    eff?: number;
 };
 
 type FailureEvent = {

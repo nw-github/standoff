@@ -177,7 +177,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 }
                 const eff = e.eff ?? 1;
                 if (eff !== 1) {
-                    res.push(` - It was ${eff > 1 ? "supereffective!" : "not very effective..."}`);
+                    res.push(` - It's ${eff > 1 ? "supereffective!" : "not very effective..."}`);
                 }
             }
 
@@ -214,6 +214,11 @@ const stringifyEvents = (events: BattleEvent[]) => {
             res.push(`${players[e.target].active!.name}'s substitute took the hit!`);
             if (e.broken) {
                 res.push(`${players[e.target].active!.name}'s substitute broke!`);
+            }
+
+            const eff = e.eff ?? 1;
+            if (eff !== 1) {
+                res.push(` - It's ${eff > 1 ? "supereffective!" : "not very effective..."}`);
             }
         } else if (e.type === "status") {
             const table: Record<Status, string> = {

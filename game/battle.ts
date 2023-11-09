@@ -291,6 +291,7 @@ export class ActivePokemon {
                 src: src.owner.id,
                 target: this.owner.id,
                 broken: this.substitute === 0,
+                eff,
             });
             damage = hpBefore - this.substitute;
         } else {
