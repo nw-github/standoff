@@ -348,6 +348,14 @@ export const moveList = {
         acc: 100,
         priority: +1,
     }),
+    razorwind: new DamagingMove({
+        name: "Razor Wind",
+        pp: 10,
+        type: "normal",
+        power: 80,
+        acc: 75,
+        flag: "charge",
+    }),
     recover: new RecoveryMove({
         name: "Recover",
         pp: 20,
@@ -397,11 +405,27 @@ export const moveList = {
         acc: 100,
         flag: "charge",
     }),
+    skyattack: new DamagingMove({
+        name: "Sky Attack",
+        pp: 5,
+        type: "flying",
+        power: 140,
+        acc: 90,
+        flag: "charge",
+    }),
     softboiled: new RecoveryMove({
         name: "Softboiled",
         pp: 10,
         type: "normal",
         why: "recover",
+    }),
+    solarbeam: new DamagingMove({
+        name: "SolarBeam",
+        pp: 10,
+        type: "grass",
+        power: 120,
+        acc: 100,
+        flag: "charge",
     }),
     sonicboom: new FixedDamageMove({
         name: "Sonic Boom",

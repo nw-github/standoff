@@ -312,6 +312,12 @@ const stringifyEvents = (events: BattleEvent[]) => {
         } else if (e.type === "charge") {
             if (e.move === "skullbash") {
                 res.push(`${pname(e.id)} lowered its head!`);
+            } else if (e.move === "razorwind") {
+                res.push(`${pname(e.id)} made a whirlwind!`);
+            } else if (e.move === "skyattack") {
+                res.push(`${pname(e.id)} is glowing!`);
+            } else if (e.move === "solarbeam") {
+                res.push(`${pname(e.id)} took in sunlight!`);
             }
         } else {
             res.push(JSON.stringify(e));
