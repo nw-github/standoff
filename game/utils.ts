@@ -61,22 +61,22 @@ export const getEffectiveness = (atk: Type, def: Type[]) => {
 };
 
 export const stageMultipliers: Record<number, number> = {
-    "-6": 25,
-    "-5": 28,
-    "-4": 33,
-    "-3": 40,
-    "-2": 50,
-    "-1": 66,
-    "0": 100,
-    "1": 150,
-    "2": 200,
-    "3": 250,
-    "4": 300,
-    "5": 350,
-    "6": 400,
+    [-6]: 25,
+    [-5]: 28,
+    [-4]: 33,
+    [-3]: 40,
+    [-2]: 50,
+    [-1]: 66,
+    0: 100,
+    1: 150,
+    2: 200,
+    3: 250,
+    4: 300,
+    5: 350,
+    6: 400,
 };
 
-export const typeChart: Record<Type, { [key in Type]?: number }> = {
+export const typeChart: Record<Type, Partial<Record<Type, number>>> = {
     normal: { ghost: 0 },
     rock: { bug: 2, fire: 2, flying: 2, ice: 2, fight: 0.5, ground: 0.5 },
     ground: { rock: 2, poison: 2, bug: 0.5, flying: 0, grass: 0.5, fire: 2, electric: 2 },
