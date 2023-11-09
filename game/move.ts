@@ -21,7 +21,7 @@ export interface Move {
 }
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
-type Flag = "high_crit" | "drain" | "explosion" | "recharge" | "crash";
+type Flag = "high_crit" | "drain" | "explosion" | "recharge" | "crash" | "double";
 
 class DamagingMove implements Move {
     readonly name: string;
@@ -93,7 +93,7 @@ class DamagingMove implements Move {
         const lvl = user.base.level;
         const crit = isCrit ? 2 : 1;
         const stab = isStab ? 1.5 : 1;
-        const dmg = ((((2 * lvl * crit) / 5 + 2) * this.power * (atk / def)) / 50 + 2) * stab * eff;
+        let dmg = ((((2 * lvl * crit) / 5 + 2) * this.power * (atk / def)) / 50 + 2) * stab * eff;
         if (dmg === 0) {
             battle.pushEvent({
                 type: "failed",
@@ -105,8 +105,9 @@ class DamagingMove implements Move {
 
         const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
         const hadSubstitute = target.substitute !== 0;
-        let [damage, dead] = target.inflictDamage(
-            Math.trunc(dmg * (rand / 255)),
+        dmg = Math.trunc(dmg * (rand / 255));
+        let [dealtDamage, dead] = target.inflictDamage(
+            dmg,
             user,
             battle,
             isCrit,
@@ -118,7 +119,7 @@ class DamagingMove implements Move {
         if (!brokeSub) {
             if (this.recoil) {
                 [, dead] = user.inflictDamage(
-                    Math.max(Math.floor(damage / this.recoil), 1),
+                    Math.max(Math.floor(dealtDamage / this.recoil), 1),
                     user,
                     battle,
                     false,
@@ -129,17 +130,17 @@ class DamagingMove implements Move {
 
             if (this.flag === "drain") {
                 user.inflictDamage(
-                    -Math.max(Math.floor(damage / 2), 1),
+                    -Math.max(Math.floor(dealtDamage / 2), 1),
                     target,
                     battle,
                     false,
                     "drain",
                     true
                 );
-            }
-
-            if (this.flag === "explosion") {
+            } else if (this.flag === "explosion") {
                 [, dead] = user.inflictDamage(user.base.hp, user, battle, false, "explosion", true);
+            } else if (this.flag === "double") {
+                [, dead] = target.inflictDamage(dmg, user, battle, isCrit, "attacked", false, eff);
             }
         }
 
@@ -232,12 +233,7 @@ class LevelMove implements Move {
     readonly type: Type;
     readonly acc?: number;
 
-    constructor({ name, pp, type, acc }: {
-        name: string;
-        pp: number;
-        type: Type;
-        acc?: number;
-    }) {
+    constructor({ name, pp, type, acc }: { name: string; pp: number; type: Type; acc?: number }) {
         this.name = name;
         this.pp = pp;
         this.type = type;
@@ -282,6 +278,14 @@ export const moveList = {
         power: 100,
         acc: 100,
         recoil: 4, // 1 / 4
+    }),
+    doublekick: new DamagingMove({
+        name: "Double Kick",
+        pp: 30,
+        type: "fight",
+        power: 30,
+        acc: 100,
+        flag: "double",
     }),
     earthquake: new DamagingMove({
         name: "Earthquake",
