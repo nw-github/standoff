@@ -8,10 +8,13 @@
             </li>
         </ul>
 
-        <div v-if="selectedMove === -1 && validMoves" v-for="{ move, i } in validMoves.moves">
-            <button @click="() => selectMove(i)">{{ moveList[move].name }}</button>
+        <div v-if="selectedMove === -1 && choices" v-for="(move, i) in choices.moves">
+            <button @click="() => selectMove(i)" :disabled="!move.valid">
+                {{ moveList[move.move].name }}
+                <span v-if="move.pp !== 0">({{ move.pp }}/{{ moveList[move.move].pp }})</span>
+            </button>
         </div>
-        <button @click="cancelMove" v-else-if="selectedMove !== -1 && validMoves">Cancel</button>
+        <button @click="cancelMove" v-else-if="selectedMove !== -1 && choices">Cancel</button>
 
         <div v-for="[turnNo, turn] in turns">
             <h2>Turn {{ turnNo }}</h2>
@@ -46,7 +49,7 @@ const status = ref("loading...");
 const myId = ref("");
 const players = reactive<Record<string, ClientPlayer>>({});
 const turns = ref<[number, string[]][]>([]);
-const validMoves = ref<ReturnType<Player["validMoves"]> | null>(null);
+const choices = ref<Player["choices"] | undefined>();
 const selectedMove = ref<number>(-1);
 
 let currentTurn: number;
@@ -85,7 +88,7 @@ onMounted(() => {
             delete players[resp.id];
         } else if (resp.type === "sv_turn") {
             turns.value = [...turns.value, [resp.turn, stringifyEvents(JSON.parse(resp.events))]];
-            validMoves.value = resp.validMoves ?? null;
+            choices.value = resp.choices;
             selectedMove.value = -1;
             currentTurn = resp.turn + 1;
         }
@@ -98,7 +101,7 @@ onMounted(() => {
             delete players[key];
         }
         turns.value = [];
-        validMoves.value = null;
+        choices.value = undefined;
         selectedMove.value = -1;
     };
 });

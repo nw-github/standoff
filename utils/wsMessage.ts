@@ -52,7 +52,7 @@ type TurnMessage = {
     /** JSON encoded BattleEvent[] */
     events: string;
     turn: number;
-    validMoves?: ReturnType<Player["validMoves"]>;
+    choices?: Player["choices"];
 };
 
 type ChoiceResponse = {

@@ -11,7 +11,7 @@ export declare interface Lobby {
             id: PlayerId,
             turn: number,
             events: string,
-            validMoves?: ReturnType<Player["validMoves"]>
+            validMoves?: Player["choices"]
         ) => void
     ): this;
     on(event: "join", listener: (id: PlayerId, name: string, isSpectator: boolean) => void): this;
@@ -111,7 +111,7 @@ export class Lobby extends EventEmitter {
                 player.id,
                 turn,
                 Lobby.stringifyEventsFor(player, events),
-                this.battle?.victor ? undefined : player.validMoves()
+                player.choices
             );
         }
 

@@ -25,9 +25,9 @@ const initLobby = (players: Players) => {
         }
     });
 
-    lobby.on("turn", (id, turn, events, validMoves) => {
+    lobby.on("turn", (id, turn, events, choices) => {
         players[id].socket.send(
-            wsStringify<ServerMessage>({ type: "sv_turn", turn, events, validMoves })
+            wsStringify<ServerMessage>({ type: "sv_turn", turn, events, choices })
         );
     });
 

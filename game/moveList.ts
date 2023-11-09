@@ -210,13 +210,13 @@ export const moveList = {
         name: "Metronome",
         pp: 10,
         type: "normal",
-        execute(battle, user, target) {
-            const moves = Object.values(moveList);
+        execute(battle, user, target): boolean {
+            const moves: Move[] = Object.values(moveList);
 
-            let move: Move | undefined;
-            while (!move || move === this) {
+            let move;
+            do {
                 move = randChoice(moves);
-            }
+            } while (move === this || move === moveList.struggle);
 
             move.use(battle, user);
             return move.execute(battle, user, target);
@@ -385,6 +385,14 @@ export const moveList = {
         type: "grass",
         acc: 100,
         status: "slp",
+    }),
+    struggle: new DamagingMove({
+        name: "Struggle",
+        pp: 10,
+        type: "normal",
+        acc: 100,
+        power: 50,
+        recoil: 2,
     }),
     substitute: new UniqueMove({
         name: "Substitute",

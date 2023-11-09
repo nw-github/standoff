@@ -1,6 +1,6 @@
 import { type BattleEvent, type DamageReason, type PlayerId } from "./events";
-import { moveList } from "./moveList";
-import type { Move } from "./moves";
+import { moveList, type MoveId } from "./moveList";
+import { type Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
 import { TransformedPokemon } from "./transformed";
 import { randChance255, randRangeInclusive, type Type } from "./utils";
@@ -9,8 +9,10 @@ export type Choice =
     | { type: "switch"; turn: number; to: number }
     | { type: "move"; turn: number; index: number };
 
+type MoveChoice = { move: MoveId; pp: number; valid: boolean; i: number };
 type ChosenMove = {
     move: Move;
+    choice: MoveChoice;
     user: ActivePokemon;
     target: ActivePokemon;
 };
@@ -40,6 +42,7 @@ export class Player {
     readonly team: Pokemon[];
     choice: ChosenMove | null = null;
     id: PlayerId;
+    choices?: { canSwitch: boolean; moves: MoveChoice[] };
 
     constructor(name: string, id: PlayerId, team: Pokemon[]) {
         this.active = new ActivePokemon(team[0], this);
@@ -48,11 +51,24 @@ export class Player {
         this.id = id;
     }
 
-    validMoves() {
-        return {
-            canSwitch: true,
-            moves: this.active.base.moves.map((move, i) => ({ move, i })),
-        };
+    updateChoices(gameOver: boolean) {
+        if (gameOver) {
+            this.choices = undefined;
+            return;
+        }
+
+        const moves = this.active.base.moves.map((move, i) => ({
+            move,
+            pp: this.active.base.pp[i],
+            valid: this.active.base.pp[i] !== 0,
+            i,
+        }));
+        if (moves.every(move => !move.valid)) {
+            moves.length = 0;
+            moves.push({ move: "struggle", pp: 0, valid: true, i: -1 });
+        }
+
+        this.choices = { canSwitch: true, moves };
     }
 }
 
@@ -109,13 +125,14 @@ export class Battle {
         }
 
         if (choice.type === "move") {
-            const move = player.active.base.moves[choice.index];
-            if (move === undefined) {
+            const validChoice = player.choices?.moves[choice.index];
+            if (!validChoice?.valid) {
                 throw new SelectionError("invalid_choice");
             }
 
             player.choice = {
-                move: moveList[move],
+                choice: validChoice,
+                move: moveList[validChoice.move],
                 user: player.active,
                 target: this.opponentOf(player).active,
             };
@@ -158,7 +175,7 @@ export class Battle {
             });
 
         let skipEnd = false;
-        for (const { move, user, target } of choices) {
+        for (const { move, user, target, choice } of choices) {
             if (user.flinch === this._turn) {
                 this.pushEvent({
                     type: "failed",
@@ -166,6 +183,10 @@ export class Battle {
                     why: "flinch",
                 });
                 continue;
+            }
+
+            if (choice.i !== -1) {
+                user.base.pp[choice.i] = Math.max(user.base.pp[choice.i], 0);
             }
 
             move.use(this, user);
@@ -200,10 +221,10 @@ export class Battle {
             }
         }
 
-        for (const player of this.players) {
-            player.choice = null;
-        }
+        return this.endTurn();
+    }
 
+    private endTurn(): Turn {
         if (this.victor) {
             this.pushEvent({
                 type: "victory",
@@ -211,10 +232,11 @@ export class Battle {
             });
         }
 
-        return this.endTurn();
-    }
+        for (const player of this.players) {
+            player.choice = null;
+            player.updateChoices(this.victor !== null);
+        }
 
-    private endTurn(): Turn {
         return {
             turn: this._turn++,
             events: this.events.splice(0),
