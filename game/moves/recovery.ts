@@ -32,7 +32,20 @@ export class RecoveryMove extends Move {
             return false;
         }
 
-        user.inflictDamage(-diff, user, battle, false, this.why, true);
+        if (this.why === "rest") {
+            user.inflictDamage(-diff, user, battle, false, this.why, true);
+            // TODO: other stuff that rest does
+        } else {
+            user.inflictDamage(
+                -Math.floor(user.base.stats.hp / 2),
+                user,
+                battle,
+                false,
+                this.why,
+                true
+            );
+        }
+
         return false;
     }
 }
