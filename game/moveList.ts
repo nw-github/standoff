@@ -6,12 +6,13 @@ import {
     FixedDamageMove,
     OHKOMove,
     AlwaysFailMove,
-    RecoveryMove,
+    RecoveryMove, 
     StageMove,
     StatusMove,
     ConversionMove,
     Psywave,
-    Substitute
+    Substitute,
+    MirrorMove
 } from "./moves";
 
 export type MoveId = keyof typeof moveList;
@@ -168,6 +169,7 @@ export const moveList = {
         type: "normal",
         stages: [["eva", +1]],
     }),
+    mirrormove: new MirrorMove(),
     mist: new BooleanFlagMove({
         name: "Mist",
         pp: 30,

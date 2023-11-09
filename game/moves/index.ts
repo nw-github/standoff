@@ -74,6 +74,26 @@ export class Substitute extends Move {
     }
 }
 
+export class MirrorMove extends Move {
+    constructor() {
+        super("Mirror Move", 20, "flying");
+    }
+
+    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        if (!target.lastMove || target.lastMove === this) {
+            battle.pushEvent({
+                type: "failed",
+                src: user.owner.id,
+                why: "generic",
+            });
+            return false;
+        }
+
+        target.lastMove.use(battle, user);
+        return target.lastMove.execute(battle, user, target);
+    }
+}
+
 export * from "./bflag";
 export * from "./confusion";
 export * from "./damaging";

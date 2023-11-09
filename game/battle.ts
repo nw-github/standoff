@@ -220,6 +220,7 @@ export class ActivePokemon {
     confusion = 0;
     flinch = 0;
     recharge?: Move;
+    lastMove?: Move;
     readonly owner: Player;
     readonly types: Type[] = [];
     readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };
@@ -252,6 +253,7 @@ export class ActivePokemon {
         this.types.length = 0;
         this.types.push(...base.species.types);
         this.substitute = 0;
+        this.lastMove = undefined;
     }
 
     getStat(stat: "atk" | "def" | "spc" | "spe", isCrit: boolean): number {
