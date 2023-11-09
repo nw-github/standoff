@@ -21,7 +21,7 @@ export interface Move {
 }
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
-type Flag = "high_crit" | "drain" | "explosion" | "recharge" | "crash" | "double";
+type Flag = "high_crit" | "drain" | "explosion" | "recharge" | "crash" | "double" | "multi";
 
 class DamagingMove implements Move {
     readonly name: string;
@@ -104,9 +104,9 @@ class DamagingMove implements Move {
         }
 
         const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
-        const hadSubstitute = target.substitute !== 0;
         dmg = Math.trunc(dmg * (rand / 255));
-        let [dealtDamage, dead] = target.inflictDamage(
+        const hadSub = target.substitute !== 0;
+        let { dealt, brokeSub, dead } = target.inflictDamage(
             dmg,
             user,
             battle,
@@ -115,22 +115,21 @@ class DamagingMove implements Move {
             false,
             eff
         );
-        const brokeSub = hadSubstitute && target.substitute === 0;
         if (!brokeSub) {
             if (this.recoil) {
-                [, dead] = user.inflictDamage(
-                    Math.max(Math.floor(dealtDamage / this.recoil), 1),
+                ({ dead } = user.inflictDamage(
+                    Math.max(Math.floor(dealt / this.recoil), 1),
                     user,
                     battle,
                     false,
                     "recoil",
                     true
-                );
+                ));
             }
 
             if (this.flag === "drain") {
                 user.inflictDamage(
-                    -Math.max(Math.floor(dealtDamage / 2), 1),
+                    -Math.max(Math.floor(dealt / 2), 1),
                     target,
                     battle,
                     false,
@@ -138,9 +137,41 @@ class DamagingMove implements Move {
                     true
                 );
             } else if (this.flag === "explosion") {
-                [, dead] = user.inflictDamage(user.base.hp, user, battle, false, "explosion", true);
+                ({ dead } = user.inflictDamage(
+                    user.base.hp,
+                    user,
+                    battle,
+                    false,
+                    "explosion",
+                    true
+                ));
             } else if (this.flag === "double") {
-                [, dead] = target.inflictDamage(dmg, user, battle, isCrit, "attacked", false, eff);
+                ({ dead } = target.inflictDamage(
+                    dmg,
+                    user,
+                    battle,
+                    isCrit,
+                    "attacked",
+                    false,
+                    eff
+                ));
+            } else if (this.flag === "multi") {
+                let count = randChance255(96) ? 1 : null;
+                count ??= randChance255(96) ? 2 : null;
+                count ??= randChance255(32) ? 3 : null;
+                count ??= 4;
+
+                while (!dead && !brokeSub && count-- > 0) {
+                    ({ dead, brokeSub } = target.inflictDamage(
+                        dmg,
+                        user,
+                        battle,
+                        isCrit,
+                        "attacked",
+                        false,
+                        eff
+                    ));
+                }
             }
         }
 
@@ -152,7 +183,7 @@ class DamagingMove implements Move {
             user.recharge = this;
         }
 
-        if (!hadSubstitute && this.effect) {
+        if (!hadSub && this.effect) {
             const [chance, effect] = this.effect;
             if (!randChance255(floatTo255(chance))) {
                 return dead;
@@ -246,7 +277,7 @@ class LevelMove implements Move {
             return false;
         }
 
-        return target.inflictDamage(user.base.level, user, battle, false, "attacked")[1];
+        return target.inflictDamage(user.base.level, user, battle, false, "attacked").dead;
     }
 }
 
@@ -411,9 +442,17 @@ export const moveList = {
                 return false;
             }
 
-            const [__, dead] = user.inflictDamage(hp, user, battle, false, "substitute");
+            const { dead } = user.inflictDamage(hp, user, battle, false, "substitute");
             user.substitute = hp + 1;
             return dead;
         },
+    }),
+    twineedle: new DamagingMove({
+        name: "Twineedle",
+        pp: 20,
+        type: "bug",
+        power: 14,
+        acc: 85,
+        flag: "multi",
     }),
 };
