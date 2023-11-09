@@ -389,6 +389,14 @@ export const moveList = {
         acc: 100,
         flag: "explosion",
     }),
+    skullbash: new DamagingMove({
+        name: "Skull Bash",
+        pp: 15,
+        type: "normal",
+        power: 100,
+        acc: 100,
+        flag: "charge",
+    }),
     softboiled: new RecoveryMove({
         name: "Softboiled",
         pp: 10,

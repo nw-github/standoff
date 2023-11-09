@@ -60,7 +60,7 @@ export class Player {
         const moves = this.active.base.moves.map((move, i) => ({
             move,
             pp: this.active.base.pp[i],
-            valid: this.active.base.pp[i] !== 0 && moveList[move] !== this.active.disabled?.move,
+            valid: this.isValidMove(move, i),
             i,
         }));
         if (moves.every(move => !move.valid)) {
@@ -68,7 +68,28 @@ export class Player {
             moves.push({ move: "struggle", pp: 0, valid: true, i: -1 });
         }
 
-        this.choices = { canSwitch: true, moves };
+        this.choices = { canSwitch: !this.active.charging, moves };
+    }
+
+    private isValidMove(move: MoveId, i: number) {
+        // TODO: research these interactions
+        //       user hyper beams, opponent disables: 
+        //          is the user forced to recharge hyper beam ? struggle? does it recharge and fail?
+        //       user clicks skull bash, opponent disables:
+
+        if (this.active.charging && this.active.charging !== moveList[move]) {
+            return false;
+        }
+
+        if (this.active.base.pp[i] === 0) {
+            return false;
+        }
+
+        if (moveList[move] === this.active.disabled?.move) {
+            return false;
+        }
+
+        return true;
     }
 }
 
@@ -258,6 +279,7 @@ export class ActivePokemon {
     flinch = 0;
     counter = 1;
     seeded = false;
+    charging?: Move;
     recharge?: Move;
     lastMove?: Move;
     disabled?: { move: Move; turns: number };
@@ -298,6 +320,7 @@ export class ActivePokemon {
         this.counter = 1;
         this.seeded = false;
         this.disabled = undefined;
+        this.charging = undefined;
     }
 
     getStat(stat: "atk" | "def" | "spc" | "spe", isCrit: boolean): number {

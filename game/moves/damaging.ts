@@ -9,6 +9,7 @@ import {
     randRangeInclusive,
     type Type,
 } from "../utils";
+import { moveListToId } from "../moveList";
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
 type Flag =
@@ -20,7 +21,8 @@ type Flag =
     | "double"
     | "multi"
     | "dream_eater"
-    | "payday";
+    | "payday"
+    | "charge";
 
 export class DamagingMove extends Move {
     readonly power: number;
@@ -56,6 +58,21 @@ export class DamagingMove extends Move {
         this.flag = flag;
         this.effect = effect;
         this.recoil = recoil;
+    }
+
+    override use(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
+        if (this.flag === "charge" && user.charging !== this) {
+            battle.pushEvent({
+                type: "charge",
+                id: user.owner.id,
+                move: moveListToId.get(this)!,
+            });
+            user.charging = this;
+            return false;
+        } else {
+            user.charging = undefined;
+            return super.use(battle, user, target);
+        }
     }
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
@@ -128,14 +145,15 @@ export class DamagingMove extends Move {
         );
         if (!brokeSub) {
             if (this.recoil) {
-                dead = user.inflictDamage(
-                    Math.max(Math.floor(dealt / this.recoil), 1),
-                    user,
-                    battle,
-                    false,
-                    "recoil",
-                    true
-                ).dead || dead;
+                dead =
+                    user.inflictDamage(
+                        Math.max(Math.floor(dealt / this.recoil), 1),
+                        user,
+                        battle,
+                        false,
+                        "recoil",
+                        true
+                    ).dead || dead;
             }
 
             if (this.flag === "drain" || this.flag === "dream_eater") {
@@ -148,24 +166,13 @@ export class DamagingMove extends Move {
                     true
                 );
             } else if (this.flag === "explosion") {
-                dead = user.inflictDamage(
-                    user.base.hp,
-                    user,
-                    battle,
-                    false,
-                    "explosion",
-                    true
-                ).dead || dead;
+                dead =
+                    user.inflictDamage(user.base.hp, user, battle, false, "explosion", true).dead ||
+                    dead;
             } else if (this.flag === "double") {
-                dead = dead || target.inflictDamage(
-                    dmg,
-                    user,
-                    battle,
-                    isCrit,
-                    "attacked",
-                    false,
-                    eff
-                ).dead;
+                dead =
+                    dead ||
+                    target.inflictDamage(dmg, user, battle, isCrit, "attacked", false, eff).dead;
             } else if (this.flag === "multi") {
                 let count = randChance255(96) ? 1 : null;
                 count ??= randChance255(96) ? 2 : null;

@@ -309,6 +309,10 @@ const stringifyEvents = (events: BattleEvent[]) => {
             } else {
                 res.push(`${pname(e.id)}'s disabled no longer!`);
             }
+        } else if (e.type === "charge") {
+            if (e.move === "skullbash") {
+                res.push(`${pname(e.id)} lowered its head!`);
+            }
         } else {
             res.push(JSON.stringify(e));
         }

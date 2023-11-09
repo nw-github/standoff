@@ -14,7 +14,8 @@ export type BattleEvent =
     | ConfusionEvent
     | InfoEvent
     | TransformEvent
-    | DisableEvent;
+    | DisableEvent
+    | ChargeEvent;
 
 export type PlayerId = string;
 
@@ -83,7 +84,7 @@ type FailureEvent = {
 type UseMoveEvent = {
     type: "move";
     src: PlayerId;
-    move: string;
+    move: MoveId;
     disabled: boolean;
 };
 
@@ -126,4 +127,10 @@ type DisableEvent = {
     id: PlayerId;
     /** if move is present, the disable has started. otherwise, it has ended */
     move?: MoveId;
+};
+
+type ChargeEvent = {
+    type: "charge";
+    id: PlayerId;
+    move: MoveId;
 };
