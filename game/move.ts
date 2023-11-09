@@ -762,6 +762,14 @@ export const moveList = {
         acc: 100,
         dmg: "level",
     }),
+    pinmissile: new DamagingMove({
+        name: "Pin Missile",
+        pp: 20,
+        type: "bug",
+        power: 14,
+        acc: 85,
+        flag: "multi",
+    }),
     psybeam: new DamagingMove({
         name: "Psybeam",
         pp: 20,
@@ -899,9 +907,10 @@ export const moveList = {
         name: "Twineedle",
         pp: 20,
         type: "bug",
-        power: 14,
-        acc: 85,
-        flag: "multi",
+        power: 25,
+        acc: 100,
+        flag: "double",
+        effect: [20, "psn"]
     }),
     whirlwind: new AlwaysFailMove({
         name: "Whirlwind",
