@@ -94,6 +94,24 @@ export class MirrorMove extends Move {
     }
 }
 
+export class Metronome extends Move {
+    constructor() {
+        super("Metronome", 10, "normal");
+    }
+
+    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        const moves = Object.values(battle.moveList);
+
+        let move: Move | undefined;
+        while (!move || move === this) {
+            move = moves[randRangeInclusive(0, moves.length - 1)];
+        }
+
+        move.use(battle, user);
+        return move.execute(battle, user, target);
+    }
+}
+
 export * from "./bflag";
 export * from "./confusion";
 export * from "./damaging";

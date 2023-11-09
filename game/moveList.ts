@@ -12,7 +12,8 @@ import {
     ConversionMove,
     Psywave,
     Substitute,
-    MirrorMove
+    MirrorMove,
+    Metronome
 } from "./moves";
 
 export type MoveId = keyof typeof moveList;
@@ -163,6 +164,7 @@ export const moveList = {
         acc: 100,
         flag: "drain",
     }),
+    metronome: new Metronome(),
     minimize: new StageMove({
         name: "Minimize",
         pp: 15,
