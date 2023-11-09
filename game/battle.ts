@@ -1,5 +1,6 @@
 import { type BattleEvent, type DamageReason, type PlayerId } from "./events";
-import { moveList, type Move } from "./move";
+import { moveList } from "./moveList";
+import type { Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
 import { randChance255, randRangeInclusive, type Type } from "./utils";
 
@@ -166,16 +167,7 @@ export class Battle {
                 continue;
             }
 
-            if (move.use) {
-                move.use(this, user);
-            } else {
-                this.pushEvent({
-                    type: "move",
-                    src: user.owner.id,
-                    move: move.name, // FIXME: send an ID instead, this prevents localization
-                });
-            }
-
+            move.use(this, user);
             // A pokemon has died, skip all end of turn events
             if (move.execute(this, user, target)) {
                 if (!this.victor) {

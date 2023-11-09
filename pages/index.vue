@@ -28,7 +28,7 @@
 import type { BattleEvent } from "../game/events";
 import type { Player, Stages } from "../game/battle";
 import type { Status } from "../game/pokemon";
-import { moveList } from "../game/move";
+import { moveList } from "../game/moveList";
 import { hpPercent } from "~/game/utils";
 
 type ClientPlayer = {
