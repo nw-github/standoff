@@ -11,7 +11,8 @@ export type BattleEvent =
     | StatusEvent
     | StagesEvent
     | ConfusionEvent
-    | InfoEvent;
+    | InfoEvent
+    | TransformEvent;
 
 export type PlayerId = string;
 
@@ -110,3 +111,10 @@ type InfoEvent = {
     id: PlayerId;
     why: BooleanFlag | "conversion" | "payday" | "seeded";
 };
+
+type TransformEvent = {
+    type: "transform";
+    src: PlayerId;
+    target: PlayerId;
+};
+

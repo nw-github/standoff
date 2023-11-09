@@ -131,6 +131,16 @@ const cancelMove = () => {
     selectedMove.value = -1;
 };
 
+const pname = (id: string, title: boolean = true) => {
+    if (id === myId.value) {
+        return players[id].active!.name;
+    } else if (title) {
+        return `The opposing ${players[id].active!.name}`;
+    } else {
+        return `the opposing ${players[id].active!.name}`;
+    }
+};
+
 const stringifyEvents = (events: BattleEvent[]) => {
     const res = [];
     for (const e of events) {
@@ -143,8 +153,8 @@ const stringifyEvents = (events: BattleEvent[]) => {
             player.active = { ...e };
             res.push(`${player.name} sent in ${e.name}! (${e.hp}/${e.maxHp})`);
         } else if (e.type === "damage") {
-            const src = players[e.src].active!;
-            const target = players[e.target].active!;
+            const src = pname(e.src);
+            const target = pname(e.target);
 
             let { hpBefore, hpAfter } = e;
             if (e.target === myId.value) {
@@ -153,19 +163,19 @@ const stringifyEvents = (events: BattleEvent[]) => {
             }
 
             if (e.why === "recoil") {
-                res.push(`${src.name} was hurt by recoil!`);
+                res.push(`${src} was hurt by recoil!`);
             } else if (e.why === "drain") {
-                res.push(`${src.name} had it's energy drained!`);
+                res.push(`${src} had it's energy drained!`);
             } else if (e.why === "crash") {
-                res.push(`${src.name} kept going and crashed!`);
+                res.push(`${src} kept going and crashed!`);
             } else if (e.why === "recover") {
-                res.push(`${src.name} regained health!`);
+                res.push(`${src} regained health!`);
             } else if (e.why === "seeded") {
-                res.push(`${src.name}'s health was sapped by Leech Seed!`);
+                res.push(`${src}'s health was sapped by Leech Seed!`);
             } else if (e.why === "psn") {
-                res.push(`${src.name} is hurt by poison!`);
+                res.push(`${src} is hurt by poison!`);
             } else if (e.why === "brn") {
-                res.push(`${src.name} is hurt by its burn!`);
+                res.push(`${src} is hurt by its burn!`);
             } else if (e.why === "attacked" && e.isCrit) {
                 res.push(`A critical hit!`);
             }
@@ -173,14 +183,14 @@ const stringifyEvents = (events: BattleEvent[]) => {
             if (e.why !== "explosion") {
                 const diff = hpBefore - hpAfter;
                 res.push(
-                    `- ${target.name} ${diff < 0 ? "gained" : "lost"} ${Math.abs(
+                    `- ${target} ${diff < 0 ? "gained" : "lost"} ${Math.abs(
                         diff
                     )}% of its health. (${hpAfter}% remaining)`
                 );
             }
 
             if (e.why === "substitute") {
-                res.push(`${src.name} put in a substitute!`);
+                res.push(`${src} put in a substitute!`);
             } else if (e.why === "attacked") {
                 const eff = e.eff ?? 1;
                 if (eff !== 1) {
@@ -191,45 +201,46 @@ const stringifyEvents = (events: BattleEvent[]) => {
             }
 
             if (hpAfter === 0) {
-                res.push(`${target.name} fainted!`);
+                res.push(`${target} fainted!`);
             }
         } else if (e.type === "failed") {
-            const src = players[e.src].active!;
+            const src = pname(e.src);
             switch (e.why) {
                 case "immune":
-                    res.push(`It doesn't affect ${src.name}...`);
+                    res.push(`It doesn't affect ${src}...`);
                     break;
                 case "miss":
-                    res.push(`${src.name} missed!`);
+                    res.push(`${src} missed!`);
                     break;
                 case "cant_substitute":
-                    res.push(`${src.name} doesn't have enough HP to create a substitute!`);
+                    res.push(`${src} doesn't have enough HP to create a substitute!`);
                     break;
                 case "has_substitute":
-                    res.push(`${src.name} already has a substitute!`);
+                    res.push(`${src} already has a substitute!`);
                     break;
                 case "whirlwind":
                 case "generic":
                     res.push(`But it failed!`);
                     break;
                 case "flinch":
-                    res.push(`${src.name} flinched!`);
+                    res.push(`${src} flinched!`);
                     break;
                 case "mist":
-                    res.push(`${src.name} is protected by the mist!`);
+                    res.push(`${src} is protected by the mist!`);
                     break;
                 case "splash":
                     res.push(`No effect!`);
                     break;
             }
         } else if (e.type === "move") {
-            res.push(`${players[e.src].active!.name} used ${e.move}!`);
+            res.push(`${pname(e.src)} used ${e.move}!`);
         } else if (e.type === "victory") {
             res.push(`${players[e.id].name} wins!`);
         } else if (e.type === "hit_sub") {
-            res.push(`${players[e.target].active!.name}'s substitute took the hit!`);
+            const target = pname(e.target);
+            res.push(`${target}'s substitute took the hit!`);
             if (e.broken) {
-                res.push(`${players[e.target].active!.name}'s substitute broke!`);
+                res.push(`${target}'s substitute broke!`);
             }
 
             const eff = e.eff ?? 1;
@@ -246,7 +257,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 brn: "was burned",
             };
 
-            res.push(`${players[e.id].active!.name} ${table[e.status]}!`);
+            res.push(`${pname(e.id)} ${table[e.status]}!`);
         } else if (e.type === "stages") {
             const table: Record<Stages, string> = {
                 atk: "Attack",
@@ -257,31 +268,34 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 eva: "Evasion",
             };
 
+            const name = pname(e.id);
             for (const [stage, amount] of e.stages) {
                 res.push(
-                    `${players[e.id].active!.name}'s ${table[stage]} ${
-                        amount > 0 ? "rose" : "fell"
-                    }${Math.abs(amount) > 1 ? " sharply" : ""}!`
+                    `${name}'s ${table[stage]} ${amount > 0 ? "rose" : "fell"}${
+                        Math.abs(amount) > 1 ? " sharply" : ""
+                    }!`
                 );
             }
         } else if (e.type === "confusion") {
-            res.push(`${players[e.id].active!.name} became confused!`);
+            res.push(`${pname(e.id)} became confused!`);
         } else if (e.type === "info") {
             if (e.why === "light_screen") {
-                res.push(`${players[e.id].active!.name}'s protected against special attacks!`);
+                res.push(`${pname(e.id)}'s protected against special attacks!`);
             } else if (e.why === "reflect") {
-                res.push(`${players[e.id].active!.name} is gained armor!`);
+                res.push(`${pname(e.id)} is gained armor!`);
             } else if (e.why === "mist") {
-                res.push(`${players[e.id].active!.name}'s' shrouded in mist!`);
+                res.push(`${pname(e.id)}'s' shrouded in mist!`);
             } else if (e.why === "focus") {
-                res.push(`${players[e.id].active!.name} is getting pumped!`);
+                res.push(`${pname(e.id)} is getting pumped!`);
             } else if (e.why === "conversion") {
-                res.push(`Converted type to match ${players[e.id].active!.name}!`);
+                res.push(`Converted type to match ${pname(e.id, false)}!`);
             } else if (e.why === "payday") {
                 res.push(`Coins scattered everywhere!`);
             } else if (e.why === "seeded") {
-                res.push(`${players[e.id].active!.name} was seeded!`);
+                res.push(`${pname(e.id)} was seeded!`);
             }
+        } else if (e.type === "transform") {
+            res.push(`${pname(e.src)} transformed into ${pname(e.target, false)}!`);
         } else {
             res.push(JSON.stringify(e));
         }

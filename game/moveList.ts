@@ -11,6 +11,7 @@ import {
     StatusMove,
     UniqueMove,
 } from "./moves";
+import { TransformedPokemon } from "./transformed";
 import { checkAccuracy, randChoice, randRangeInclusive } from "./utils";
 
 export type MoveId = keyof typeof moveList;
@@ -452,6 +453,33 @@ export const moveList = {
         type: "poison",
         acc: 85,
         status: "tox",
+    }),
+    transform: new UniqueMove({
+        name: "Transform",
+        pp: 10,
+        type: "normal",
+        execute(battle, user, target) {
+            if (user.base instanceof TransformedPokemon) {
+                user.base = new TransformedPokemon(user.base.base, target.base);
+            } else {
+                user.base = new TransformedPokemon(user.base, target.base);
+            }
+
+            for (const k in user.stages) {
+                // @ts-ignore
+                user.stages[k] = target.stages[k];
+            }
+
+            user.types.length = 0;
+            user.types.push(...target.types);
+
+            battle.pushEvent({
+                type: "transform",
+                src: user.owner.id,
+                target: target.owner.id,
+            });
+            return false;
+        },
     }),
     twineedle: new DamagingMove({
         name: "Twineedle",

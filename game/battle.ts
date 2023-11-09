@@ -2,6 +2,7 @@ import { type BattleEvent, type DamageReason, type PlayerId } from "./events";
 import { moveList } from "./moveList";
 import type { Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
+import { TransformedPokemon } from "./transformed";
 import { randChance255, randRangeInclusive, type Type } from "./utils";
 
 export type Choice =
@@ -278,6 +279,10 @@ export class ActivePokemon {
 
     getStat(stat: "atk" | "def" | "spc" | "spe", isCrit: boolean): number {
         // TODO: apply stages, par/brn, stat duplication bug
+        if (isCrit && this.base instanceof TransformedPokemon) {
+            return this.base.base.stats[stat];
+        }
+
         return this.base.stats[stat];
     }
 
