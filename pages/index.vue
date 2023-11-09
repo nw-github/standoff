@@ -201,6 +201,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 case "has_substitute":
                     res.push(`${src.name} already has a substitute!`);
                     break;
+                case "whirlwind":
                 case "generic":
                     res.push(`But it failed!`);
                     break;
@@ -209,6 +210,9 @@ const stringifyEvents = (events: BattleEvent[]) => {
                     break;
                 case "mist":
                     res.push(`${src.name} is protected by the mist!`);
+                    break;
+                case "splash":
+                    res.push(`No effect!`);
                     break;
             }
         } else if (e.type === "move") {

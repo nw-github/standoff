@@ -1,4 +1,5 @@
 import type { BooleanFlag, ActivePokemon, Battle, Stages } from "./battle";
+import type { FailReason } from "./events";
 import type { Status } from "./pokemon";
 import {
     randChance255,
@@ -97,8 +98,7 @@ class DamagingMove implements Move {
         const applyReflect = atks === "atk" && target.flags.reflect;
         if (!isCrit && (applyLightScreen || applyReflect)) {
             def *= 2;
-            if (def > 1024)
-                def -= def % 1024;
+            if (def > 1024) def -= def % 1024;
         }
 
         const lvl = user.base.level;
@@ -509,6 +509,43 @@ class BooleanFlagMove implements Move {
     }
 }
 
+class AlwaysFailMove implements Move {
+    readonly name: string;
+    readonly pp: number;
+    readonly type: Type;
+    readonly why: FailReason;
+    readonly acc?: number;
+
+    constructor({
+        name,
+        pp,
+        type,
+        why,
+        acc,
+    }: {
+        name: string;
+        pp: number;
+        type: Type;
+        why: FailReason;
+        acc?: number;
+    }) {
+        this.name = name;
+        this.pp = pp;
+        this.type = type;
+        this.why = why;
+        this.acc = acc;
+    }
+
+    execute(battle: Battle, user: ActivePokemon, _: ActivePokemon): boolean {
+        battle.pushEvent({
+            type: "failed",
+            src: user.owner.id,
+            why: this.why,
+        });
+        return false;
+    }
+}
+
 export type MoveId = keyof typeof moveList;
 
 const tsEnsureMove = <T extends Move>(t: T) => t;
@@ -699,6 +736,13 @@ export const moveList = {
         type: "psychic",
         flag: "reflect",
     }),
+    roar: new AlwaysFailMove({
+        name: "Roar",
+        pp: 20,
+        acc: 100,
+        type: "normal",
+        why: "whirlwind",
+    }),
     sandattack: new StageMove({
         name: "Sand Attack",
         pp: 15,
@@ -727,6 +771,12 @@ export const moveList = {
         type: "normal",
         acc: 90,
         dmg: 20,
+    }),
+    splash: new AlwaysFailMove({
+        name: "Splash",
+        pp: 40,
+        type: "normal",
+        why: "splash",
     }),
     spore: new StatusMove({
         name: "Spore",
@@ -771,6 +821,12 @@ export const moveList = {
         type: "normal",
         acc: 55,
     }),
+    teleport: new AlwaysFailMove({
+        name: "Teleport",
+        pp: 20,
+        type: "psychic",
+        why: "generic",
+    }),
     twineedle: new DamagingMove({
         name: "Twineedle",
         pp: 20,
@@ -778,5 +834,12 @@ export const moveList = {
         power: 14,
         acc: 85,
         flag: "multi",
+    }),
+    whirlwind: new AlwaysFailMove({
+        name: "Whirlwind",
+        pp: 20,
+        acc: 100,
+        type: "normal",
+        why: "whirlwind",
     }),
 };

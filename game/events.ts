@@ -45,10 +45,21 @@ type HitSubstituteEvent = {
     eff?: number;
 };
 
+export type FailReason =
+    | "immune"
+    | "miss"
+    | "generic"
+    | "has_substitute"
+    | "cant_substitute"
+    | "flinch"
+    | "mist"
+    | "splash"
+    | "whirlwind";
+
 type FailureEvent = {
     type: "failed";
     src: PlayerId;
-    why: "immune" | "miss" | "generic" | "has_substitute" | "cant_substitute" | "flinch" | "mist";
+    why: FailReason;
 };
 
 type UseMoveEvent = {
@@ -66,21 +77,21 @@ type StatusEvent = {
     type: "status";
     id: PlayerId;
     status: Status;
-}
+};
 
 type StagesEvent = {
     type: "stages";
     id: PlayerId;
     stages: [Stages, number][];
-}
+};
 
 type ConfusionEvent = {
     type: "confusion";
     id: PlayerId;
-}
+};
 
 type FlagEvent = {
     type: "flag";
     id: PlayerId;
     flag: BooleanFlag;
-}
+};
