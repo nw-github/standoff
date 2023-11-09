@@ -348,10 +348,15 @@ export class ActivePokemon {
     }
 
     inflictConfusion(battle: Battle) {
+        if (this.confusion) {
+            return false;
+        }
+
         this.confusion = randRangeInclusive(1, 4);
         battle.pushEvent({
             type: "confusion",
             id: this.owner.id,
         });
+        return true;
     }
 }

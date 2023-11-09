@@ -416,6 +416,45 @@ class StatusMove implements Move {
     }
 }
 
+class ConfusionMove implements Move {
+    readonly name: string;
+    readonly pp: number;
+    readonly type: Type;
+    readonly acc?: number;
+
+    constructor({
+        name,
+        pp,
+        type,
+        acc,
+    }: {
+        name: string;
+        pp: number;
+        type: Type;
+        acc?: number;
+    }) {
+        this.name = name;
+        this.pp = pp;
+        this.type = type;
+        this.acc = acc;
+    }
+
+    execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
+            return false;
+        }
+
+        if (!target.inflictConfusion(battle)) {
+            battle.pushEvent({
+                type: "failed",
+                src: target.owner.id,
+                why: "generic",
+            });
+        }
+        return false;
+    }
+}
+
 export type MoveId = keyof typeof moveList;
 
 const tsEnsureMove = <T extends Move>(t: T) => t;
@@ -434,6 +473,12 @@ export const moveList = {
         power: 85,
         acc: 100,
         effect: [30.1, "par"],
+    }),
+    confuseray: new ConfusionMove({
+        name: "Confuse Ray",
+        pp: 10,
+        type: "ghost",
+        acc: 100,
     }),
     crabhammer: new DamagingMove({
         name: "Crabhammer",
@@ -641,6 +686,12 @@ export const moveList = {
             user.substitute = hp + 1;
             return dead;
         },
+    }),
+    supersonic: new ConfusionMove({
+        name: "Supersonic",
+        pp: 20,
+        type: "normal",
+        acc: 55,
     }),
     twineedle: new DamagingMove({
         name: "Twineedle",
