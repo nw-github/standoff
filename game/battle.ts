@@ -1,13 +1,7 @@
 import { type BattleEvent, type DamageEvent, type PlayerId } from "./events";
 import { moveList, type Move } from "./move";
 import { type Pokemon, type Status } from "./pokemon";
-import {
-    floatTo255,
-    randChance255,
-    randRangeInclusive,
-    stageMultipliers,
-    type Type,
-} from "./utils";
+import { randChance255, randRangeInclusive, type Type } from "./utils";
 
 export type Choice =
     | { type: "switch"; turn: number; to: number }
@@ -263,12 +257,7 @@ export class ActivePokemon {
         this.substitute = 0;
     }
 
-    getStat(stat: Stages, isCrit: boolean): number {
-        // https://bulbapedia.bulbagarden.net/wiki/Stat_modifier#Stage_multipliers
-        if (stat === "acc" || stat === "eva") {
-            return stageMultipliers[this.stages[stat]];
-        }
-
+    getStat(stat: "atk" | "def" | "spc" | "spe", isCrit: boolean): number {
         // TODO: apply stages, par/brn, stat duplication bug
         return this.base.stats[stat];
     }

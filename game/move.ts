@@ -87,7 +87,9 @@ class DamagingMove implements Move {
         const isCrit = randChance255(this.critChance(user));
         const isSpecial = DamagingMove.isSpecial(this.type);
         const isStab = user.types.includes(this.type);
-        const [atks, defs] = (isSpecial ? ["spc", "spc"] : ["atk", "def"]) as [Stages, Stages];
+        const [atks, defs]: ["spc" | "atk", "spc" | "def"] = isSpecial
+            ? ["spc", "spc"]
+            : ["atk", "def"];
         const atk = user.getStat(atks, isCrit);
         const def = Math.floor(target.getStat(defs, isCrit) / (this.flag === "explosion" ? 2 : 1));
         const lvl = user.base.level;

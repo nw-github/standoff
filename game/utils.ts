@@ -41,7 +41,9 @@ export const checkAccuracy = (
 ) => {
     // https://bulbapedia.bulbagarden.net/wiki/Accuracy#Generation_I_and_II
     const chance =
-        floatTo255(acc) * (user.getStat("acc", false) / 100) * (target.getStat("eva", false) / 100);
+        floatTo255(acc) *
+        (stageMultipliers[user.stages["acc"]] / 100) *
+        (stageMultipliers[-target.stages["eva"]] / 100);
     console.log(`Accuracy: ${acc} | Chance/256: ${chance}`);
     if (!randChance255(chance)) {
         battle.pushEvent({
