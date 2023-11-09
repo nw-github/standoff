@@ -379,6 +379,25 @@ export const moveList = {
             return dead;
         },
     }),
+    superfang: new UniqueMove({
+        name: "Super Fang",
+        pp: 10,
+        type: "normal",
+        acc: 90,
+        execute(battle, user, target) {
+            if (!checkAccuracy(this.acc!, battle, user, target)) {
+                return false;
+            }
+
+            return target.inflictDamage(
+                Math.max(Math.floor(target.base.hp / 2), 1),
+                user,
+                battle,
+                false,
+                "attacked"
+            ).dead;
+        },
+    }),
     supersonic: new ConfusionMove({
         name: "Supersonic",
         pp: 20,
