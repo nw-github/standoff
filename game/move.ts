@@ -211,7 +211,7 @@ class DamagingMove implements Move {
             } else if (effect === "flinch") {
                 target.flinch = battle.turn;
             } else {
-                if (!target.base.status || target.types.includes(this.type)) {
+                if (target.base.status || target.types.includes(this.type)) {
                     return dead;
                 }
 
