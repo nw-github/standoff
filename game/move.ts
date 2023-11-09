@@ -22,7 +22,15 @@ export interface Move {
 }
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
-type Flag = "high_crit" | "drain" | "explosion" | "recharge" | "crash" | "double" | "multi";
+type Flag =
+    | "high_crit"
+    | "drain"
+    | "explosion"
+    | "recharge"
+    | "crash"
+    | "double"
+    | "multi"
+    | "dream_eater";
 
 class DamagingMove implements Move {
     readonly name: string;
@@ -77,6 +85,15 @@ class DamagingMove implements Move {
                 why: "immune",
             });
             this.crashDamage(battle, user, target);
+            return false;
+        }
+
+        if (this.flag === "dream_eater" && target.base.status !== "slp") {
+            battle.pushEvent({
+                type: "failed",
+                src: target.owner.id,
+                why: "generic",
+            });
             return false;
         }
 
@@ -138,7 +155,7 @@ class DamagingMove implements Move {
                 ));
             }
 
-            if (this.flag === "drain") {
+            if (this.flag === "drain" || this.flag === "dream_eater") {
                 user.inflictDamage(
                     -Math.max(Math.floor(dealt / 2), 1),
                     target,
@@ -657,6 +674,14 @@ export const moveList = {
         type: "dragon",
         acc: 100,
         dmg: 40,
+    }),
+    dreameater: new DamagingMove({
+        name: "Dream Eater",
+        pp: 15,
+        type: "psychic",
+        power: 100,
+        acc: 100,
+        flag: "dream_eater"
     }),
     earthquake: new DamagingMove({
         name: "Earthquake",
