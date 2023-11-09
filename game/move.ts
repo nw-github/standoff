@@ -91,7 +91,16 @@ class DamagingMove implements Move {
             ? ["spc", "spc"]
             : ["atk", "def"];
         const atk = user.getStat(atks, isCrit);
-        const def = Math.floor(target.getStat(defs, isCrit) / (this.flag === "explosion" ? 2 : 1));
+        let def = Math.floor(target.getStat(defs, isCrit) / (this.flag === "explosion" ? 2 : 1));
+
+        const applyLightScreen = atks === "spc" && target.flags.light_screen;
+        const applyReflect = atks === "atk" && target.flags.reflect;
+        if (!isCrit && (applyLightScreen || applyReflect)) {
+            def *= 2;
+            if (def > 1024)
+                def -= def % 1024;
+        }
+
         const lvl = user.base.level;
         const crit = isCrit ? 2 : 1;
         const stab = isStab ? 1.5 : 1;
@@ -431,17 +440,7 @@ class ConfusionMove implements Move {
     readonly type: Type;
     readonly acc?: number;
 
-    constructor({
-        name,
-        pp,
-        type,
-        acc,
-    }: {
-        name: string;
-        pp: number;
-        type: Type;
-        acc?: number;
-    }) {
+    constructor({ name, pp, type, acc }: { name: string; pp: number; type: Type; acc?: number }) {
         this.name = name;
         this.pp = pp;
         this.type = type;
@@ -734,7 +733,7 @@ export const moveList = {
         pp: 15,
         type: "grass",
         acc: 100,
-        status: "slp"
+        status: "slp",
     }),
     substitute: tsEnsureMove({
         name: "Substitute",
