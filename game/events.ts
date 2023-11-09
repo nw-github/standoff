@@ -104,5 +104,5 @@ type ConfusionEvent = {
 type InfoEvent = {
     type: "info";
     id: PlayerId;
-    why: BooleanFlag | "conversion";
+    why: BooleanFlag | "conversion" | "payday";
 };

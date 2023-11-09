@@ -230,6 +230,14 @@ export const moveList = {
         acc: 100,
         dmg: "level",
     }),
+    payday: new DamagingMove({
+        name: "Pay Day",
+        pp: 20,
+        type: "normal",
+        power: 40,
+        acc: 100,
+        flag: "payday"
+    }),
     pinmissile: new DamagingMove({
         name: "Pin Missile",
         pp: 20,

@@ -19,7 +19,8 @@ type Flag =
     | "crash"
     | "double"
     | "multi"
-    | "dream_eater";
+    | "dream_eater"
+    | "payday";
 
 export class DamagingMove extends Move {
     readonly power: number;
@@ -182,6 +183,12 @@ export class DamagingMove extends Move {
                         eff
                     ));
                 }
+            } else if (this.flag === "payday") {
+                battle.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: "payday",
+                });
             }
         }
 

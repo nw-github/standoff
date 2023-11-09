@@ -179,7 +179,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 }
                 const eff = e.eff ?? 1;
                 if (eff !== 1) {
-                    res.push(` - It's ${eff > 1 ? "supereffective!" : "not very effective..."}`);
+                    res.push(` - It's ${eff > 1 ? "super effective!" : "not very effective..."}`);
                 }
             } else if (e.why === "ohko") {
                 res.push(` - It's a one-hit KO!`);
@@ -271,6 +271,8 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 res.push(`${players[e.id].active!.name} is getting pumped!`);
             } else if (e.why === "conversion") {
                 res.push(`Converted type to match ${players[e.id].active!.name}!`);
+            } else if (e.why === "payday") {
+                res.push(`Coins scattered everywhere!`);
             }
         } else {
             res.push(JSON.stringify(e));
