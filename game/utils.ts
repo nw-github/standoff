@@ -47,7 +47,7 @@ export const checkAccuracy = (
         (stageMultipliers[user.stages["acc"]] / 100) *
         (stageMultipliers[-target.stages["eva"]] / 100);
     console.log(`Accuracy: ${acc} | Chance/256: ${chance}`);
-    if (!randChance255(chance)) {
+    if (target.invuln || !randChance255(chance)) {
         battle.pushEvent({
             type: "failed",
             src: user.owner.id,

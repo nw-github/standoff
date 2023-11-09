@@ -62,6 +62,14 @@ export const moveList = {
         acc: 85,
         flag: "high_crit",
     }),
+    dig: new DamagingMove({
+        name: "Dig",
+        pp: 10,
+        type: "ground",
+        power: 100,
+        acc: 100,
+        flag: "charge_invuln",
+    }),
     disable: new UniqueMove({
         name: "Disable",
         pp: 20,
@@ -144,6 +152,14 @@ export const moveList = {
         pp: 5,
         type: "ground",
         acc: 30,
+    }),
+    fly: new DamagingMove({
+        name: "Fly",
+        pp: 15,
+        type: "flying",
+        power: 70,
+        acc: 95,
+        flag: "charge_invuln",
     }),
     focusenergy: new BooleanFlagMove({
         name: "Focus Energy",

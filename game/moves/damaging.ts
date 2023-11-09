@@ -22,7 +22,8 @@ type Flag =
     | "multi"
     | "dream_eater"
     | "payday"
-    | "charge";
+    | "charge"
+    | "charge_invuln";
 
 export class DamagingMove extends Move {
     readonly power: number;
@@ -61,16 +62,23 @@ export class DamagingMove extends Move {
     }
 
     override use(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
-        if (this.flag === "charge" && user.charging !== this) {
+        if ((this.flag === "charge" || this.flag === "charge_invuln") && user.charging !== this) {
             battle.pushEvent({
                 type: "charge",
                 id: user.owner.id,
                 move: moveListToId.get(this)!,
             });
             user.charging = this;
+            if (this.flag === "charge_invuln") {
+                user.invuln = true;
+            }
+
             return false;
         } else {
             user.charging = undefined;
+            if (this.flag === "charge_invuln") {
+                user.invuln = false;
+            }
             return super.use(battle, user, target);
         }
     }

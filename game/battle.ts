@@ -279,6 +279,7 @@ export class ActivePokemon {
     flinch = 0;
     counter = 1;
     seeded = false;
+    invuln = false;
     charging?: Move;
     recharge?: Move;
     lastMove?: Move;
@@ -319,6 +320,7 @@ export class ActivePokemon {
         this.lastMove = undefined;
         this.counter = 1;
         this.seeded = false;
+        this.invuln = false;
         this.disabled = undefined;
         this.charging = undefined;
     }

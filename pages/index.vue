@@ -318,6 +318,10 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 res.push(`${pname(e.id)} is glowing!`);
             } else if (e.move === "solarbeam") {
                 res.push(`${pname(e.id)} took in sunlight!`);
+            } else if (e.move === "dig") {
+                res.push(`${pname(e.id)} dug a hole!`);
+            } else if (e.move === "fly") {
+                res.push(`${pname(e.id)} flew up high!`);
             }
         } else {
             res.push(JSON.stringify(e));
