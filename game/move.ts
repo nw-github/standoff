@@ -500,9 +500,9 @@ class BooleanFlagMove implements Move {
         } else {
             user.flags[this.flag] = true;
             battle.pushEvent({
-                type: "flag",
+                type: "info",
                 id: user.owner.id,
-                flag: this.flag,
+                why: this.flag,
             });
         }
         return false;
@@ -570,6 +570,23 @@ export const moveList = {
         pp: 10,
         type: "ghost",
         acc: 100,
+    }),
+    conversion: tsEnsureMove({
+        name: "Conversion",
+        pp: 30,
+        type: "normal",
+        execute(battle, user, target) {
+            user.types.length = 0;
+            user.types.push(...target.types);
+
+            battle.pushEvent({
+                type: "info",
+                id: target.owner.id,
+                why: "conversion"
+            });
+
+            return false;
+        },
     }),
     crabhammer: new DamagingMove({
         name: "Crabhammer",

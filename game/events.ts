@@ -11,7 +11,7 @@ export type BattleEvent =
     | StatusEvent
     | StagesEvent
     | ConfusionEvent
-    | FlagEvent;
+    | InfoEvent;
 
 export type PlayerId = string;
 
@@ -90,8 +90,8 @@ type ConfusionEvent = {
     id: PlayerId;
 };
 
-type FlagEvent = {
-    type: "flag";
+type InfoEvent = {
+    type: "info";
     id: PlayerId;
-    flag: BooleanFlag;
+    why: BooleanFlag | "conversion";
 };

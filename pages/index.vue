@@ -258,15 +258,17 @@ const stringifyEvents = (events: BattleEvent[]) => {
             }
         } else if (e.type === "confusion") {
             res.push(`${players[e.id].active!.name} became confused!`);
-        } else if (e.type === "flag") {
-            if (e.flag === "light_screen") {
+        } else if (e.type === "info") {
+            if (e.why === "light_screen") {
                 res.push(`${players[e.id].active!.name}'s protected against special attacks!`);
-            } else if (e.flag === "reflect") {
+            } else if (e.why === "reflect") {
                 res.push(`${players[e.id].active!.name} is gained armor!`);
-            } else if (e.flag === "mist") {
+            } else if (e.why === "mist") {
                 res.push(`${players[e.id].active!.name}'s' shrouded in mist!`);
-            } else if (e.flag === "focus") {
+            } else if (e.why === "focus") {
                 res.push(`${players[e.id].active!.name} is getting pumped!`);
+            } else if (e.why === "conversion") {
+                res.push(`Converted type to match ${players[e.id].active!.name}!`);
             }
         } else {
             res.push(JSON.stringify(e));
