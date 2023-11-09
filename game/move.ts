@@ -786,6 +786,26 @@ export const moveList = {
         acc: 100,
         effect: [33.2, [["spc", -1]]],
     }),
+    psywave: tsEnsureMove({
+        name: "Psywave",
+        pp: 15,
+        type: "psychic",
+        acc: 80,
+        execute(battle, user, target) {
+            if (!checkAccuracy(this.acc, battle, user, target)) {
+                return false;
+            }
+
+            // psywave has a desync glitch that we don't emulate
+            return target.inflictDamage(
+                randRangeInclusive(1, Math.max(Math.floor(user.base.level * 1.5 - 1), 1)),
+                user,
+                battle,
+                false,
+                "attacked"
+            ).dead;
+        },
+    }),
     quickattack: new DamagingMove({
         name: "Quick Attack",
         pp: 30,
@@ -910,7 +930,7 @@ export const moveList = {
         power: 25,
         acc: 100,
         flag: "double",
-        effect: [20, "psn"]
+        effect: [20, "psn"],
     }),
     whirlwind: new AlwaysFailMove({
         name: "Whirlwind",
