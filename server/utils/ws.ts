@@ -54,7 +54,7 @@ const initSocket = (socket: WebSocket, players: Players, lobby: Lobby) => {
                     {},
                     {},
                     100,
-                    ["hijumpkick", "doubleedge", "substitute", "explosion"],
+                    ["fissure", "disable"],
                     "Mewtwo_" + socket.uuid.slice(0, 2)
                 ),
             ]);

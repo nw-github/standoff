@@ -1,4 +1,5 @@
 import type { ActivePokemon, Battle } from "../battle";
+import { moveListToId } from "../moveList";
 import type { Type } from "../utils";
 
 export abstract class Move {
@@ -22,7 +23,7 @@ export abstract class Move {
                 battle.pushEvent({
                     type: "move",
                     src: user.owner.id,
-                    move: this.name, // FIXME: send an ID instead, this prevents localization
+                    move: moveListToId.get(this)!,
                     disabled: true,
                 });
                 return false;
@@ -32,7 +33,7 @@ export abstract class Move {
         battle.pushEvent({
             type: "move",
             src: user.owner.id,
-            move: this.name, // FIXME: send an ID instead, this prevents localization
+            move: moveListToId.get(this)!,
             disabled: false
         });
         user.lastMove = this;
