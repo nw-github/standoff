@@ -323,12 +323,23 @@ export class ActivePokemon {
 
     inflictStages(stages: [Stages, number][], battle: Battle) {
         // TODO: update stats/stages
+        const changed: [Stages, number][] = [];
+        for (const [stage, count] of stages) {
+            if (Math.abs(this.stages[stage]) !== 6) {
+                this.stages[stage] = Math.max(Math.min(this.stages[stage] + count, 6), -6);
+                changed.push([stage, count]);
+            }
+        }
 
-        battle.pushEvent({
-            type: "stages",
-            id: this.owner.id,
-            stages,
-        });
+        if (changed.length) {
+            battle.pushEvent({
+                type: "stages",
+                id: this.owner.id,
+                stages: changed,
+            });
+        }
+
+        return changed.length !== 0;
     }
 
     inflictConfusion(battle: Battle) {

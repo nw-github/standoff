@@ -300,7 +300,7 @@ class OHKOMove implements Move {
     readonly type: Type;
     readonly acc?: number;
 
-    constructor({ name, pp, type, acc }: { name: string; pp: number; type: Type, acc?: number }) {
+    constructor({ name, pp, type, acc }: { name: string; pp: number; type: Type; acc?: number }) {
         this.name = name;
         this.pp = pp;
         this.type = type;
@@ -326,11 +326,64 @@ class OHKOMove implements Move {
     }
 }
 
+class StageMove implements Move {
+    readonly name: string;
+    readonly pp: number;
+    readonly type: Type;
+    readonly stages: [Stages, number][];
+    readonly acc?: number;
+
+    constructor({
+        name,
+        pp,
+        type,
+        acc,
+        stages,
+    }: {
+        name: string;
+        pp: number;
+        type: Type;
+        stages: StageMove["stages"];
+        acc?: number;
+    }) {
+        this.name = name;
+        this.pp = pp;
+        this.type = type;
+        this.acc = acc;
+        this.stages = stages;
+    }
+
+    execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        if (this.acc) {
+            if (!checkAccuracy(this.acc, battle, user, target)) {
+                return false;
+            }
+        } else {
+            target = user;
+        }
+
+        if (!target.inflictStages(this.stages, battle)) {
+            battle.pushEvent({
+                type: "failed",
+                src: target.owner.id,
+                why: "generic",
+            });
+        }
+        return false;
+    }
+}
+
 export type MoveId = keyof typeof moveList;
 
 const tsEnsureMove = <T extends Move>(t: T) => t;
 
 export const moveList = {
+    amnesia: new StageMove({
+        name: "Amnesia",
+        pp: 20,
+        type: "psychic",
+        stages: [["spc", 2]],
+    }),
     bodyslam: new DamagingMove({
         name: "Body Slam",
         pp: 15,
@@ -443,6 +496,12 @@ export const moveList = {
         acc: 100,
         flag: "drain",
     }),
+    minimize: new StageMove({
+        name: "Minimize",
+        pp: 15,
+        type: "normal",
+        stages: [["eva", +1]],
+    }),
     nightshade: new FixedDamageMove({
         name: "Night Shade",
         pp: 15,
@@ -473,6 +532,13 @@ export const moveList = {
         power: 40,
         acc: 100,
         priority: +1,
+    }),
+    sandattack: new StageMove({
+        name: "Sand Attack",
+        pp: 15,
+        type: "normal",
+        stages: [["acc", -1]],
+        acc: 100,
     }),
     seismictoss: new FixedDamageMove({
         name: "Seismic Toss",
