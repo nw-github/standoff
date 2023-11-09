@@ -160,12 +160,20 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 res.push(`${src.name} kept going and crashed!`);
             } else if (e.why === "recover") {
                 res.push(`${src.name} regained health!`);
+            } else if (e.why === "seeded") {
+                res.push(`${src.name}'s health was sapped by Leech Seed!`);
+            } else if (e.why === "psn") {
+                res.push(`${src.name} is hurt by poison!`);
+            } else if (e.why === "brn") {
+                res.push(`${src.name} is hurt by its burn!`);
+            } else if (e.why === "attacked" && e.isCrit) {
+                res.push(`A critical hit!`);
             }
 
             if (e.why !== "explosion") {
                 const diff = hpBefore - hpAfter;
                 res.push(
-                    `${target.name} ${diff < 0 ? "gained" : "lost"} ${Math.abs(
+                    `- ${target.name} ${diff < 0 ? "gained" : "lost"} ${Math.abs(
                         diff
                     )}% of its health. (${hpAfter}% remaining)`
                 );
@@ -174,9 +182,6 @@ const stringifyEvents = (events: BattleEvent[]) => {
             if (e.why === "substitute") {
                 res.push(`${src.name} put in a substitute!`);
             } else if (e.why === "attacked") {
-                if (e.isCrit) {
-                    res.push(` - A critical hit!`);
-                }
                 const eff = e.eff ?? 1;
                 if (eff !== 1) {
                     res.push(` - It's ${eff > 1 ? "super effective!" : "not very effective..."}`);
@@ -238,6 +243,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 slp: "fell asleep",
                 frz: "was frozen",
                 tox: "was badly poisoned",
+                brn: "was burned",
             };
 
             res.push(`${players[e.id].active!.name} ${table[e.status]}!`);
@@ -273,6 +279,8 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 res.push(`Converted type to match ${players[e.id].active!.name}!`);
             } else if (e.why === "payday") {
                 res.push(`Coins scattered everywhere!`);
+            } else if (e.why === "seeded") {
+                res.push(`${players[e.id].active!.name} was seeded!`);
             }
         } else {
             res.push(JSON.stringify(e));

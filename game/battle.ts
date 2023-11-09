@@ -137,7 +137,7 @@ export class Battle {
         this.events.push(event);
     }
 
-    private opponentOf(player: Player): Player {
+    opponentOf(player: Player): Player {
         return this.players[0] === player ? this.players[1] : this.players[0];
     }
 
@@ -186,7 +186,19 @@ export class Battle {
         }
 
         if (!skipEnd) {
-            // TODO: end of turn events
+            for (const { user } of choices) {
+                if (user.base.status === "tox" && user.tickCounter(this, "psn")) {
+                    break;
+                }
+
+                if (user.base.status === "brn" && user.tickCounter(this, "brn")) {
+                    break;
+                }
+
+                if (user.seeded && user.tickCounter(this, "seeded")) {
+                    break;
+                }
+            }
         }
 
         for (const player of this.players) {
@@ -221,6 +233,8 @@ export class ActivePokemon {
     substitute = 0;
     confusion = 0;
     flinch = 0;
+    counter = 1;
+    seeded = false;
     recharge?: Move;
     lastMove?: Move;
     readonly owner: Player;
@@ -233,6 +247,10 @@ export class ActivePokemon {
     }
 
     switchTo(base: Pokemon, battle: Battle) {
+        if (base.status === "tox") {
+            base.status = "psn";
+        }
+
         battle.pushEvent({
             type: "switch",
             dexId: base.species.dexId,
@@ -256,6 +274,8 @@ export class ActivePokemon {
         this.types.push(...base.species.types);
         this.substitute = 0;
         this.lastMove = undefined;
+        this.counter = 1;
+        this.seeded = false;
     }
 
     getStat(stat: "atk" | "def" | "spc" | "spe", isCrit: boolean): number {
@@ -359,5 +379,19 @@ export class ActivePokemon {
             id: this.owner.id,
         });
         return true;
+    }
+
+    tickCounter(battle: Battle, why: DamageReason) {
+        const dmg = this.counter * Math.max(this.base.stats.hp / 16, 1);
+        const { dead } = this.inflictDamage(dmg, this, battle, false, why, true);
+        const opponent = battle.opponentOf(this.owner).active;
+        if (why === "seeded" && opponent.base.hp < opponent.base.stats.hp) {
+            opponent.inflictDamage(-dmg, this, battle, false, "seeder", true);
+        }
+
+        if (this.base.status === "tox") {
+            this.counter++;
+        }
+        return dead;
     }
 }

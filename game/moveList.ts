@@ -163,6 +163,34 @@ export const moveList = {
         acc: 95,
         flag: "crash",
     }),
+    leechseed: new UniqueMove({
+        name: "Leech Seed",
+        pp: 15,
+        type: "grass",
+        acc: 80,
+        execute(battle, user, target) {
+            if (target.types.includes(this.type)) {
+                battle.pushEvent({
+                    type: "failed",
+                    src: target.owner.id,
+                    why: "immune",
+                });
+                return false;
+            }
+
+            if (!checkAccuracy(this.acc!, battle, user, target)) {
+                return false;
+            }
+
+            target.seeded = true;
+            battle.pushEvent({
+                type: "info",
+                id: target.owner.id,
+                why: "seeded",
+            });
+            return false;
+        },
+    }),
     lightscreen: new BooleanFlagMove({
         name: "Light Screen",
         pp: 30,
@@ -236,7 +264,7 @@ export const moveList = {
         type: "normal",
         power: 40,
         acc: 100,
-        flag: "payday"
+        flag: "payday",
     }),
     pinmissile: new DamagingMove({
         name: "Pin Missile",
@@ -417,6 +445,13 @@ export const moveList = {
         pp: 20,
         type: "psychic",
         why: "generic",
+    }),
+    toxic: new StatusMove({
+        name: "Toxic",
+        pp: 15,
+        type: "poison",
+        acc: 85,
+        status: "tox",
     }),
     twineedle: new DamagingMove({
         name: "Twineedle",

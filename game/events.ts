@@ -34,7 +34,11 @@ export type DamageReason =
     | "crash"
     | "ohko"
     | "recover"
-    | "rest";
+    | "rest"
+    | "seeded"
+    | "seeder"
+    | "psn"
+    | "brn";
 
 type DamageEvent = {
     type: "damage";
@@ -104,5 +108,5 @@ type ConfusionEvent = {
 type InfoEvent = {
     type: "info";
     id: PlayerId;
-    why: BooleanFlag | "conversion" | "payday";
+    why: BooleanFlag | "conversion" | "payday" | "seeded";
 };

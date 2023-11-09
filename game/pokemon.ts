@@ -1,7 +1,7 @@
 import { moveList, type MoveId } from "./moveList";
 import { speciesList, type Stats, type SpeciesId } from "./species";
 
-export type Status = "psn" | "par" | "slp" | "frz" | "tox";
+export type Status = "psn" | "par" | "slp" | "frz" | "tox" | "brn";
 
 export type OptStats = {
     hp?: number;
