@@ -127,14 +127,14 @@ export class DamagingMove extends Move {
         );
         if (!brokeSub) {
             if (this.recoil) {
-                ({ dead } = user.inflictDamage(
+                dead = user.inflictDamage(
                     Math.max(Math.floor(dealt / this.recoil), 1),
                     user,
                     battle,
                     false,
                     "recoil",
                     true
-                ));
+                ).dead || dead;
             }
 
             if (this.flag === "drain" || this.flag === "dream_eater") {
@@ -147,16 +147,16 @@ export class DamagingMove extends Move {
                     true
                 );
             } else if (this.flag === "explosion") {
-                ({ dead } = user.inflictDamage(
+                dead = user.inflictDamage(
                     user.base.hp,
                     user,
                     battle,
                     false,
                     "explosion",
                     true
-                ));
+                ).dead || dead;
             } else if (this.flag === "double") {
-                ({ dead } = target.inflictDamage(
+                dead = dead || target.inflictDamage(
                     dmg,
                     user,
                     battle,
@@ -164,7 +164,7 @@ export class DamagingMove extends Move {
                     "attacked",
                     false,
                     eff
-                ));
+                ).dead;
             } else if (this.flag === "multi") {
                 let count = randChance255(96) ? 1 : null;
                 count ??= randChance255(96) ? 2 : null;
