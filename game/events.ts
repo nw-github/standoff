@@ -1,4 +1,4 @@
-import type { Stages } from "./battle";
+import type { BooleanFlag, Stages } from "./battle";
 import { type Status } from "./pokemon";
 
 export type BattleEvent =
@@ -10,7 +10,8 @@ export type BattleEvent =
     | HitSubstituteEvent
     | StatusEvent
     | StagesEvent
-    | ConfusionEvent;
+    | ConfusionEvent
+    | FlagEvent;
 
 export type PlayerId = string;
 
@@ -76,4 +77,10 @@ type StagesEvent = {
 type ConfusionEvent = {
     type: "confusion";
     id: PlayerId;
+}
+
+type FlagEvent = {
+    type: "flag";
+    id: PlayerId;
+    flag: BooleanFlag;
 }

@@ -1,4 +1,4 @@
-import type { ActivePokemon, Battle, Stages } from "./battle";
+import type { BooleanFlag, ActivePokemon, Battle, Stages } from "./battle";
 import type { Status } from "./pokemon";
 import {
     randChance255,
@@ -216,9 +216,9 @@ class DamagingMove implements Move {
     private critChance(user: ActivePokemon) {
         const baseSpeed = user.base.species.stats.spe;
         if (this.flag === "high_crit") {
-            return user.focus ? 4 * (baseSpeed / 4) : 8 * (baseSpeed / 2);
+            return user.flags.focus ? 4 * (baseSpeed / 4) : 8 * (baseSpeed / 2);
         } else {
-            return user.focus ? baseSpeed / 8 : baseSpeed / 2;
+            return user.flags.focus ? baseSpeed / 8 : baseSpeed / 2;
         }
     }
 
@@ -455,6 +455,52 @@ class ConfusionMove implements Move {
     }
 }
 
+class BooleanFlagMove implements Move {
+    readonly name: string;
+    readonly pp: number;
+    readonly type: Type;
+    readonly flag: BooleanFlag;
+    readonly acc?: number;
+
+    constructor({
+        name,
+        pp,
+        type,
+        flag,
+        acc,
+    }: {
+        name: string;
+        pp: number;
+        type: Type;
+        flag: BooleanFlag;
+        acc?: number;
+    }) {
+        this.name = name;
+        this.pp = pp;
+        this.type = type;
+        this.acc = acc;
+        this.flag = flag;
+    }
+
+    execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        if (user.flags[this.flag]) {
+            battle.pushEvent({
+                type: "failed",
+                src: user.owner.id,
+                why: "generic",
+            });
+        } else {
+            user.flags[this.flag] = true;
+            battle.pushEvent({
+                type: "flag",
+                id: user.owner.id,
+                flag: this.flag,
+            });
+        }
+        return false;
+    }
+}
+
 export type MoveId = keyof typeof moveList;
 
 const tsEnsureMove = <T extends Move>(t: T) => t;
@@ -532,6 +578,12 @@ export const moveList = {
         type: "ground",
         acc: 30,
     }),
+    focusenergy: new BooleanFlagMove({
+        name: "Focus Energy",
+        pp: 30,
+        type: "normal",
+        flag: "focus",
+    }),
     guillotine: new OHKOMove({
         name: "Guillotine",
         pp: 5,
@@ -576,6 +628,12 @@ export const moveList = {
         acc: 95,
         flag: "crash",
     }),
+    lightscreen: new BooleanFlagMove({
+        name: "Light Screen",
+        pp: 30,
+        type: "psychic",
+        flag: "light_screen",
+    }),
     megadrain: new DamagingMove({
         name: "Mega Drain",
         pp: 10,
@@ -589,6 +647,12 @@ export const moveList = {
         pp: 15,
         type: "normal",
         stages: [["eva", +1]],
+    }),
+    mist: new BooleanFlagMove({
+        name: "Mist",
+        pp: 30,
+        type: "ice",
+        flag: "mist",
     }),
     nightshade: new FixedDamageMove({
         name: "Night Shade",
@@ -620,6 +684,12 @@ export const moveList = {
         power: 40,
         acc: 100,
         priority: +1,
+    }),
+    reflect: new BooleanFlagMove({
+        name: "Reflect",
+        pp: 20,
+        type: "psychic",
+        flag: "reflect",
     }),
     sandattack: new StageMove({
         name: "Sand Attack",
@@ -661,7 +731,7 @@ export const moveList = {
         name: "Substitute",
         pp: 10,
         type: "normal",
-        execute(battle: Battle, user: ActivePokemon, _: ActivePokemon) {
+        execute(battle, user, _) {
             if (user.substitute > 0) {
                 battle.pushEvent({
                     type: "failed",

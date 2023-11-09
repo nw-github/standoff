@@ -219,9 +219,11 @@ export class Battle {
 
 export type Stages = keyof ActivePokemon["stages"];
 
+export type BooleanFlag = "light_screen" | "reflect" | "mist" | "focus";
+
 export class ActivePokemon {
     base: Pokemon;
-    focus = false;
+    flags: Partial<Record<BooleanFlag, boolean>> = {};
     substitute = 0;
     confusion = 0;
     flinch = 0;
@@ -251,7 +253,10 @@ export class ActivePokemon {
             // @ts-ignore
             this.stages[k] = 0;
         }
-        this.focus = false;
+        for (const k in this.flags) {
+            // @ts-ignore
+            this.flags[k] = false;
+        }
         this.types.length = 0;
         this.types.push(...base.species.types);
         this.substitute = 0;
