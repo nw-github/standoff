@@ -37,10 +37,12 @@ export const checkAccuracy = (
     acc: number,
     battle: Battle,
     user: ActivePokemon,
-    target: ActivePokemon,
+    target: ActivePokemon
 ) => {
     // https://bulbapedia.bulbagarden.net/wiki/Accuracy#Generation_I_and_II
-    const chance = floatTo255(acc) * user.getStat("acc", false) * target.getStat("eva", false);
+    const chance =
+        floatTo255(acc) * (user.getStat("acc", false) / 100) * (target.getStat("eva", false) / 100);
+    console.log(`Accuracy: ${acc} | Chance/256: ${chance}`);
     if (!randChance255(chance)) {
         battle.pushEvent({
             type: "failed",
@@ -54,7 +56,7 @@ export const checkAccuracy = (
 
 export const getEffectiveness = (atk: Type, def: Type[]) => {
     return def.reduce((eff, def) => eff * (typeChart[atk][def] ?? 1), 1);
-}
+};
 
 export const stageMultipliers: Record<number, number> = {
     "-6": 25,
