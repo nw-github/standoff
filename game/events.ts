@@ -25,7 +25,18 @@ type SwitchEvent = {
     name: string;
 };
 
-export type DamageEvent = {
+export type DamageReason =
+    | "attacked"
+    | "substitute"
+    | "recoil"
+    | "drain"
+    | "explosion"
+    | "crash"
+    | "ohko"
+    | "recover"
+    | "rest";
+
+type DamageEvent = {
     type: "damage";
     src: PlayerId;
     target: PlayerId;
@@ -33,7 +44,7 @@ export type DamageEvent = {
     hpAfter: number;
     maxHp: number;
     isCrit: boolean;
-    why: "attacked" | "substitute" | "recoil" | "drain" | "explosion" | "crash" | "ohko";
+    why: DamageReason;
     eff?: number;
 };
 

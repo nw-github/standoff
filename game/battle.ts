@@ -1,4 +1,4 @@
-import { type BattleEvent, type DamageEvent, type PlayerId } from "./events";
+import { type BattleEvent, type DamageReason, type PlayerId } from "./events";
 import { moveList, type Move } from "./move";
 import { type Pokemon, type Status } from "./pokemon";
 import { randChance255, randRangeInclusive, type Type } from "./utils";
@@ -272,7 +272,7 @@ export class ActivePokemon {
         src: ActivePokemon,
         battle: Battle,
         isCrit: boolean,
-        why: DamageEvent["why"],
+        why: DamageReason,
         direct?: boolean,
         eff?: number
     ) {

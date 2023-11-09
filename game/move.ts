@@ -1,5 +1,5 @@
 import type { BooleanFlag, ActivePokemon, Battle, Stages } from "./battle";
-import type { FailReason } from "./events";
+import type { DamageReason, FailReason } from "./events";
 import type { Status } from "./pokemon";
 import {
     randChance255,
@@ -546,6 +546,45 @@ class AlwaysFailMove implements Move {
     }
 }
 
+class RecoveryMove implements Move {
+    readonly name: string;
+    readonly pp: number;
+    readonly type: Type;
+    readonly why: DamageReason;
+
+    constructor({
+        name,
+        pp,
+        type,
+        why,
+    }: {
+        name: string;
+        pp: number;
+        type: Type;
+        why: DamageReason;
+    }) {
+        this.name = name;
+        this.pp = pp;
+        this.type = type;
+        this.why = why;
+    }
+
+    execute(battle: Battle, user: ActivePokemon, _: ActivePokemon): boolean {
+        const diff = user.base.stats.hp - user.base.hp;
+        if (diff === 0 || diff % 255 === 0) {
+            battle.pushEvent({
+                type: "failed",
+                src: user.owner.id,
+                why: "generic",
+            });
+            return false;
+        }
+
+        user.inflictDamage(-diff, user, battle, false, this.why, true);
+        return false;
+    }
+}
+
 export type MoveId = keyof typeof moveList;
 
 const tsEnsureMove = <T extends Move>(t: T) => t;
@@ -582,7 +621,7 @@ export const moveList = {
             battle.pushEvent({
                 type: "info",
                 id: target.owner.id,
-                why: "conversion"
+                why: "conversion",
             });
 
             return false;
@@ -747,6 +786,12 @@ export const moveList = {
         acc: 100,
         priority: +1,
     }),
+    recover: new RecoveryMove({
+        name: "Recover",
+        pp: 20,
+        type: "normal",
+        why: "recover",
+    }),
     reflect: new BooleanFlagMove({
         name: "Reflect",
         pp: 20,
@@ -781,6 +826,12 @@ export const moveList = {
         power: 130,
         acc: 100,
         flag: "explosion",
+    }),
+    softboiled: new RecoveryMove({
+        name: "Softboiled",
+        pp: 10,
+        type: "normal",
+        why: "recover",
     }),
     sonicboom: new FixedDamageMove({
         name: "Sonic Boom",
