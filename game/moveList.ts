@@ -11,7 +11,7 @@ import {
     StatusMove,
     UniqueMove,
 } from "./moves";
-import { checkAccuracy, randRangeInclusive } from "./utils";
+import { checkAccuracy, randChoice, randRangeInclusive } from "./utils";
 
 export type MoveId = keyof typeof moveList;
 
@@ -210,11 +210,11 @@ export const moveList = {
         pp: 10,
         type: "normal",
         execute(battle, user, target) {
-            const moves = Object.values(battle.moveList);
+            const moves = Object.values(moveList);
 
             let move: Move | undefined;
             while (!move || move === this) {
-                move = moves[randRangeInclusive(0, moves.length - 1)];
+                move = randChoice(moves);
             }
 
             move.use(battle, user);

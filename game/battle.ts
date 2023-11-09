@@ -60,11 +60,9 @@ export class Battle {
     private _turn = 0;
     private readonly events: BattleEvent[] = [];
     victor: Player | null = null;
-    moveList: typeof moveList;
 
     private constructor(player1: Player, player2: Player) {
         this.players = [player1, player2];
-        this.moveList = moveList;
     }
 
     static start(player1: Player, player2: Player): [Battle, Turn] {

@@ -25,6 +25,8 @@ export const randChance255 = (num: number) => {
     return randRangeInclusive(0, 255) < Math.floor(Math.min(num, 255));
 };
 
+export const randChoice = <T>(arr: T[]) => arr[randRangeInclusive(0, arr.length - 1)];
+
 export const floatTo255 = (num: number) => {
     return Math.floor((num / 100) * 255);
 };
