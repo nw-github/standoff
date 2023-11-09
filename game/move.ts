@@ -258,26 +258,41 @@ class DamagingMove implements Move {
     }
 }
 
-class LevelMove implements Move {
+class FixedDamageMove implements Move {
     readonly name: string;
     readonly pp: number;
     readonly type: Type;
+    readonly dmg: number | "level";
     readonly acc?: number;
 
-    constructor({ name, pp, type, acc }: { name: string; pp: number; type: Type; acc?: number }) {
+    constructor({
+        name,
+        pp,
+        dmg,
+        type,
+        acc,
+    }: {
+        name: string;
+        pp: number;
+        type: Type;
+        dmg: number | "level";
+        acc?: number;
+    }) {
         this.name = name;
         this.pp = pp;
         this.type = type;
+        this.dmg = dmg;
         this.acc = acc;
     }
 
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
-        // Night Shade/Seismic Toss are not affected by type immunity in Gen 1
+        // Fixed damage moves are not affected by type immunity in Gen 1
         if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
             return false;
         }
 
-        return target.inflictDamage(user.base.level, user, battle, false, "attacked").dead;
+        const dmg = this.dmg === "level" ? user.base.level : this.dmg;
+        return target.inflictDamage(dmg, user, battle, false, "attacked").dead;
     }
 }
 
@@ -317,6 +332,13 @@ export const moveList = {
         power: 30,
         acc: 100,
         flag: "double",
+    }),
+    dragonrage: new FixedDamageMove({
+        name: "Dragon Rage",
+        pp: 10,
+        type: "dragon",
+        acc: 100,
+        dmg: 40,
     }),
     earthquake: new DamagingMove({
         name: "Earthquake",
@@ -373,11 +395,12 @@ export const moveList = {
         acc: 100,
         flag: "drain",
     }),
-    nightshade: new LevelMove({
+    nightshade: new FixedDamageMove({
         name: "Night Shade",
         pp: 15,
         type: "ghost",
         acc: 100,
+        dmg: "level",
     }),
     psybeam: new DamagingMove({
         name: "Psybeam",
@@ -403,11 +426,12 @@ export const moveList = {
         acc: 100,
         priority: +1,
     }),
-    seismictoss: new LevelMove({
+    seismictoss: new FixedDamageMove({
         name: "Seismic Toss",
         pp: 20,
         type: "normal",
         acc: 100,
+        dmg: "level",
     }),
     selfdestruct: new DamagingMove({
         name: "Self-Destruct",
@@ -416,6 +440,13 @@ export const moveList = {
         power: 130,
         acc: 100,
         flag: "explosion",
+    }),
+    sonicboom: new FixedDamageMove({
+        name: "Sonic Boom",
+        pp: 20,
+        type: "normal",
+        acc: 90,
+        dmg: 20,
     }),
     substitute: tsEnsureMove({
         name: "Substitute",
