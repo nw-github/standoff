@@ -48,7 +48,7 @@ type HitSubstituteEvent = {
 type FailureEvent = {
     type: "failed";
     src: PlayerId;
-    why: "immune" | "miss" | "generic" | "has_substitute" | "cant_substitute" | "flinch";
+    why: "immune" | "miss" | "generic" | "has_substitute" | "cant_substitute" | "flinch" | "mist";
 };
 
 type UseMoveEvent = {

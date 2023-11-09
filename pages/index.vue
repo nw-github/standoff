@@ -207,6 +207,9 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 case "flinch":
                     res.push(`${src.name} flinched!`);
                     break;
+                case "mist":
+                    res.push(`${src.name} is protected by the mist!`);
+                    break;
             }
         } else if (e.type === "move") {
             res.push(`${players[e.src].active!.name} used ${e.move}!`);

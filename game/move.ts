@@ -355,6 +355,15 @@ class StageMove implements Move {
 
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
         if (this.acc) {
+            if (target.flags.mist) {
+                battle.pushEvent({
+                    type: "failed",
+                    src: target.owner.id,
+                    why: "mist",
+                });
+                return false;
+            }
+
             if (!checkAccuracy(this.acc, battle, user, target)) {
                 return false;
             }
@@ -482,7 +491,7 @@ class BooleanFlagMove implements Move {
         this.flag = flag;
     }
 
-    execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+    execute(battle: Battle, user: ActivePokemon, _: ActivePokemon): boolean {
         if (user.flags[this.flag]) {
             battle.pushEvent({
                 type: "failed",
