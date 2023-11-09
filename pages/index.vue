@@ -236,7 +236,11 @@ const stringifyEvents = (events: BattleEvent[]) => {
                     break;
             }
         } else if (e.type === "move") {
-            res.push(`${pname(e.src)} used ${e.move}!`);
+            if (e.disabled) {
+                res.push(`${pname(e.src)}'s ${e.move} is disabled!`);
+            } else {
+                res.push(`${pname(e.src)} used ${e.move}!`);
+            }
         } else if (e.type === "victory") {
             res.push(`${players[e.id].name} wins!`);
         } else if (e.type === "hit_sub") {
@@ -299,6 +303,12 @@ const stringifyEvents = (events: BattleEvent[]) => {
             }
         } else if (e.type === "transform") {
             res.push(`${pname(e.src)} transformed into ${pname(e.target, false)}!`);
+        } else if (e.type === "disable") {
+            if (e.move) {
+                res.push(`${pname(e.id)}'s ${moveList[e.move].name} was disabled!`);
+            } else {
+                res.push(`${pname(e.id)}'s disabled no longer!`);
+            }
         } else {
             res.push(JSON.stringify(e));
         }

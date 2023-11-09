@@ -1,4 +1,5 @@
 import type { BooleanFlag, Stages } from "./battle";
+import type { MoveId } from "./moveList";
 import { type Status } from "./pokemon";
 
 export type BattleEvent =
@@ -12,7 +13,8 @@ export type BattleEvent =
     | StagesEvent
     | ConfusionEvent
     | InfoEvent
-    | TransformEvent;
+    | TransformEvent
+    | DisableEvent;
 
 export type PlayerId = string;
 
@@ -82,6 +84,7 @@ type UseMoveEvent = {
     type: "move";
     src: PlayerId;
     move: string;
+    disabled: boolean;
 };
 
 type VictoryEvent = {
@@ -118,3 +121,9 @@ type TransformEvent = {
     target: PlayerId;
 };
 
+type DisableEvent = {
+    type: "disable";
+    id: PlayerId;
+    /** if move is present, the disable has started. otherwise, it has ended */
+    move?: MoveId;
+};

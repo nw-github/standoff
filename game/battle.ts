@@ -60,7 +60,7 @@ export class Player {
         const moves = this.active.base.moves.map((move, i) => ({
             move,
             pp: this.active.base.pp[i],
-            valid: this.active.base.pp[i] !== 0,
+            valid: this.active.base.pp[i] !== 0 && moveList[move] !== this.active.disabled?.move,
             i,
         }));
         if (moves.every(move => !move.valid)) {
@@ -189,9 +189,8 @@ export class Battle {
                 user.base.pp[choice.i] = Math.max(user.base.pp[choice.i], 0);
             }
 
-            move.use(this, user);
             // A pokemon has died, skip all end of turn events
-            if (move.execute(this, user, target)) {
+            if (move.use(this, user, target)) {
                 if (!this.victor) {
                     if (target.owner.team.every(poke => poke.hp <= 0)) {
                         this.victor = user.owner;
@@ -249,6 +248,9 @@ export type Stages = keyof ActivePokemon["stages"];
 export type BooleanFlag = "light_screen" | "reflect" | "mist" | "focus";
 
 export class ActivePokemon {
+    readonly owner: Player;
+    readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };
+    readonly types: Type[] = [];
     base: Pokemon;
     flags: Partial<Record<BooleanFlag, boolean>> = {};
     substitute = 0;
@@ -258,9 +260,7 @@ export class ActivePokemon {
     seeded = false;
     recharge?: Move;
     lastMove?: Move;
-    readonly owner: Player;
-    readonly types: Type[] = [];
-    readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };
+    disabled?: { move: Move; turns: number };
 
     constructor(base: Pokemon, owner: Player) {
         this.base = base;
@@ -297,6 +297,7 @@ export class ActivePokemon {
         this.lastMove = undefined;
         this.counter = 1;
         this.seeded = false;
+        this.disabled = undefined;
     }
 
     getStat(stat: "atk" | "def" | "spc" | "spe", isCrit: boolean): number {

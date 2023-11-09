@@ -62,6 +62,37 @@ export const moveList = {
         acc: 85,
         flag: "high_crit",
     }),
+    disable: new UniqueMove({
+        name: "Disable",
+        pp: 20,
+        type: "normal",
+        acc: 55,
+        execute(battle, user, target) {
+            const choices = target.base.moves.filter((_, i) => target.base.pp[i] !== 0);
+            if (!choices.length || target.disabled) {
+                battle.pushEvent({
+                    type: "failed",
+                    src: target.owner.id,
+                    why: "generic",
+                });
+                return false;
+            }
+
+            if (!checkAccuracy(this.acc!, battle, user, target)) {
+                return false;
+            }
+
+            const move = randChoice(choices);
+            target.disabled = { move: moveList[move], turns: randRangeInclusive(1, 8) };
+            battle.pushEvent({
+                type: "disable",
+                id: target.owner.id,
+                move,
+            });
+
+            return false;
+        },
+    }),
     doubleedge: new DamagingMove({
         name: "Double Edge",
         pp: 15,
@@ -218,8 +249,7 @@ export const moveList = {
                 move = randChoice(moves);
             } while (move === this || move === moveList.struggle);
 
-            move.use(battle, user);
-            return move.execute(battle, user, target);
+            return move.use(battle, user, target);
         },
     }),
     minimize: new StageMove({
@@ -242,8 +272,7 @@ export const moveList = {
                 return false;
             }
 
-            target.lastMove.use(battle, user);
-            return target.lastMove.execute(battle, user, target);
+            return target.lastMove.use(battle, user, target);
         },
     }),
     mist: new BooleanFlagMove({
