@@ -313,12 +313,17 @@ export class ActivePokemon {
     }
 
     inflictStatus(status: Status, battle: Battle) {
+        if (this.base.status !== null) {
+            return false;
+        }
+
         this.base.status = status;
         battle.pushEvent({
             type: "status",
             id: this.owner.id,
             status,
         });
+        return true;
     }
 
     inflictStages(stages: [Stages, number][], battle: Battle) {

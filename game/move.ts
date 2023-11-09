@@ -373,6 +373,49 @@ class StageMove implements Move {
     }
 }
 
+class StatusMove implements Move {
+    readonly name: string;
+    readonly pp: number;
+    readonly type: Type;
+    readonly status: Status;
+    readonly acc?: number;
+
+    constructor({
+        name,
+        pp,
+        type,
+        acc,
+        status,
+    }: {
+        name: string;
+        pp: number;
+        type: Type;
+        status: Status;
+        acc?: number;
+    }) {
+        this.name = name;
+        this.pp = pp;
+        this.type = type;
+        this.acc = acc;
+        this.status = status;
+    }
+
+    execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
+            return false;
+        }
+
+        if (!target.inflictStatus(this.status, battle)) {
+            battle.pushEvent({
+                type: "failed",
+                src: target.owner.id,
+                why: "generic",
+            });
+        }
+        return false;
+    }
+}
+
 export type MoveId = keyof typeof moveList;
 
 const tsEnsureMove = <T extends Move>(t: T) => t;
@@ -561,6 +604,13 @@ export const moveList = {
         type: "normal",
         acc: 90,
         dmg: 20,
+    }),
+    spore: new StatusMove({
+        name: "Spore",
+        pp: 15,
+        type: "grass",
+        acc: 100,
+        status: "slp"
     }),
     substitute: tsEnsureMove({
         name: "Substitute",
