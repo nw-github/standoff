@@ -3,7 +3,7 @@ import type { Status } from "./pokemon";
 import {
     randChance255,
     randRangeInclusive,
-    typeChart,
+    getEffectiveness,
     type Type,
     floatTo255,
     checkAccuracy,
@@ -68,7 +68,7 @@ class DamagingMove implements Move {
 
     execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
         // https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_I
-        const eff = DamagingMove.getEffectiveness(this.type, target.base.species.types);
+        const eff = getEffectiveness(this.type, target.base.species.types);
         if (eff === 0) {
             battle.pushEvent({
                 type: "failed",
@@ -231,10 +231,6 @@ class DamagingMove implements Move {
         }
     }
 
-    private static getEffectiveness(atk: Type, def: Type[]) {
-        return def.reduce((eff, def) => eff * (typeChart[atk][def] ?? 1), 1);
-    }
-
     private static isSpecial(atk: Type) {
         switch (atk) {
             case "normal":
@@ -293,6 +289,38 @@ class FixedDamageMove implements Move {
 
         const dmg = this.dmg === "level" ? user.base.level : this.dmg;
         return target.inflictDamage(dmg, user, battle, false, "attacked").dead;
+    }
+}
+
+class OHKOMove implements Move {
+    readonly name: string;
+    readonly pp: number;
+    readonly type: Type;
+    readonly acc?: number;
+
+    constructor({ name, pp, type, acc }: { name: string; pp: number; type: Type, acc?: number }) {
+        this.name = name;
+        this.pp = pp;
+        this.type = type;
+        this.acc = acc;
+    }
+
+    execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        if (getEffectiveness(this.type, target.base.species.types) === 0) {
+            battle.pushEvent({
+                type: "failed",
+                src: target.owner.id,
+                why: "immune",
+            });
+            return false;
+        }
+
+        const acc = target.getStat("spe", false) > user.getStat("spe", false) ? 0 : this.acc;
+        if (acc && !checkAccuracy(acc, battle, user, target)) {
+            return false;
+        }
+
+        return target.inflictDamage(65535, user, battle, false, "ohko", false, 1).dead;
     }
 }
 
@@ -355,6 +383,18 @@ export const moveList = {
         acc: 100,
         flag: "explosion",
     }),
+    fissure: new OHKOMove({
+        name: "Fissure",
+        pp: 5,
+        type: "ground",
+        acc: 30,
+    }),
+    guillotine: new OHKOMove({
+        name: "Guillotine",
+        pp: 5,
+        type: "normal",
+        acc: 30,
+    }),
     headbutt: new DamagingMove({
         name: "Headbutt",
         pp: 15,
@@ -370,6 +410,12 @@ export const moveList = {
         power: 85,
         acc: 90,
         flag: "crash",
+    }),
+    horndrill: new OHKOMove({
+        name: "Horn Drill",
+        pp: 5,
+        type: "normal",
+        acc: 30,
     }),
     hyperbeam: new DamagingMove({
         name: "Hyper Beam",

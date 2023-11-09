@@ -52,6 +52,10 @@ export const checkAccuracy = (
     return true;
 };
 
+export const getEffectiveness = (atk: Type, def: Type[]) => {
+    return def.reduce((eff, def) => eff * (typeChart[atk][def] ?? 1), 1);
+}
+
 export const stageMultipliers: Record<number, number> = {
     "-6": 25,
     "-5": 28,

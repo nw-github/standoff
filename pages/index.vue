@@ -179,6 +179,8 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 if (eff !== 1) {
                     res.push(` - It's ${eff > 1 ? "supereffective!" : "not very effective..."}`);
                 }
+            } else if (e.why === "ohko") {
+                res.push(` - It's a one-hit KO!`);
             }
 
             if (hpAfter === 0) {
@@ -218,7 +220,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
 
             const eff = e.eff ?? 1;
             if (eff !== 1) {
-                res.push(` - It's ${eff > 1 ? "supereffective!" : "not very effective..."}`);
+                res.push(` - It's ${eff > 1 ? "super effective!" : "not very effective..."}`);
             }
         } else if (e.type === "status") {
             const table: Record<Status, string> = {
