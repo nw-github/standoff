@@ -269,12 +269,12 @@ const stringifyEvents = (events: BattleEvent[]) => {
             res.push(`${pname(e.id)} ${table[e.status]}!`);
         } else if (e.type === "stages") {
             const table: Record<Stages, string> = {
-                atk: "Attack",
-                def: "Defense",
-                spc: "Special",
-                spe: "Speed",
-                acc: "Accuracy",
-                eva: "Evasion",
+                atk: "attack",
+                def: "defense",
+                spc: "special",
+                spe: "speed",
+                acc: "acccuracy",
+                eva: "evasion",
             };
 
             const name = pname(e.id);
@@ -306,6 +306,12 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 res.push(`${pname(e.id)} became confused!`);
             } else if (e.why === "recharge") {
                 res.push(`${pname(e.id)} must recharge!`);
+            } else if (e.why === "frozen") {
+                res.push(`${pname(e.id)} is frozen solid!`);
+            } else if (e.why === "sleep") {
+                res.push(`${pname(e.id)} is fast asleep!`);
+            } else if (e.why === "wake") {
+                res.push(`${pname(e.id)} woke up!`);
             }
         } else if (e.type === "transform") {
             res.push(`${pname(e.src)} transformed into ${pname(e.target, false)}!`);

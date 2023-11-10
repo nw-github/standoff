@@ -12,14 +12,15 @@ export type OptStats = {
 };
 
 export class Pokemon {
-    public readonly stats: Stats;
-    public readonly speciesId: SpeciesId;
-    public readonly level: number;
-    public readonly name: string;
-    public readonly moves: MoveId[];
-    public pp: number[];
-    public hp: number;
-    public status: Status | null;
+    readonly stats: Stats;
+    readonly speciesId: SpeciesId;
+    readonly level: number;
+    readonly name: string;
+    readonly moves: MoveId[];
+    pp: number[];
+    hp: number;
+    status: Status | null;
+    sleep_turns: number = 0;
 
     constructor(
         speciesId: SpeciesId,

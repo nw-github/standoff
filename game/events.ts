@@ -112,7 +112,10 @@ type InfoReason =
     | "seeded"
     | "became_confused"
     | "confused"
-    | "recharge";
+    | "recharge"
+    | "frozen"
+    | "sleep"
+    | "wake";
 
 type InfoEvent = {
     type: "info";

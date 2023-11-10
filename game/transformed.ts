@@ -45,6 +45,14 @@ export class TransformedPokemon {
         this.base.status = value;
     }
 
+    get sleep_turns() {
+        return this.base.sleep_turns;
+    }
+
+    set sleep_turns(value) {
+        this.base.sleep_turns = value;
+    }
+
     get species() {
         return this.base.species;
     }

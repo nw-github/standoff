@@ -207,6 +207,28 @@ export class Battle {
 
         let skipEnd = false;
         for (const { move, user, target, choice } of choices) {
+            if (user.base.status === "frz") {
+                this.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: "frozen",
+                });
+                continue;
+            } else if (user.base.status === "slp") {
+                --user.base.sleep_turns;
+                const done = user.base.sleep_turns === 0;
+                if (done) {
+                    user.base.status = null;
+                }
+
+                this.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: done ? "wake" : "sleep",
+                });
+                continue;
+            }
+
             if (user.flinch === this._turn) {
                 this.pushEvent({
                     type: "failed",
@@ -414,6 +436,11 @@ export class ActivePokemon {
     inflictStatus(status: Status, battle: Battle) {
         if (this.base.status !== null) {
             return false;
+        }
+
+        if (status === "slp") {
+            this.recharge = undefined;
+            this.base.sleep_turns = randRangeInclusive(1, 7);
         }
 
         this.base.status = status;
