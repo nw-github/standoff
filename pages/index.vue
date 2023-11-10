@@ -304,6 +304,8 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 res.push(`${pname(e.id)} is confused!`);
             } else if (e.why === "became_confused") {
                 res.push(`${pname(e.id)} became confused!`);
+            } else if (e.why === "recharge") {
+                res.push(`${pname(e.id)} must recharge!`);
             }
         } else if (e.type === "transform") {
             res.push(`${pname(e.src)} transformed into ${pname(e.target, false)}!`);

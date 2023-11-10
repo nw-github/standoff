@@ -105,10 +105,19 @@ type StagesEvent = {
     stages: [Stages, number][];
 };
 
+type InfoReason =
+    | BooleanFlag
+    | "conversion"
+    | "payday"
+    | "seeded"
+    | "became_confused"
+    | "confused"
+    | "recharge";
+
 type InfoEvent = {
     type: "info";
     id: PlayerId;
-    why: BooleanFlag | "conversion" | "payday" | "seeded" | "became_confused" | "confused";
+    why: InfoReason;
 };
 
 type TransformEvent = {

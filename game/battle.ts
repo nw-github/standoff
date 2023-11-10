@@ -67,7 +67,10 @@ export class Player {
             moves = [{ move: "struggle", pp: 0, valid: true, i: -1 }];
         }
 
-        this.choices = { canSwitch: !this.active.charging, moves };
+        this.choices = {
+            canSwitch: !this.active.charging && !this.active.thrashing && !this.active.recharge,
+            moves
+        };
     }
 
     private isValidMove(move: MoveId, i: number) {
@@ -75,6 +78,10 @@ export class Player {
         //       user hyper beams, opponent disables: 
         //          is the user forced to recharge hyper beam ? struggle? does it recharge and fail?
         //       user clicks skull bash, opponent disables:
+
+        if (this.active.recharge && this.active.recharge !== moveList[move]) {
+            return false;
+        }
 
         if (this.active.charging && this.active.charging !== moveList[move]) {
             return false;
@@ -206,6 +213,17 @@ export class Battle {
                     src: user.owner.id,
                     why: "flinch",
                 });
+                user.recharge = undefined;
+                continue;
+            }
+
+            if (user.recharge) {
+                this.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: "recharge",
+                });
+                user.recharge = undefined;
                 continue;
             }
 
