@@ -3,7 +3,7 @@ import { moveList, type MoveId } from "./moveList";
 import { type Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
 import { TransformedPokemon } from "./transformed";
-import { clamp, randChance255, randRangeInclusive, type Type } from "./utils";
+import { clamp, randChance255, randRangeInclusive, stageMultipliers, type Type } from "./utils";
 
 export type Choice =
     | { type: "switch"; turn: number; to: number }
@@ -69,13 +69,13 @@ export class Player {
 
         this.choices = {
             canSwitch: !this.active.charging && !this.active.thrashing && !this.active.recharge,
-            moves
+            moves,
         };
     }
 
     private isValidMove(move: MoveId, i: number) {
         // TODO: research these interactions
-        //       user hyper beams, opponent disables: 
+        //       user hyper beams, opponent disables:
         //          is the user forced to recharge hyper beam ? struggle? does it recharge and fail?
         //       user clicks skull bash, opponent disables:
 
@@ -196,8 +196,8 @@ export class Battle {
                     return (b.move.priority ?? 0) - (a.move.priority ?? 0);
                 }
 
-                const aSpe = a.user.owner.active.getStat("spe", false);
-                const bSpe = b.user.owner.active.getStat("spe", false);
+                const aSpe = a.user.owner.active.getStat("spe");
+                const bSpe = b.user.owner.active.getStat("spe");
                 if (aSpe === bSpe) {
                     return randChance255(128) ? -1 : 1;
                 }
@@ -253,7 +253,7 @@ export class Battle {
                 this.pushEvent({
                     type: "info",
                     id: user.owner.id,
-                    why: "confused"
+                    why: "confused",
                 });
                 // TODO: confusion damage
             }
@@ -320,6 +320,7 @@ export type BooleanFlag = "light_screen" | "reflect" | "mist" | "focus";
 export class ActivePokemon {
     readonly owner: Player;
     readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };
+    stats = { atk: 0, def: 0, spc: 0, spe: 0 };
     types: Type[] = [];
     base: Pokemon;
     flags: Partial<Record<BooleanFlag, boolean>> = {};
@@ -333,7 +334,7 @@ export class ActivePokemon {
     charging?: Move;
     recharge?: Move;
     lastMove?: Move;
-    thrashing?: { move: Move; turns: number, acc?: number };
+    thrashing?: { move: Move; turns: number; acc?: number };
     disabled?: { move: Move; turns: number };
 
     constructor(base: Pokemon, owner: Player) {
@@ -366,6 +367,7 @@ export class ActivePokemon {
             this.flags[k] = false;
         }
         this.types = [...base.species.types];
+        this.stats = { ...base.stats };
         this.substitute = 0;
         this.confusion = 0;
         this.counter = 1;
@@ -379,13 +381,16 @@ export class ActivePokemon {
         this.recharge = undefined;
     }
 
-    getStat(stat: "atk" | "def" | "spc" | "spe", isCrit: boolean): number {
-        // TODO: apply stages, par/brn, stat duplication bug
-        if (isCrit && this.base instanceof TransformedPokemon) {
+    getStat(stat: keyof ActivePokemon["stats"], isCrit?: boolean, def?: boolean): number {
+        if (!def && isCrit && this.base instanceof TransformedPokemon) {
             return this.base.base.stats[stat];
         }
 
-        return this.base.stats[stat];
+        if (isCrit) {
+            return this.base.stats[stat];
+        }
+
+        return this.stats[stat];
     }
 
     inflictDamage(
@@ -454,25 +459,42 @@ export class ActivePokemon {
             id: this.owner.id,
             status,
         });
+
+        this.applyStatusDebuff();
         return true;
     }
 
-    inflictStages(stages: [Stages, number][], battle: Battle) {
+    inflictStages(mods: [Stages, number][], battle: Battle) {
         // TODO: update stats
-        stages = stages.filter(([stage]) => Math.abs(this.stages[stage]) !== 6);
-        for (const [stage, count] of stages) {
-            this.stages[stage] = clamp(this.stages[stage] + count, -6, 6);
+        mods = mods.filter(([stat]) => Math.abs(this.stages[stat]) !== 6);
+        
+        const opponent = battle.opponentOf(this.owner).active;
+        for (const [stat, count] of mods) {
+            this.stages[stat] = clamp(this.stages[stat] + count, -6, 6);
+
+            if (stat === "atk" || stat === "def" || stat == "spc" || stat === "spe") {
+                this.stats[stat] = Math.floor(this.base.stats[stat] * (stageMultipliers[this.stages[stat]] / 100));
+                // https://www.smogon.com/rb/articles/rby_mechanics_guide#stat-mechanics
+                if (count < 0) {
+                    this.stats[stat] %= 1024;
+                }
+
+                this.stats[stat] = clamp(this.stats[stat], 1, 999);
+            }
+
+            // https://bulbapedia.bulbagarden.net/wiki/List_of_battle_glitches_(Generation_I)#Stat_modification_errors
+            opponent.applyStatusDebuff();
         }
 
-        if (stages.length) {
+        if (mods.length) {
             battle.pushEvent({
                 type: "stages",
                 id: this.owner.id,
-                stages,
+                stages: mods,
             });
         }
 
-        return stages.length !== 0;
+        return mods.length !== 0;
     }
 
     inflictConfusion(battle: Battle, thrashing?: true) {
@@ -485,14 +507,14 @@ export class ActivePokemon {
             battle.pushEvent({
                 type: "info",
                 id: this.owner.id,
-                why: "became_confused"
+                why: "became_confused",
             });
         }
         return true;
     }
 
     tickCounter(battle: Battle, why: DamageReason) {
-        const multiplier = (this.base.status === "psn" && why === "psn") ? 1 : this.counter;
+        const multiplier = this.base.status === "psn" && why === "psn" ? 1 : this.counter;
         const dmg = multiplier * Math.max(this.base.stats.hp / 16, 1);
         const { dead } = this.inflictDamage(dmg, this, battle, false, why, true);
         const opponent = battle.opponentOf(this.owner).active;
@@ -525,5 +547,15 @@ export class ActivePokemon {
         }
 
         return false;
+    }
+
+    applyStatusDebuff() {
+        if (this.base.status === "brn") {
+            this.base.stats.atk = Math.max(this.base.stats.atk / 2, 1);
+        }
+
+        if (this.base.status === "par") {
+            this.base.stats.spe = Math.max(this.base.stats.spe / 4, 1);
+        }
     }
 }

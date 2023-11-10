@@ -120,19 +120,21 @@ export class DamagingMove extends Move {
         }
 
         const isCrit = randChance255(this.critChance(user));
-        const isSpecial = DamagingMove.isSpecial(this.type);
         const isStab = user.types.includes(this.type);
-        const [atks, defs]: ["spc" | "atk", "spc" | "def"] = isSpecial
+        const [atks, defs]: ["spc" | "atk", "spc" | "def"] = DamagingMove.isSpecial(this.type)
             ? ["spc", "spc"]
             : ["atk", "def"];
         const atk = user.getStat(atks, isCrit);
-        let def = Math.floor(target.getStat(defs, isCrit) / (this.flag === "explosion" ? 2 : 1));
-
+        let def = Math.floor(
+            target.getStat(defs, isCrit, true) / (this.flag === "explosion" ? 2 : 1)
+        );
         const applyLightScreen = atks === "spc" && target.flags.light_screen;
         const applyReflect = atks === "atk" && target.flags.reflect;
         if (!isCrit && (applyLightScreen || applyReflect)) {
             def *= 2;
-            if (def > 1024) def -= def % 1024;
+            if (def > 1024) {
+                def -= def % 1024;
+            }
         }
 
         const lvl = user.base.level;
@@ -159,6 +161,15 @@ export class DamagingMove extends Move {
             "attacked",
             false,
             eff
+        );
+
+        console.log(
+            `${this.name} (Pow ${this.power})`,
+            `(${atks} ${atk})`,
+            `(${defs} ${def})`,
+            `(Stab ${stab})`,
+            `(Rand ${rand})`,
+            `(Crit? ${isCrit})`
         );
         if (!brokeSub) {
             if (this.recoil) {
@@ -341,7 +352,7 @@ export class OHKOMove extends Move {
             return false;
         }
 
-        const acc = target.getStat("spe", false) > user.getStat("spe", false) ? 0 : this.acc;
+        const acc = target.getStat("spe") > user.getStat("spe") ? 0 : this.acc;
         if (acc && !checkAccuracy(acc, battle, user, target)) {
             return false;
         }
