@@ -271,21 +271,21 @@ export class Battle {
                 skipEnd = true;
                 break;
             }
+
+            if (move.power && user.handleStatusDamage(this)) {
+                skipEnd = true;
+                break;
+            }
+
+            if (user.seeded && user.tickCounter(this, "seeded")) {
+                skipEnd = true;
+                break;
+            }
         }
 
         if (!skipEnd) {
             for (const { user } of choices) {
-                if (user.base.status === "tox" && user.tickCounter(this, "psn")) {
-                    break;
-                }
-
-                if (user.base.status === "brn" && user.tickCounter(this, "brn")) {
-                    break;
-                }
-
-                if (user.seeded && user.tickCounter(this, "seeded")) {
-                    break;
-                }
+                user.handleStatusDamage(this);
             }
         }
 
@@ -302,6 +302,7 @@ export class Battle {
 
         for (const player of this.players) {
             player.choice = null;
+            player.active.handledStatus = false;
             player.updateChoices(this.victor !== null);
         }
 
@@ -328,6 +329,7 @@ export class ActivePokemon {
     counter = 1;
     seeded = false;
     invuln = false;
+    handledStatus = false;
     charging?: Move;
     recharge?: Move;
     lastMove?: Move;
@@ -369,6 +371,7 @@ export class ActivePokemon {
         this.counter = 1;
         this.seeded = false;
         this.invuln = false;
+        this.handledStatus = false;
         this.lastMove = undefined;
         this.thrashing = undefined;
         this.disabled = undefined;
@@ -489,7 +492,8 @@ export class ActivePokemon {
     }
 
     tickCounter(battle: Battle, why: DamageReason) {
-        const dmg = this.counter * Math.max(this.base.stats.hp / 16, 1);
+        const multiplier = (this.base.status === "psn" && why === "psn") ? 1 : this.counter;
+        const dmg = multiplier * Math.max(this.base.stats.hp / 16, 1);
         const { dead } = this.inflictDamage(dmg, this, battle, false, why, true);
         const opponent = battle.opponentOf(this.owner).active;
         if (why === "seeded" && opponent.base.hp < opponent.base.stats.hp) {
@@ -500,5 +504,26 @@ export class ActivePokemon {
             this.counter++;
         }
         return dead;
+    }
+
+    handleStatusDamage(battle: Battle) {
+        if (this.handledStatus) {
+            return false;
+        }
+
+        this.handledStatus = true;
+        if (this.base.status === "tox" && this.tickCounter(battle, "psn")) {
+            return true;
+        }
+
+        if (this.base.status === "brn" && this.tickCounter(battle, "brn")) {
+            return true;
+        }
+
+        if (this.base.status === "psn" && this.tickCounter(battle, "psn")) {
+            return true;
+        }
+
+        return false;
     }
 }
