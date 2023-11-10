@@ -611,7 +611,8 @@ export const moveList = {
         pp: 5,
         type: "ice",
         power: 110,
-        acc: 70,
+        acc: 90,
+        effect: [10, "frz"],
     }),
     boneclub: new DamagingMove({
         name: "Bone Club",
@@ -750,6 +751,7 @@ export const moveList = {
         type: "fire",
         power: 110,
         acc: 85,
+        effect: [30, "brn"],
     }),
     firepunch: new DamagingMove({
         name: "Fire Punch",
@@ -765,6 +767,7 @@ export const moveList = {
         type: "fire",
         power: 95,
         acc: 100,
+        effect: [10, "brn"],
     }),
     fly: new DamagingMove({
         name: "Fly",
@@ -849,6 +852,7 @@ export const moveList = {
         type: "ice",
         power: 95,
         acc: 100,
+        effect: [10, "frz"],
     }),
     icepunch: new DamagingMove({
         name: "Ice Punch",
@@ -880,6 +884,7 @@ export const moveList = {
         type: "ghost",
         power: 20,
         acc: 100,
+        effect: [30, "par"],
     }),
     lowkick: new DamagingMove({
         name: "Low Kick",
@@ -947,6 +952,7 @@ export const moveList = {
         type: "poison",
         power: 15,
         acc: 100,
+        effect: [20, "psn"],
     }),
     pound: new DamagingMove({
         name: "Pound",
@@ -1069,7 +1075,7 @@ export const moveList = {
         type: "poison",
         power: 65,
         acc: 100,
-        effect: [30, "psn"],
+        effect: [40, "psn"],
     }),
     smog: new DamagingMove({
         name: "Smog",
@@ -1077,6 +1083,7 @@ export const moveList = {
         type: "poison",
         power: 20,
         acc: 70,
+        effect: [40, "psn"],
     }),
     solarbeam: new DamagingMove({
         name: "SolarBeam",
@@ -1165,8 +1172,9 @@ export const moveList = {
         name: "Thunder",
         pp: 10,
         type: "electric",
-        power: 110,
+        power: 120,
         acc: 70,
+        effect: [10, "par"],
     }),
     thunderpunch: new DamagingMove({
         name: "Thunder Punch",
@@ -1190,6 +1198,7 @@ export const moveList = {
         type: "electric",
         power: 95,
         acc: 100,
+        effect: [10, "par"],
     }),
     triattack: new DamagingMove({
         name: "Tri Attack",
