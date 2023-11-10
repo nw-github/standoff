@@ -151,7 +151,7 @@ export class DamagingMove extends Move {
         }
 
         const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
-        dmg = Math.trunc(dmg * (rand / 255));
+        dmg = Math.floor(dmg * (rand / 255));
         const hadSub = target.substitute !== 0;
         let { dealt, brokeSub, dead } = target.inflictDamage(
             dmg,
@@ -169,7 +169,8 @@ export class DamagingMove extends Move {
             `(${defs} ${def})`,
             `(Stab ${stab})`,
             `(Rand ${rand})`,
-            `(Crit? ${isCrit})`
+            `(Crit? ${isCrit})`,
+            ` = ${dmg}`
         );
         if (!brokeSub) {
             if (this.recoil) {

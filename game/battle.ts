@@ -559,7 +559,7 @@ export class ActivePokemon {
 
     tickCounter(battle: Battle, why: DamageReason) {
         const multiplier = this.base.status === "psn" && why === "psn" ? 1 : this.counter;
-        const dmg = multiplier * Math.max(this.base.stats.hp / 16, 1);
+        const dmg = Math.floor(multiplier * Math.max(this.base.stats.hp / 16, 1));
         const { dead } = this.inflictDamage(dmg, this, battle, false, why, true);
         const opponent = battle.opponentOf(this.owner).active;
         if (why === "seeded" && opponent.base.hp < opponent.base.stats.hp) {
