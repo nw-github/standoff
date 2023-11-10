@@ -365,13 +365,15 @@ export class ActivePokemon {
         }
         this.types = [...base.species.types];
         this.substitute = 0;
-        this.lastMove = undefined;
+        this.confusion = 0;
         this.counter = 1;
         this.seeded = false;
         this.invuln = false;
+        this.lastMove = undefined;
         this.thrashing = undefined;
         this.disabled = undefined;
         this.charging = undefined;
+        this.recharge = undefined;
     }
 
     getStat(stat: "atk" | "def" | "spc" | "spe", isCrit: boolean): number {
