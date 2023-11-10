@@ -31,7 +31,7 @@ export abstract class Move {
             }
         }
 
-        if (moveIndex) {
+        if (moveIndex !== undefined) {
             user.base.pp[moveIndex] = Math.max(user.base.pp[moveIndex] - 1, 0);
         }
 
