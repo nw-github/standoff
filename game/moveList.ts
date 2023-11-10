@@ -63,6 +63,53 @@ export const moveList = {
             return false;
         },
     }),
+    haze: new UniqueMove({
+        name: "Haze",
+        pp: 30,
+        type: "ice",
+        execute(battle, user, target) {
+            battle.pushEvent({
+                type: "info",
+                id: user.owner.id,
+                why: "haze"
+            });
+
+            for (const k in user.stages) {
+                // @ts-ignore
+                user.stages[k] = target.stages[k] = 0;
+            }
+
+            for (const k in user.flags) {
+                // @ts-ignore
+                user.flags[k] = target.flags[k] = false;
+            }
+
+            user.counter = target.counter = 0;
+            user.confusion = target.confusion = 0;
+            user.seeded = target.seeded = false;
+            user.disabled = target.disabled = undefined;
+            user.stats = {...user.base.stats};
+            target.stats = {...target.base.stats};
+
+            if (user.base.status === "tox") {
+                user.base.status = "psn";
+            }
+
+            if (target.base.status === "frz" || target.base.status === "slp") {
+                battle.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: target.base.status === "frz" ? "thaw" : "wake",
+                });
+
+                target.base.sleep_turns = 0;
+                target.hazed = true;
+            }
+
+            target.base.status = null;
+            return false;
+        },
+    }),
     leechseed: new UniqueMove({
         name: "Leech Seed",
         pp: 15,

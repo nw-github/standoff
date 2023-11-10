@@ -207,7 +207,9 @@ export class Battle {
 
         let skipEnd = false;
         for (const { move, user, target, choice } of choices) {
-            if (user.base.status === "frz") {
+            if (user.hazed) {
+                continue;
+            } else if (user.base.status === "frz") {
                 this.pushEvent({
                     type: "info",
                     id: user.owner.id,
@@ -303,6 +305,7 @@ export class Battle {
         for (const player of this.players) {
             player.choice = null;
             player.active.handledStatus = false;
+            player.active.hazed = false;
             player.updateChoices(this.victor !== null);
         }
 
@@ -331,6 +334,7 @@ export class ActivePokemon {
     seeded = false;
     invuln = false;
     handledStatus = false;
+    hazed = false;
     charging?: Move;
     recharge?: Move;
     lastMove?: Move;
@@ -374,6 +378,7 @@ export class ActivePokemon {
         this.seeded = false;
         this.invuln = false;
         this.handledStatus = false;
+        this.hazed = false;
         this.lastMove = undefined;
         this.thrashing = undefined;
         this.disabled = undefined;

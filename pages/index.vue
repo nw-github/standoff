@@ -28,7 +28,7 @@
 </template>
 
 <script setup lang="ts">
-import type { BattleEvent } from "../game/events";
+import type { BattleEvent, InfoReason } from "../game/events";
 import type { Player, Stages } from "../game/battle";
 import type { Status } from "../game/pokemon";
 import { moveList } from "../game/moveList";
@@ -286,33 +286,25 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 );
             }
         } else if (e.type === "info") {
-            if (e.why === "light_screen") {
-                res.push(`${pname(e.id)}'s protected against special attacks!`);
-            } else if (e.why === "reflect") {
-                res.push(`${pname(e.id)} is gained armor!`);
-            } else if (e.why === "mist") {
-                res.push(`${pname(e.id)}'s' shrouded in mist!`);
-            } else if (e.why === "focus") {
-                res.push(`${pname(e.id)} is getting pumped!`);
-            } else if (e.why === "conversion") {
-                res.push(`Converted type to match ${pname(e.id, false)}!`);
-            } else if (e.why === "payday") {
-                res.push(`Coins scattered everywhere!`);
-            } else if (e.why === "seeded") {
-                res.push(`${pname(e.id)} was seeded!`);
-            } else if (e.why === "confused") {
-                res.push(`${pname(e.id)} is confused!`);
-            } else if (e.why === "became_confused") {
-                res.push(`${pname(e.id)} became confused!`);
-            } else if (e.why === "recharge") {
-                res.push(`${pname(e.id)} must recharge!`);
-            } else if (e.why === "frozen") {
-                res.push(`${pname(e.id)} is frozen solid!`);
-            } else if (e.why === "sleep") {
-                res.push(`${pname(e.id)} is fast asleep!`);
-            } else if (e.why === "wake") {
-                res.push(`${pname(e.id)} woke up!`);
-            }
+            const messages: Record<InfoReason, string> = {
+                seeded: "{} was seeded!",
+                mist: "{}'s' shrouded in mist!",
+                light_screen: "{}'s protected against special attacks!",
+                reflect: "{} is gained armor!",
+                focus: "{} is getting pumped!",
+                conversion: "Converted type to match {l}!",
+                payday: "Coins scattered everywhere!",
+                became_confused: "{} became confused!",
+                confused: "{} is confused!",
+                recharge: "{} must recharge!",
+                frozen: "{} is frozen solid!",
+                sleep: "{} is fast asleep!",
+                wake: "{} woke up!",
+                haze: "All status changes were removed!",
+                thaw: "{} thawed out!",
+            };
+
+            res.push(messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)));
         } else if (e.type === "transform") {
             res.push(`${pname(e.src)} transformed into ${pname(e.target, false)}!`);
         } else if (e.type === "disable") {

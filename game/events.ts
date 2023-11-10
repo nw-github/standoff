@@ -105,7 +105,7 @@ type StagesEvent = {
     stages: [Stages, number][];
 };
 
-type InfoReason =
+export type InfoReason =
     | BooleanFlag
     | "conversion"
     | "payday"
@@ -115,7 +115,9 @@ type InfoReason =
     | "recharge"
     | "frozen"
     | "sleep"
-    | "wake";
+    | "wake"
+    | "haze"
+    | "thaw";
 
 type InfoEvent = {
     type: "info";
