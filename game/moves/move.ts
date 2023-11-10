@@ -12,7 +12,7 @@ export abstract class Move {
         readonly power?: number,
     ) {}
 
-    use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex: number): boolean {
+    use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number): boolean {
         if (user.disabled) {
             if (--user.disabled.turns === 0) {
                 user.disabled = undefined;
@@ -31,7 +31,7 @@ export abstract class Move {
             }
         }
 
-        if (moveIndex !== -1) {
+        if (moveIndex) {
             user.base.pp[moveIndex] = Math.max(user.base.pp[moveIndex] - 1, 0);
         }
 

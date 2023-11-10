@@ -8,13 +8,31 @@
             </li>
         </ul>
 
-        <div v-if="selectedMove === -1 && choices" v-for="(move, i) in choices.moves">
-            <button @click="() => selectMove(i)" :disabled="!move.valid">
-                {{ moveList[move.move].name }}
-                <span v-if="move.pp !== 0">({{ move.pp }}/{{ moveList[move.move].pp }})</span>
-            </button>
+        <div v-if="choices && !madeSelection">
+            <div>
+                <button
+                    v-for="(move, i) in choices.moves"
+                    @click="() => selectMove(i)"
+                    :disabled="!move.valid"
+                >
+                    {{ moveList[move.move].name }}
+                    <span v-if="move.pp !== 0">({{ move.pp }}/{{ moveList[move.move].pp }})</span>
+                </button>
+            </div>
+
+            <br />
+
+            <div>
+                <button
+                    v-for="(poke, i) in myTeam"
+                    @click="() => selectSwitch(i)"
+                    :disabled="!choices.canSwitch || i === active || !poke.hp"
+                >
+                    {{ poke.name }} ({{ poke.hp }}/{{ poke.stats.hp }})
+                </button>
+            </div>
         </div>
-        <button @click="cancelMove" v-else-if="selectedMove !== -1 && choices">Cancel</button>
+        <button @click="cancelMove" v-else-if="choices">Cancel</button>
 
         <div v-for="[turnNo, turn] in turns">
             <h2>Turn {{ turnNo }}</h2>
@@ -30,7 +48,7 @@
 <script setup lang="ts">
 import type { BattleEvent, InfoReason } from "../game/events";
 import type { Player, Stages } from "../game/battle";
-import type { Status } from "../game/pokemon";
+import type { Pokemon, Status } from "../game/pokemon";
 import { moveList } from "../game/moveList";
 import { hpPercent } from "~/game/utils";
 
@@ -50,9 +68,12 @@ const myId = ref("");
 const players = reactive<Record<string, ClientPlayer>>({});
 const turns = ref<[number, string[]][]>([]);
 const choices = ref<Player["choices"] | undefined>();
-const selectedMove = ref<number>(-1);
+const madeSelection = ref<boolean>(false);
+const myTeam = ref<Pokemon[]>([]);
+const active = ref<number>(0);
 
 let currentTurn: number;
+let nextActive: number = 0;
 let ws: WebSocket;
 onMounted(() => {
     if (process.server) {
@@ -82,15 +103,23 @@ onMounted(() => {
             for (const { id, name, isSpectator } of resp.players) {
                 players[id] = { name, isSpectator };
             }
+            if (resp.team) {
+                myTeam.value = resp.team;
+            }
         } else if (resp.type === "sv_join") {
             players[resp.id] = resp;
         } else if (resp.type === "sv_leave") {
             delete players[resp.id];
         } else if (resp.type === "sv_turn") {
+            active.value = nextActive;
             turns.value = [...turns.value, [resp.turn, stringifyEvents(JSON.parse(resp.events))]];
             choices.value = resp.choices;
-            selectedMove.value = -1;
+            madeSelection.value = false;
             currentTurn = resp.turn + 1;
+        } else if (resp.type === "sv_cancel") {
+            console.log(resp.error);
+        } else if (resp.type === "sv_choice") {
+            console.log(resp.error);
         }
     };
     ws.onerror = console.error;
@@ -102,7 +131,7 @@ onMounted(() => {
         }
         turns.value = [];
         choices.value = undefined;
-        selectedMove.value = -1;
+        madeSelection.value = false;
     };
 });
 
@@ -121,7 +150,22 @@ const selectMove = (index: number) => {
             },
         })
     );
-    selectedMove.value = index;
+    madeSelection.value = true;
+};
+
+const selectSwitch = (index: number) => {
+    ws.send(
+        wsStringify<ClientMessage>({
+            type: "cl_choice",
+            choice: {
+                type: "switch",
+                to: index,
+                turn: currentTurn,
+            },
+        })
+    );
+    madeSelection.value = true;
+    nextActive = index;
 };
 
 const cancelMove = () => {
@@ -131,7 +175,7 @@ const cancelMove = () => {
             turn: currentTurn,
         })
     );
-    selectedMove.value = -1;
+    madeSelection.value = false;
 };
 
 const pname = (id: string, title: boolean = true) => {
@@ -160,7 +204,9 @@ const stringifyEvents = (events: BattleEvent[]) => {
             const target = pname(e.target);
 
             let { hpBefore, hpAfter } = e;
+            players[e.target].active!.hp = hpAfter;
             if (e.target === myId.value) {
+                myTeam.value[active.value].hp = hpAfter;
                 hpBefore = hpPercent(hpBefore, e.maxHp);
                 hpAfter = hpPercent(hpAfter, e.maxHp);
             }

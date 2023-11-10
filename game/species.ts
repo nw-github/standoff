@@ -13,25 +13,36 @@ export type Species = {
     readonly types: [Type, ...Type[]];
     readonly moves: string[];
     readonly stats: Stats;
-    readonly weight: number;
     readonly name: string;
 };
 
 export type SpeciesId = keyof typeof speciesList;
 
 export const speciesList = {
-    "mewtwo": {
+    mewtwo: {
         dexId: 150,
         name: "Mewtwo",
         types: ["psychic"],
         moves: [],
-        weight: 1220,
         stats: {
             hp: 106,
             atk: 110,
             def: 90,
             spc: 154,
             spe: 130,
+        },
+    } as Species,
+    tauros: {
+        dexId: 128,
+        name: "Tauros",
+        types: ["normal"],
+        moves: [],
+        stats: {
+            hp: 75,
+            atk: 100,
+            def: 95,
+            spc: 70,
+            spe: 110,
         },
     } as Species,
 };

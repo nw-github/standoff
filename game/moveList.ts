@@ -150,7 +150,7 @@ export const moveList = {
                 move = randChoice(moves);
             } while (move === this || move === moveList.struggle);
 
-            return move.use(battle, user, target, -1);
+            return move.use(battle, user, target);
         },
     }),
     mirrormove: new UniqueMove({
@@ -167,7 +167,7 @@ export const moveList = {
                 return false;
             }
 
-            return target.lastMove.use(battle, user, target, -1);
+            return target.lastMove.use(battle, user, target);
         },
     }),
     psywave: new UniqueMove({

@@ -1,6 +1,6 @@
 import { type BattleEvent, type DamageReason, type PlayerId } from "./events";
 import { moveList, type MoveId } from "./moveList";
-import { type Move } from "./moves";
+import { Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
 import { TransformedPokemon } from "./transformed";
 import { clamp, randChance255, randRangeInclusive, stageMultipliers, type Type } from "./utils";
@@ -12,10 +12,24 @@ export type Choice =
 type MoveChoice = { move: MoveId; pp: number; valid: boolean; i: number };
 type ChosenMove = {
     move: Move;
-    choice: MoveChoice;
+    choice?: MoveChoice;
     user: ActivePokemon;
-    target: ActivePokemon;
 };
+
+class SwitchMove extends Move {
+    constructor(readonly poke: Pokemon) {
+        super("", 0, "normal", undefined, +2);
+    }
+
+    override use(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        return this.execute(battle, user, target);
+    }
+
+    override execute(battle: Battle, user: ActivePokemon, _: ActivePokemon): boolean {
+        user.switchTo(this.poke, battle);
+        return false;
+    }
+}
 
 export class SelectionError extends Error {
     constructor(
@@ -51,8 +65,8 @@ export class Player {
         this.id = id;
     }
 
-    updateChoices(gameOver: boolean) {
-        if (gameOver) {
+    updateChoices(battle: Battle) {
+        if (battle.victor || (!battle.opponentOf(this).active.base.hp && this.active.base.hp)) {
             this.choices = undefined;
             return;
         }
@@ -63,12 +77,18 @@ export class Player {
             valid: this.isValidMove(move, i),
             i,
         }));
-        if (moves.every(move => !move.valid)) {
+
+        if (!this.active.base.hp) {
+            for (const move of moves) {
+                move.valid = false;
+            }
+        } else if (moves.every(move => !move.valid)) {
             moves = [{ move: "struggle", pp: 0, valid: true, i: -1 }];
         }
 
+        const canSwitch = !this.active.charging && !this.active.thrashing && !this.active.recharge;
         this.choices = {
-            canSwitch: !this.active.charging && !this.active.thrashing && !this.active.recharge,
+            canSwitch: canSwitch || this.active.base.hp === 0,
             moves,
         };
     }
@@ -165,15 +185,31 @@ export class Battle {
                 choice: validChoice,
                 move: moveList[validChoice.move],
                 user: player.active,
-                target: this.opponentOf(player).active,
             };
         } else if (choice.type === "switch") {
-            throw new Error("TODO: switch moves");
+            if (!player.choices?.canSwitch) {
+                throw new SelectionError("invalid_choice");
+            }
+
+            const selected = player.team[choice.to];
+            const current = player.active.base;
+            if (!selected || selected === current || !selected.hp) {
+                throw new SelectionError("invalid_choice");
+            }
+
+            if (current instanceof TransformedPokemon && selected === current.base) {
+                throw new SelectionError("invalid_choice");
+            }
+
+            player.choice = {
+                move: new SwitchMove(selected),
+                user: player.active,
+            };
         } else {
             throw new SelectionError("invalid_choice");
         }
 
-        if (!this.players.every(player => player.choice !== null)) {
+        if (!this.players.every(player => !player.choices || player.choice)) {
             return null;
         }
 
@@ -190,6 +226,7 @@ export class Battle {
 
     private runTurn() {
         const choices = this.players
+            .filter(player => player.choice)
             .map(player => player.choice!)
             .sort((a, b) => {
                 if (a.move.priority !== b.move.priority) {
@@ -206,62 +243,59 @@ export class Battle {
             });
 
         let skipEnd = false;
-        for (const { move, user, target, choice } of choices) {
-            if (user.hazed) {
-                continue;
-            } else if (user.base.status === "frz") {
-                this.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "frozen",
-                });
-                continue;
-            } else if (user.base.status === "slp") {
-                --user.base.sleep_turns;
-                const done = user.base.sleep_turns === 0;
-                if (done) {
-                    user.base.status = null;
+        for (const { move, user, choice } of choices) {
+            if (!(move instanceof SwitchMove)) {
+                if (user.hazed) {
+                    continue;
+                } else if (user.base.status === "frz") {
+                    this.pushEvent({
+                        type: "info",
+                        id: user.owner.id,
+                        why: "frozen",
+                    });
+                    continue;
+                } else if (user.base.status === "slp") {
+                    --user.base.sleep_turns;
+                    const done = user.base.sleep_turns === 0;
+                    if (done) {
+                        user.base.status = null;
+                    }
+    
+                    this.pushEvent({
+                        type: "info",
+                        id: user.owner.id,
+                        why: done ? "wake" : "sleep",
+                    });
+                    continue;
+                } else if (user.flinch === this._turn) {
+                    this.pushEvent({
+                        type: "failed",
+                        src: user.owner.id,
+                        why: "flinch",
+                    });
+                    user.recharge = undefined;
+                    continue;
+                } else if (user.recharge) {
+                    this.pushEvent({
+                        type: "info",
+                        id: user.owner.id,
+                        why: "recharge",
+                    });
+                    user.recharge = undefined;
+                    continue;
+                } else if (user.confusion) {
+                    this.pushEvent({
+                        type: "info",
+                        id: user.owner.id,
+                        why: "confused",
+                    });
+                    // TODO: confusion damage
                 }
-
-                this.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: done ? "wake" : "sleep",
-                });
-                continue;
             }
 
-            if (user.flinch === this._turn) {
-                this.pushEvent({
-                    type: "failed",
-                    src: user.owner.id,
-                    why: "flinch",
-                });
-                user.recharge = undefined;
-                continue;
-            }
-
-            if (user.recharge) {
-                this.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "recharge",
-                });
-                user.recharge = undefined;
-                continue;
-            }
-
-            if (user.confusion) {
-                this.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "confused",
-                });
-                // TODO: confusion damage
-            }
-
-            // A pokemon has died, skip all end of turn events
-            if (move.use(this, user, target, choice.i)) {
+            const target = this.opponentOf(user.owner).active;
+            if (move.use(this, user, target, choice?.i)) {
+                // A pokemon has died, skip all end of turn events
                 if (!this.victor) {
                     if (target.owner.team.every(poke => poke.hp <= 0)) {
                         this.victor = user.owner;
@@ -306,7 +340,7 @@ export class Battle {
             player.choice = null;
             player.active.handledStatus = false;
             player.active.hazed = false;
-            player.updateChoices(this.victor !== null);
+            player.updateChoices(this);
         }
 
         return {
@@ -463,6 +497,7 @@ export class ActivePokemon {
         }
 
         this.base.status = status;
+        this.handledStatus = false;
         battle.pushEvent({
             type: "status",
             id: this.owner.id,
