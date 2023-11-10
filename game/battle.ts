@@ -3,7 +3,7 @@ import { moveList, type MoveId } from "./moveList";
 import { type Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
 import { TransformedPokemon } from "./transformed";
-import { randChance255, randRangeInclusive, type Type } from "./utils";
+import { clamp, randChance255, randRangeInclusive, type Type } from "./utils";
 
 export type Choice =
     | { type: "switch"; turn: number; to: number }
@@ -57,15 +57,14 @@ export class Player {
             return;
         }
 
-        const moves = this.active.base.moves.map((move, i) => ({
+        let moves = this.active.base.moves.map((move, i) => ({
             move,
             pp: this.active.base.pp[i],
             valid: this.isValidMove(move, i),
             i,
         }));
         if (moves.every(move => !move.valid)) {
-            moves.length = 0;
-            moves.push({ move: "struggle", pp: 0, valid: true, i: -1 });
+            moves = [{ move: "struggle", pp: 0, valid: true, i: -1 }];
         }
 
         this.choices = { canSwitch: !this.active.charging, moves };
@@ -280,7 +279,7 @@ export type BooleanFlag = "light_screen" | "reflect" | "mist" | "focus";
 export class ActivePokemon {
     readonly owner: Player;
     readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };
-    readonly types: Type[] = [];
+    types: Type[] = [];
     base: Pokemon;
     flags: Partial<Record<BooleanFlag, boolean>> = {};
     substitute = 0;
@@ -324,8 +323,7 @@ export class ActivePokemon {
             // @ts-ignore
             this.flags[k] = false;
         }
-        this.types.length = 0;
-        this.types.push(...base.species.types);
+        this.types = [...base.species.types];
         this.substitute = 0;
         this.lastMove = undefined;
         this.counter = 1;
@@ -410,24 +408,21 @@ export class ActivePokemon {
     }
 
     inflictStages(stages: [Stages, number][], battle: Battle) {
-        // TODO: update stats/stages
-        const changed: [Stages, number][] = [];
+        // TODO: update stats
+        stages = stages.filter(([stage]) => Math.abs(this.stages[stage]) !== 6);
         for (const [stage, count] of stages) {
-            if (Math.abs(this.stages[stage]) !== 6) {
-                this.stages[stage] = Math.max(Math.min(this.stages[stage] + count, 6), -6);
-                changed.push([stage, count]);
-            }
+            this.stages[stage] = clamp(this.stages[stage] + count, -6, 6);
         }
 
-        if (changed.length) {
+        if (stages.length) {
             battle.pushEvent({
                 type: "stages",
                 id: this.owner.id,
-                stages: changed,
+                stages,
             });
         }
 
-        return changed.length !== 0;
+        return stages.length !== 0;
     }
 
     inflictConfusion(battle: Battle, thrashing?: true) {

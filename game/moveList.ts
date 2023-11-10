@@ -42,9 +42,7 @@ export const moveList = {
         pp: 30,
         type: "normal",
         execute(battle, user, target) {
-            user.types.length = 0;
-            user.types.push(...target.types);
-
+            user.types = [...target.types];
             battle.pushEvent({
                 type: "info",
                 id: target.owner.id,
@@ -571,9 +569,7 @@ export const moveList = {
                 user.stages[k] = target.stages[k];
             }
 
-            user.types.length = 0;
-            user.types.push(...target.types);
-
+            user.types = [...target.types];
             battle.pushEvent({
                 type: "transform",
                 src: user.owner.id,
