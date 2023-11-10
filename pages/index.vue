@@ -181,6 +181,8 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 res.push(`${src} is hurt by its burn!`);
             } else if (e.why === "attacked" && e.isCrit) {
                 res.push(`A critical hit!`);
+            } else if (e.why === "rest") {
+                res.push(`${src} started sleeping!`);
             }
 
             if (e.why !== "explosion") {

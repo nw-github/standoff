@@ -298,6 +298,12 @@ export const moveList = {
         type: "normal",
         why: "recover",
     }),
+    rest: new RecoveryMove({
+        name: "Rest",
+        pp: 10,
+        type: "psychic",
+        why: "rest",
+    }),
     softboiled: new RecoveryMove({
         name: "Softboiled",
         pp: 10,

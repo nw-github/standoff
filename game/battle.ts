@@ -458,6 +458,10 @@ export class ActivePokemon {
             this.base.sleep_turns = randRangeInclusive(1, 7);
         }
 
+        if (status === "tox") {
+            this.counter = 1;
+        }
+
         this.base.status = status;
         battle.pushEvent({
             type: "status",
