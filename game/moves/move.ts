@@ -11,7 +11,7 @@ export abstract class Move {
         readonly priority?: number
     ) {}
 
-    use(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+    use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex: number): boolean {
         if (user.disabled) {
             if (--user.disabled.turns === 0) {
                 user.disabled = undefined;
@@ -28,6 +28,10 @@ export abstract class Move {
                 });
                 return false;
             }
+        }
+
+        if (moveIndex !== -1) {
+            user.base.pp[moveIndex] = Math.max(user.base.pp[moveIndex] - 1, 0);
         }
 
         battle.pushEvent({

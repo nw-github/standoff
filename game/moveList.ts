@@ -265,7 +265,7 @@ export const moveList = {
                 move = randChoice(moves);
             } while (move === this || move === moveList.struggle);
 
-            return move.use(battle, user, target);
+            return move.use(battle, user, target, -1);
         },
     }),
     minimize: new StageMove({
@@ -288,7 +288,7 @@ export const moveList = {
                 return false;
             }
 
-            return target.lastMove.use(battle, user, target);
+            return target.lastMove.use(battle, user, target, -1);
         },
     }),
     mist: new BooleanFlagMove({

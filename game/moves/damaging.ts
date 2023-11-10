@@ -61,7 +61,7 @@ export class DamagingMove extends Move {
         this.recoil = recoil;
     }
 
-    override use(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
+    override use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex: number) {
         if ((this.flag === "charge" || this.flag === "charge_invuln") && user.charging !== this) {
             battle.pushEvent({
                 type: "charge",
@@ -79,7 +79,7 @@ export class DamagingMove extends Move {
             if (this.flag === "charge_invuln") {
                 user.invuln = false;
             }
-            return super.use(battle, user, target);
+            return super.use(battle, user, target, moveIndex);
         }
     }
 

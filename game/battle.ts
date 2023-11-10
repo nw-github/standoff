@@ -206,12 +206,8 @@ export class Battle {
                 continue;
             }
 
-            if (choice.i !== -1) {
-                user.base.pp[choice.i] = Math.max(user.base.pp[choice.i], 0);
-            }
-
             // A pokemon has died, skip all end of turn events
-            if (move.use(this, user, target)) {
+            if (move.use(this, user, target, choice.i)) {
                 if (!this.victor) {
                     if (target.owner.team.every(poke => poke.hp <= 0)) {
                         this.victor = user.owner;
