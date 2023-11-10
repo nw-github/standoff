@@ -16,6 +16,7 @@ export class UniqueMove extends Move {
         type,
         acc,
         priority,
+        power,
         execute,
     }: {
         name: string;
@@ -23,9 +24,10 @@ export class UniqueMove extends Move {
         type: Type;
         acc?: number;
         priority?: number;
+        power?: number;
         execute: UniqueMove["executeFn"];
     }) {
-        super(name, pp, type, acc, priority);
+        super(name, pp, type, acc, priority, power);
         this.executeFn = execute;
     }
 

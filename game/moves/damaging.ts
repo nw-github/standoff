@@ -27,9 +27,7 @@ type Flag =
     | "multi_turn";
 
 export class DamagingMove extends Move {
-    readonly power: number;
     readonly flag?: Flag;
-    readonly priority?: number;
     readonly effect?: [number, Effect];
     readonly recoil?: number;
 
@@ -54,9 +52,7 @@ export class DamagingMove extends Move {
         recoil?: number;
         flag?: Flag;
     }) {
-        super(name, pp, type, acc);
-        this.power = power;
-        this.priority = priority;
+        super(name, pp, type, acc, priority, power);
         this.flag = flag;
         this.effect = effect;
         this.recoil = recoil;
@@ -75,13 +71,13 @@ export class DamagingMove extends Move {
             }
 
             return false;
-        } else {
-            user.charging = undefined;
-            if (this.flag === "charge_invuln") {
-                user.invuln = false;
-            }
-            return super.use(battle, user, target, moveIndex);
         }
+
+        user.charging = undefined;
+        if (this.flag === "charge_invuln") {
+            user.invuln = false;
+        }
+        return super.use(battle, user, target, moveIndex);
     }
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
@@ -142,7 +138,7 @@ export class DamagingMove extends Move {
         const lvl = user.base.level;
         const crit = isCrit ? 2 : 1;
         const stab = isStab ? 1.5 : 1;
-        let dmg = ((((2 * lvl * crit) / 5 + 2) * this.power * (atk / def)) / 50 + 2) * stab * eff;
+        let dmg = ((((2 * lvl * crit) / 5 + 2) * this.power! * (atk / def)) / 50 + 2) * stab * eff;
         if (dmg === 0) {
             battle.pushEvent({
                 type: "failed",
@@ -315,7 +311,7 @@ export class FixedDamageMove extends Move {
         dmg: number | "level";
         acc?: number;
     }) {
-        super(name, pp, type, acc);
+        super(name, pp, type, acc, 0, 1);
         this.dmg = dmg;
     }
 
@@ -332,7 +328,7 @@ export class FixedDamageMove extends Move {
 
 export class OHKOMove extends Move {
     constructor({ name, pp, type, acc }: { name: string; pp: number; type: Type; acc?: number }) {
-        super(name, pp, type, acc);
+        super(name, pp, type, acc, 0, 1);
     }
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {

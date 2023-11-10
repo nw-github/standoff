@@ -128,6 +128,7 @@ export const moveList = {
         pp: 15,
         type: "psychic",
         acc: 80,
+        power: 1,
         execute(battle, user, target) {
             if (!checkAccuracy(this.acc!, battle, user, target)) {
                 return false;
@@ -178,6 +179,7 @@ export const moveList = {
         pp: 10,
         type: "normal",
         acc: 90,
+        power: 1,
         execute(battle, user, target) {
             if (!checkAccuracy(this.acc!, battle, user, target)) {
                 return false;

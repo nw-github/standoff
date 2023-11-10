@@ -8,7 +8,8 @@ export abstract class Move {
         readonly pp: number,
         readonly type: Type,
         readonly acc?: number,
-        readonly priority?: number
+        readonly priority?: number,
+        readonly power?: number,
     ) {}
 
     use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex: number): boolean {
