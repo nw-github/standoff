@@ -16,7 +16,7 @@
                     :disabled="!move.valid"
                 >
                     {{ moveList[move.move].name }}
-                    <span v-if="move.pp !== 0">({{ move.pp }}/{{ moveList[move.move].pp }})</span>
+                    <span v-if="move.pp !== -1">({{ move.pp }}/{{ moveList[move.move].pp }})</span>
                 </button>
             </div>
 

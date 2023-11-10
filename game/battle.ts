@@ -1,5 +1,5 @@
 import { type BattleEvent, type DamageReason, type PlayerId } from "./events";
-import { moveList, type MoveId } from "./moveList";
+import { moveList, type MoveId, moveListToId } from "./moveList";
 import { Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
 import { TransformedPokemon } from "./transformed";
@@ -9,7 +9,7 @@ export type Choice =
     | { type: "switch"; turn: number; to: number }
     | { type: "move"; turn: number; index: number };
 
-type MoveChoice = { move: MoveId; pp: number; valid: boolean; i: number };
+type MoveChoice = { move: MoveId; pp: number; valid: boolean; indexInMoves?: number };
 type ChosenMove = {
     move: Move;
     choice?: MoveChoice;
@@ -71,11 +71,11 @@ export class Player {
             return;
         }
 
-        let moves = this.active.base.moves.map((move, i) => ({
+        let moves: MoveChoice[] = this.active.base.moves.map((move, i) => ({
             move,
             pp: this.active.base.pp[i],
             valid: this.isValidMove(move, i),
-            i,
+            indexInMoves: i,
         }));
 
         if (!this.active.base.hp) {
@@ -83,7 +83,22 @@ export class Player {
                 move.valid = false;
             }
         } else if (moves.every(move => !move.valid)) {
-            moves = [{ move: "struggle", pp: 0, valid: true, i: -1 }];
+            const metronome = [
+                this.active.charging,
+                this.active.thrashing?.move,
+                this.active.recharge,
+            ];
+            moves.length = 0;
+            for (const move of metronome) {
+                if (move) {
+                    moves = [{ move: moveListToId.get(move)!, pp: -1, valid: true }];
+                    break;
+                }
+            }
+
+            if (!moves.length) {
+                moves = [{ move: "struggle", pp: 0, valid: true }];
+            }
         }
 
         const canSwitch = !this.active.charging && !this.active.thrashing && !this.active.recharge;
@@ -260,7 +275,7 @@ export class Battle {
                     if (done) {
                         user.base.status = null;
                     }
-    
+
                     this.pushEvent({
                         type: "info",
                         id: user.owner.id,
@@ -294,7 +309,7 @@ export class Battle {
             }
 
             const target = this.opponentOf(user.owner).active;
-            if (move.use(this, user, target, choice?.i)) {
+            if (move.use(this, user, target, choice?.indexInMoves)) {
                 // A pokemon has died, skip all end of turn events
                 if (!this.victor) {
                     if (target.owner.team.every(poke => poke.hp <= 0)) {
@@ -511,13 +526,15 @@ export class ActivePokemon {
     inflictStages(mods: [Stages, number][], battle: Battle) {
         // TODO: update stats
         mods = mods.filter(([stat]) => Math.abs(this.stages[stat]) !== 6);
-        
+
         const opponent = battle.opponentOf(this.owner).active;
         for (const [stat, count] of mods) {
             this.stages[stat] = clamp(this.stages[stat] + count, -6, 6);
 
             if (stat === "atk" || stat === "def" || stat == "spc" || stat === "spe") {
-                this.stats[stat] = Math.floor(this.base.stats[stat] * (stageMultipliers[this.stages[stat]] / 100));
+                this.stats[stat] = Math.floor(
+                    this.base.stats[stat] * (stageMultipliers[this.stages[stat]] / 100)
+                );
                 // https://www.smogon.com/rb/articles/rby_mechanics_guide#stat-mechanics
                 if (count < 0) {
                     this.stats[stat] %= 1024;
