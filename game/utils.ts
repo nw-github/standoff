@@ -31,8 +31,25 @@ export const floatTo255 = (num: number) => {
     return Math.floor((num / 100) * 255);
 };
 
+export const clamp = (num: number, min: number, max: number) => {
+    return Math.max(Math.min(num, max), min);
+};
+
 export const hpPercent = (current: number, max: number) => {
     return Math.round((current / max) * 100);
+};
+
+export const scaleAccuracy255 = (acc: number, user: ActivePokemon, target: ActivePokemon) => {
+    // https://bulbapedia.bulbagarden.net/wiki/Accuracy#Generation_I_and_II
+    return clamp(
+        Math.floor(
+            acc *
+                (stageMultipliers[user.stages["acc"]] / 100) *
+                (stageMultipliers[-target.stages["eva"]] / 100)
+        ),
+        1,
+        255
+    );
 };
 
 export const checkAccuracy = (
@@ -41,12 +58,14 @@ export const checkAccuracy = (
     user: ActivePokemon,
     target: ActivePokemon
 ) => {
-    // https://bulbapedia.bulbagarden.net/wiki/Accuracy#Generation_I_and_II
-    const chance =
-        floatTo255(acc) *
-        (stageMultipliers[user.stages["acc"]] / 100) *
-        (stageMultipliers[-target.stages["eva"]] / 100);
-    console.log(`Accuracy: ${acc} | Chance/256: ${chance}`);
+    const chance = scaleAccuracy255(user.thrashing?.acc ?? floatTo255(acc), user, target);
+    // https://www.smogon.com/dex/rb/moves/petal-dance/
+    // https://www.youtube.com/watch?v=NC5gbJeExbs
+    if (user.thrashing) {
+        user.thrashing.acc = chance;
+    }
+
+    console.log(`Accuracy: ${acc} (${chance}/256)`);
     if (target.invuln || !randChance255(chance)) {
         battle.pushEvent({
             type: "failed",

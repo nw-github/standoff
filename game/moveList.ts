@@ -312,6 +312,14 @@ export const moveList = {
         acc: 100,
         flag: "payday",
     }),
+    petaldance: new DamagingMove({
+        name: "Petal Dance",
+        pp: 20,
+        type: "grass",
+        power: 70,
+        acc: 100,
+        flag: "multi_turn",
+    }),
     pinmissile: new DamagingMove({
         name: "Pin Missile",
         pp: 20,
@@ -531,6 +539,14 @@ export const moveList = {
         pp: 20,
         type: "psychic",
         why: "generic",
+    }),
+    thrash: new DamagingMove({
+        name: "Thrash",
+        pp: 20,
+        type: "normal",
+        power: 90,
+        acc: 100,
+        flag: "multi_turn",
     }),
     toxic: new StatusMove({
         name: "Toxic",

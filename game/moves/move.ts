@@ -38,7 +38,7 @@ export abstract class Move {
             type: "move",
             src: user.owner.id,
             move: moveListToId.get(this)!,
-            disabled: false
+            thrashing: user.thrashing ? true : undefined,
         });
         user.lastMove = this;
         return this.execute(battle, user, target);

@@ -236,7 +236,9 @@ const stringifyEvents = (events: BattleEvent[]) => {
                     break;
             }
         } else if (e.type === "move") {
-            if (e.disabled) {
+            if (e.thrashing) {
+                res.push(`${pname(e.src)}'s thrashing about!`);
+            } else if (e.disabled) {
                 res.push(`${pname(e.src)}'s ${moveList[e.move].name} is disabled!`);
             } else {
                 res.push(`${pname(e.src)} used ${moveList[e.move].name}!`);

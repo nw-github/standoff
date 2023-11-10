@@ -84,7 +84,8 @@ type UseMoveEvent = {
     type: "move";
     src: PlayerId;
     move: MoveId;
-    disabled: boolean;
+    disabled?: true;
+    thrashing?: true;
 };
 
 type VictoryEvent = {

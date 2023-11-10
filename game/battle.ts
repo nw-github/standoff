@@ -81,6 +81,10 @@ export class Player {
             return false;
         }
 
+        if (this.active.thrashing && this.active.thrashing.move !== moveList[move]) {
+            return false;
+        }
+
         if (this.active.base.pp[i] === 0) {
             return false;
         }
@@ -288,6 +292,7 @@ export class ActivePokemon {
     charging?: Move;
     recharge?: Move;
     lastMove?: Move;
+    thrashing?: { move: Move; turns: number, acc?: number };
     disabled?: { move: Move; turns: number };
 
     constructor(base: Pokemon, owner: Player) {
@@ -326,6 +331,7 @@ export class ActivePokemon {
         this.counter = 1;
         this.seeded = false;
         this.invuln = false;
+        this.thrashing = undefined;
         this.disabled = undefined;
         this.charging = undefined;
     }
@@ -424,17 +430,19 @@ export class ActivePokemon {
         return changed.length !== 0;
     }
 
-    inflictConfusion(battle: Battle) {
-        if (this.confusion) {
+    inflictConfusion(battle: Battle, thrashing?: true) {
+        if (!thrashing && this.confusion) {
             return false;
         }
 
         this.confusion = randRangeInclusive(1, 4);
-        battle.pushEvent({
-            type: "info",
-            id: this.owner.id,
-            why: "became_confused"
-        });
+        if (!thrashing) {
+            battle.pushEvent({
+                type: "info",
+                id: this.owner.id,
+                why: "became_confused"
+            });
+        }
         return true;
     }
 

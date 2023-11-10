@@ -23,7 +23,8 @@ type Flag =
     | "dream_eater"
     | "payday"
     | "charge"
-    | "charge_invuln";
+    | "charge_invuln"
+    | "multi_turn";
 
 export class DamagingMove extends Move {
     readonly power: number;
@@ -84,6 +85,18 @@ export class DamagingMove extends Move {
     }
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        if (this.flag === "multi_turn" && !user.thrashing) {
+            user.thrashing = {
+                move: this,
+                turns: randRangeInclusive(2, 3),
+            };
+        } else if (user.thrashing) {
+            --user.thrashing.turns;
+            if (user.thrashing.turns <= 0) {
+                user.thrashing = undefined;
+                user.inflictConfusion(battle, true);
+            }
+        }
         // https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_I
         const eff = getEffectiveness(this.type, target.base.species.types);
         if (eff === 0) {
