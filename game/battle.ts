@@ -551,11 +551,11 @@ export class ActivePokemon {
 
     applyStatusDebuff() {
         if (this.base.status === "brn") {
-            this.base.stats.atk = Math.max(this.base.stats.atk / 2, 1);
+            this.stats.atk = Math.max(this.base.stats.atk / 2, 1);
         }
 
         if (this.base.status === "par") {
-            this.base.stats.spe = Math.max(this.base.stats.spe / 4, 1);
+            this.stats.spe = Math.max(this.base.stats.spe / 4, 1);
         }
     }
 }

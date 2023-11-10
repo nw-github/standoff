@@ -149,7 +149,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
     for (const e of events) {
         if (e.type === "switch") {
             const player = players[e.src];
-            if (player.active) {
+            if (player.active && player.active.hp) {
                 res.push(`${player.name} withdrew ${player.active.name}!`);
             }
 
