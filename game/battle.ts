@@ -206,6 +206,15 @@ export class Battle {
                 continue;
             }
 
+            if (user.confusion) {
+                this.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: "confused"
+                });
+                // TODO: confusion damage
+            }
+
             // A pokemon has died, skip all end of turn events
             if (move.use(this, user, target, choice.i)) {
                 if (!this.victor) {
@@ -422,8 +431,9 @@ export class ActivePokemon {
 
         this.confusion = randRangeInclusive(1, 4);
         battle.pushEvent({
-            type: "confusion",
+            type: "info",
             id: this.owner.id,
+            why: "became_confused"
         });
         return true;
     }

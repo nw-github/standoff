@@ -11,7 +11,6 @@ export type BattleEvent =
     | HitSubstituteEvent
     | StatusEvent
     | StagesEvent
-    | ConfusionEvent
     | InfoEvent
     | TransformEvent
     | DisableEvent
@@ -105,15 +104,10 @@ type StagesEvent = {
     stages: [Stages, number][];
 };
 
-type ConfusionEvent = {
-    type: "confusion";
-    id: PlayerId;
-};
-
 type InfoEvent = {
     type: "info";
     id: PlayerId;
-    why: BooleanFlag | "conversion" | "payday" | "seeded";
+    why: BooleanFlag | "conversion" | "payday" | "seeded" | "became_confused" | "confused";
 };
 
 type TransformEvent = {

@@ -283,8 +283,6 @@ const stringifyEvents = (events: BattleEvent[]) => {
                     }!`
                 );
             }
-        } else if (e.type === "confusion") {
-            res.push(`${pname(e.id)} became confused!`);
         } else if (e.type === "info") {
             if (e.why === "light_screen") {
                 res.push(`${pname(e.id)}'s protected against special attacks!`);
@@ -300,6 +298,10 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 res.push(`Coins scattered everywhere!`);
             } else if (e.why === "seeded") {
                 res.push(`${pname(e.id)} was seeded!`);
+            } else if (e.why === "confused") {
+                res.push(`${pname(e.id)} is confused!`);
+            } else if (e.why === "became_confused") {
+                res.push(`${pname(e.id)} became confused!`);
             }
         } else if (e.type === "transform") {
             res.push(`${pname(e.src)} transformed into ${pname(e.target, false)}!`);
