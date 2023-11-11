@@ -1,4 +1,3 @@
-const prod = process.env.NODE_ENV !== 'development';
 
 export default defineEventHandler(event => {
     // FIXME: the Nuxt hook won't work in the production build, so this ensures the websocket will 

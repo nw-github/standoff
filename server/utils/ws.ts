@@ -108,6 +108,8 @@ const initSocket = (socket: WebSocket, players: Players, lobby: Lobby) => {
     });
 };
 
+export const prod = process.env.NODE_ENV !== 'development';
+
 export function wsInit(server: any, reset: boolean) {
     if (global.wss) {
         if (reset) {
@@ -117,16 +119,19 @@ export function wsInit(server: any, reset: boolean) {
         }
     }
 
-    console.log("initializing wss...");
+    if (prod) {
+        global.wss = new WebSocketServer({ path: "/ws", server });
+    } else {
+        console.log("initializing wss...");
+        global.wss = new WebSocketServer({ path: "/ws", port: 1337 });
+    }
 
-    const wss = (global.wss = new WebSocketServer({ server, path: "/ws" }));
     const players: Players = {};
     const lobby = initLobby(players);
 
-    wss.on("connection", socket => initSocket(socket as WebSocket, players, lobby));
-    wss.on("error", console.error);
-    wss.on("listening", () => console.log("wss has started listening..."));
-    wss.on("close", () => console.log("wss server has closed"));
-
+    global.wss.on("connection", socket => initSocket(socket as WebSocket, players, lobby));
+    global.wss.on("error", console.error);
+    global.wss.on("listening", () => console.log("wss has started listening..."));
+    global.wss.on("close", () => console.log("wss server has closed"));
     console.log("initialized wss!");
 }

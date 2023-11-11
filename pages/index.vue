@@ -81,7 +81,8 @@ onMounted(() => {
     }
 
     const loc = window.location;
-    ws = new WebSocket(`${loc.protocol.replace("http", "ws")}//${loc.host}/ws`);
+    const port = import.meta.env.DEV ? 1337 : loc.port;
+    ws = new WebSocket(`${loc.protocol.replace("http", "ws")}//${loc.hostname}:${port}/ws`);
     ws.onopen = () => {
         status.value = "Opened, sending join request...!";
 
