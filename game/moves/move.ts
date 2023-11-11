@@ -32,7 +32,10 @@ export abstract class Move {
         }
 
         if (moveIndex !== undefined) {
-            user.base.pp[moveIndex] = Math.max(user.base.pp[moveIndex] - 1, 0);
+            user.base.pp[moveIndex]--;
+            if (user.base.pp[moveIndex] < 0) {
+                user.base.pp[moveIndex] = 63;
+            }
         }
 
         battle.pushEvent({

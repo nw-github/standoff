@@ -238,6 +238,17 @@ export class DamagingMove extends Move {
 
         if (!hadSub && this.effect) {
             const [chance, effect] = this.effect;
+            if (effect === "brn" && target.base.status === "frz") {
+                target.base.status = null;
+                battle.pushEvent({
+                    type: "info",
+                    id: target.owner.id,
+                    why: "thaw"
+                });
+                // TODO: can you thaw and then burn?
+                return dead;
+            }
+
             if (!randChance255(floatTo255(chance))) {
                 return dead;
             }

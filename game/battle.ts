@@ -116,21 +116,27 @@ export class Player {
 
         if (this.active.recharge && this.active.recharge !== moveList[move]) {
             return false;
-        }
-
-        if (this.active.charging && this.active.charging !== moveList[move]) {
+        } else if (this.active.charging && this.active.charging !== moveList[move]) {
             return false;
-        }
-
-        if (this.active.thrashing && this.active.thrashing.move !== moveList[move]) {
+        } else if (this.active.thrashing && this.active.thrashing.move !== moveList[move]) {
             return false;
-        }
+        } else if (this.active.base.status === "frz") {
+            // https://bulbapedia.bulbagarden.net/wiki/List_of_battle_glitches_(Generation_I)#Defrost_move_forcing
+            // XXX: Gen 1 doesn't let you pick your move when frozen, so if you are defrosted 
+            // before your turn, the game can desync. The logic we implement follows with what the 
+            // opponent player's game would do :shrug: 
 
-        if (this.active.base.pp[i] === 0) {
+            // Gen 1 also doesn't let you pick your move while asleep, but you can't wake up and act 
+            // on the same turn, nor can you act on the turn haze removes your non-volatile status,
+            // so it doesn't matter.
+            if (this.active.lastMove && this.active.lastMove !== moveList[move]) {
+                return false;
+            }
+
+            return this.active.lastMove ? true : i === 0;
+        } else if (moveList[move] === this.active.disabled?.move) {
             return false;
-        }
-
-        if (moveList[move] === this.active.disabled?.move) {
+        } else if (this.active.base.pp[i] === 0) {
             return false;
         }
 
