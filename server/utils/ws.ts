@@ -4,6 +4,9 @@ import { v4 as uuid } from "uuid";
 import { Lobby } from "../../game/lobby";
 import { ClientMessage, ServerMessage, wsStringify } from "../../utils/wsMessage";
 import { Pokemon } from "../../game/pokemon";
+import { MoveId, moveList } from "../../game/moveList";
+import { randChoice, randRangeInclusive } from "../../game/utils";
+import { AlwaysFailMove } from "../../game/moves";
 
 declare global {
     var wss: WebSocketServer;
@@ -40,6 +43,23 @@ const initLobby = (players: Players) => {
     return lobby;
 };
 
+const keys = Object.keys(moveList) as MoveId[];
+
+const randomMoves = (moves: MoveId[] = [], count: number = 4) => {
+    while (moves.length < count) {
+        let move;
+        do {
+            move = randChoice(keys);
+        } while (
+            moves.includes(move) ||
+            move === "struggle" ||
+            moveList[move] instanceof AlwaysFailMove
+        );
+        moves.push(move);
+    }
+    return moves;
+};
+
 const initSocket = (socket: WebSocket, players: Players, lobby: Lobby) => {
     socket.uuid = uuid();
     socket.on("message", data => {
@@ -48,16 +68,20 @@ const initSocket = (socket: WebSocket, players: Players, lobby: Lobby) => {
 
         const isRegistered = socket.uuid in players;
         if (!isRegistered && resp.type === "cl_join") {
-            const team = lobby.join(socket.uuid, resp.name, [
-                new Pokemon(
-                    "mewtwo",
-                    {},
-                    {},
-                    100,
-                    ["fissure", "disable"],
-                    "Mewtwo_" + socket.uuid.slice(0, 2)
-                ),
-            ]);
+            const pokemon = [
+                new Pokemon("alakazam", {}, {}, 100, randomMoves([])),
+                new Pokemon("tauros", {}, {}, 100, randomMoves([])),
+                new Pokemon("snorlax", {}, {}, 100, randomMoves([])),
+                new Pokemon("zapdos", {}, {}, 100, randomMoves([])),
+                new Pokemon("starmie", {}, {}, 100, randomMoves([])),
+                new Pokemon("exeggutor", {}, {}, 100, randomMoves([])),
+            ];
+            const num = randRangeInclusive(1, pokemon.length - 1);
+            const tmp = pokemon[0];
+            pokemon[0] = pokemon[num];
+            pokemon[num] = tmp;
+
+            const team = lobby.join(socket.uuid, resp.name, pokemon);
             players[socket.uuid] = {
                 socket,
                 name: resp.name,
@@ -108,7 +132,7 @@ const initSocket = (socket: WebSocket, players: Players, lobby: Lobby) => {
     });
 };
 
-export const prod = process.env.NODE_ENV !== 'development';
+export const prod = process.env.NODE_ENV !== "development";
 
 export function wsInit(server: any, reset: boolean) {
     if (global.wss) {

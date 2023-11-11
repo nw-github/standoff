@@ -8,6 +8,19 @@
             </li>
         </ul>
 
+        <div class="textbox">
+            <div v-for="[turnNo, turn] in turns">
+                <h2>Turn {{ turnNo }}</h2>
+                <ul>
+                    <li v-for="event in turn">
+                        {{ event }}
+                    </li>
+                </ul>
+            </div>
+
+            <div ref="textboxScrollDiv"></div>
+        </div>
+
         <div v-if="choices && !madeSelection">
             <div>
                 <button
@@ -33,24 +46,23 @@
             </div>
         </div>
         <button @click="cancelMove" v-else-if="choices">Cancel</button>
-
-        <div v-for="[turnNo, turn] in turns">
-            <h2>Turn {{ turnNo }}</h2>
-            <ul>
-                <li v-for="event in turn">
-                    {{ event }}
-                </li>
-            </ul>
-        </div>
     </div>
 </template>
+
+<style scoped>
+.textbox {
+    height: 60vh;
+    width: 70vw;
+    overflow-y: scroll;
+}
+</style>
 
 <script setup lang="ts">
 import type { BattleEvent, InfoReason } from "../game/events";
 import type { Player, Stages } from "../game/battle";
 import type { Pokemon, Status } from "../game/pokemon";
 import { moveList } from "../game/moveList";
-import { hpPercent } from "~/game/utils";
+import { hpPercent } from "../game/utils";
 
 type ClientPlayer = {
     name: string;
@@ -71,6 +83,8 @@ const choices = ref<Player["choices"] | undefined>();
 const madeSelection = ref<boolean>(false);
 const myTeam = ref<Pokemon[]>([]);
 const active = ref<number>(0);
+
+const textboxScrollDiv = ref<HTMLDivElement | null>(null);
 
 let currentTurn: number;
 let nextActive: number = 0;
@@ -93,7 +107,7 @@ onMounted(() => {
             })
         );
     };
-    ws.onmessage = ({ data }) => {
+    ws.onmessage = async ({ data }) => {
         const resp = JSON.parse(data) as ServerMessage;
         if (resp.type === "sv_accepted") {
             status.value = `Accepted!`;
@@ -117,6 +131,9 @@ onMounted(() => {
             choices.value = resp.choices;
             madeSelection.value = false;
             currentTurn = resp.turn + 1;
+
+            await nextTick();
+            textboxScrollDiv.value?.scrollIntoView();
         } else if (resp.type === "sv_cancel") {
             console.log(resp.error);
         } else if (resp.type === "sv_choice") {
@@ -351,6 +368,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 wake: "{} woke up!",
                 haze: "All status changes were removed!",
                 thaw: "{} thawed out!",
+                paralyze: "{}'s fully paralyzed!",
             };
 
             res.push(messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)));
