@@ -102,6 +102,10 @@ export class DamagingMove extends Move {
                 why: "immune",
             });
             this.crashDamage(battle, user, target);
+            if (this.flag === "explosion") {
+                return user.inflictDamage(user.base.hp, user, battle, false, "explosion", true)
+                    .dead;
+            }
             return false;
         }
 
@@ -243,7 +247,7 @@ export class DamagingMove extends Move {
                 battle.pushEvent({
                     type: "info",
                     id: target.owner.id,
-                    why: "thaw"
+                    why: "thaw",
                 });
                 // TODO: can you thaw and then burn?
                 return dead;
