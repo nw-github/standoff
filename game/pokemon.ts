@@ -3,14 +3,6 @@ import { speciesList, type Stats, type SpeciesId } from "./species";
 
 export type Status = "psn" | "par" | "slp" | "frz" | "tox" | "brn";
 
-export type OptStats = {
-    hp?: number;
-    atk?: number;
-    def?: number;
-    spc?: number;
-    spe?: number;
-};
-
 export class Pokemon {
     readonly stats: Stats;
     readonly speciesId: SpeciesId;
@@ -24,20 +16,20 @@ export class Pokemon {
 
     constructor(
         speciesId: SpeciesId,
-        dvs: OptStats,
-        statexp: OptStats,
+        dvs: Partial<Stats>,
+        statexp: Partial<Stats>,
         level: number,
         moves: MoveId[],
         name?: string
     ) {
-        dvs.atk ??= 0;
-        dvs.def ??= 0;
-        dvs.spc ??= 0;
-        dvs.spe ??= 0;
+        dvs.atk ??= 15;
+        dvs.def ??= 15;
+        dvs.spc ??= 15;
+        dvs.spe ??= 15;
         dvs.hp = ((dvs.atk & 1) << 3) | ((dvs.def & 1) << 2) | ((dvs.spc & 1) << 1) | (dvs.spe & 1);
 
         const calcStatBase = (stat: keyof Stats) => {
-            const s = Math.min(Math.ceil(Math.sqrt(statexp[stat] ?? 0)), 255);
+            const s = Math.min(Math.ceil(Math.sqrt(statexp[stat] ?? 65535)), 255);
             return Math.floor((((this.species.stats[stat] + dvs[stat]!) * 2 + s / 4) * level) / 100);
         };
 
