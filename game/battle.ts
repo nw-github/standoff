@@ -451,6 +451,7 @@ export class ActivePokemon {
         this.disabled = undefined;
         this.charging = undefined;
         this.recharge = undefined;
+        this.applyStatusDebuff();
     }
 
     getStat(stat: keyof ActivePokemon["stats"], isCrit?: boolean, def?: boolean): number {
