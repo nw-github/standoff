@@ -9,7 +9,7 @@ export type Choice =
     | { type: "switch"; turn: number; to: number }
     | { type: "move"; turn: number; index: number };
 
-type MoveChoice = { move: MoveId; pp: number; valid: boolean; indexInMoves?: number };
+export type MoveChoice = { move: MoveId; pp: number; valid: boolean; indexInMoves?: number };
 type ChosenMove = {
     move: Move;
     choice?: MoveChoice;

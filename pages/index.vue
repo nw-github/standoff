@@ -23,26 +23,22 @@
 
         <div v-if="choices && !madeSelection">
             <div>
-                <button
-                    v-for="(move, i) in choices.moves"
+                <MoveButton
+                    v-for="(choice, i) in choices.moves"
+                    :choice="choice"
                     @click="() => selectMove(i)"
-                    :disabled="!move.valid"
-                >
-                    {{ moveList[move.move].name }}
-                    <span v-if="move.pp !== -1">({{ move.pp }}/{{ moveList[move.move].pp }})</span>
-                </button>
+                />
             </div>
 
             <br />
 
             <div>
-                <button
+                <SwitchButton
                     v-for="(poke, i) in myTeam"
+                    :poke="poke"
+                    :disabled="i === active || !choices.canSwitch"
                     @click="() => selectSwitch(i)"
-                    :disabled="!choices.canSwitch || i === active || !poke.hp"
-                >
-                    {{ poke.name }} ({{ poke.hp }}/{{ poke.stats.hp }})
-                </button>
+                />
             </div>
         </div>
         <button @click="cancelMove" v-else-if="choices">Cancel</button>
@@ -62,7 +58,7 @@ import type { BattleEvent, InfoReason } from "../game/events";
 import type { Player, Stages } from "../game/battle";
 import type { Pokemon, Status } from "../game/pokemon";
 import { moveList } from "../game/moveList";
-import { hpPercent } from "../game/utils";
+import { hpPercentExact } from "../game/utils";
 
 type ClientPlayer = {
     name: string;
@@ -131,6 +127,14 @@ onMounted(() => {
             choices.value = resp.choices;
             madeSelection.value = false;
             currentTurn = resp.turn + 1;
+
+            if (resp.choices) {
+                for (const { pp, indexInMoves } of resp.choices.moves) {
+                    if (indexInMoves !== undefined) {
+                        myTeam.value[active.value].pp[indexInMoves] = pp;
+                    }
+                }
+            }
 
             await nextTick();
             textboxScrollDiv.value?.scrollIntoView();
@@ -225,8 +229,8 @@ const stringifyEvents = (events: BattleEvent[]) => {
             players[e.target].active!.hp = hpAfter;
             if (e.target === myId.value) {
                 myTeam.value[active.value].hp = hpAfter;
-                hpBefore = hpPercent(hpBefore, e.maxHp);
-                hpAfter = hpPercent(hpAfter, e.maxHp);
+                hpBefore = hpPercentExact(hpBefore, e.maxHp);
+                hpAfter = hpPercentExact(hpAfter, e.maxHp);
             }
 
             if (e.why === "recoil") {
@@ -252,9 +256,9 @@ const stringifyEvents = (events: BattleEvent[]) => {
             if (e.why !== "explosion") {
                 const diff = hpBefore - hpAfter;
                 res.push(
-                    `- ${target} ${diff < 0 ? "gained" : "lost"} ${Math.abs(
+                    `- ${target} ${diff < 0 ? "gained" : "lost"} ${roundTo(Math.abs(
                         diff
-                    )}% of its health. (${hpAfter}% remaining)`
+                    ), 1)}% of its health. (${roundTo(hpAfter, 1)}% remaining)`
                 );
             }
 
@@ -333,6 +337,10 @@ const stringifyEvents = (events: BattleEvent[]) => {
             };
 
             res.push(`${pname(e.id)} ${table[e.status]}!`);
+            // TODO: remove status
+            if (e.id === myId.value) {
+                myTeam.value[active.value].status = e.status;
+            }
         } else if (e.type === "stages") {
             const table: Record<Stages, string> = {
                 atk: "attack",

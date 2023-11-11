@@ -35,8 +35,12 @@ export const clamp = (num: number, min: number, max: number) => {
     return Math.max(Math.min(num, max), min);
 };
 
+export const hpPercentExact = (current: number, max: number) => {
+    return (current / max) * 100;
+};
+
 export const hpPercent = (current: number, max: number) => {
-    return Math.round((current / max) * 100);
+    return Math.round(hpPercentExact(current, max));
 };
 
 export const scaleAccuracy255 = (acc: number, user: ActivePokemon, target: ActivePokemon) => {
@@ -79,6 +83,28 @@ export const checkAccuracy = (
 
 export const getEffectiveness = (atk: Type, def: Type[]) => {
     return def.reduce((eff, def) => eff * (typeChart[atk][def] ?? 1), 1);
+};
+
+export const isSpecial = (atk: Type) => {
+    switch (atk) {
+        case "normal":
+        case "rock":
+        case "ground":
+        case "ghost":
+        case "poison":
+        case "bug":
+        case "flying":
+        case "fight":
+            return false;
+        case "water":
+        case "grass":
+        case "fire":
+        case "electric":
+        case "ice":
+        case "psychic":
+        case "dragon":
+            return true;
+    }
 };
 
 export const stageMultipliers: Record<number, number> = {

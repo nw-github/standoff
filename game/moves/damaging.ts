@@ -8,6 +8,7 @@ import {
     randChance255,
     randRangeInclusive,
     type Type,
+    isSpecial
 } from "../utils";
 import { moveListToId } from "../moveList";
 
@@ -125,7 +126,7 @@ export class DamagingMove extends Move {
 
         const isCrit = randChance255(this.critChance(user));
         const isStab = user.types.includes(this.type);
-        const [atks, defs]: ["spc" | "atk", "spc" | "def"] = DamagingMove.isSpecial(this.type)
+        const [atks, defs]: ["spc" | "atk", "spc" | "def"] = isSpecial(this.type)
             ? ["spc", "spc"]
             : ["atk", "def"];
         const atk = user.getStat(atks, isCrit);
@@ -296,28 +297,6 @@ export class DamagingMove extends Move {
             } else if (!user.substitute) {
                 user.inflictDamage(1, user, battle, false, "crash", true);
             }
-        }
-    }
-
-    private static isSpecial(atk: Type) {
-        switch (atk) {
-            case "normal":
-            case "rock":
-            case "ground":
-            case "ghost":
-            case "poison":
-            case "bug":
-            case "flying":
-            case "fight":
-                return false;
-            case "water":
-            case "grass":
-            case "fire":
-            case "electric":
-            case "ice":
-            case "psychic":
-            case "dragon":
-                return true;
         }
     }
 }
