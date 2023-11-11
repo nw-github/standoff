@@ -3,7 +3,7 @@ import { moveList, type MoveId, moveListToId } from "./moveList";
 import { Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
 import { TransformedPokemon } from "./transformed";
-import { clamp, randChance255, randRangeInclusive, stageMultipliers, type Type } from "./utils";
+import { clamp, floatTo255, randChance255, randRangeInclusive, stageMultipliers, type Type } from "./utils";
 
 export type Choice =
     | { type: "switch"; turn: number; to: number }
@@ -304,7 +304,19 @@ export class Battle {
                     });
                     user.recharge = undefined;
                     continue;
-                } else if (user.confusion) {
+                } else if (user.base.status === "par" && randChance255(floatTo255(25))) {
+                    this.pushEvent({
+                        type: "info",
+                        id: user.owner.id,
+                        why: "paralyze",
+                    });
+
+                    user.charging = undefined;
+                    user.thrashing = undefined;
+                    continue;
+                }
+
+                if (user.confusion) {
                     this.pushEvent({
                         type: "info",
                         id: user.owner.id,

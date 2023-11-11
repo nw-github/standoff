@@ -117,7 +117,8 @@ export type InfoReason =
     | "sleep"
     | "wake"
     | "haze"
-    | "thaw";
+    | "thaw"
+    | "paralyze";
 
 type InfoEvent = {
     type: "info";
