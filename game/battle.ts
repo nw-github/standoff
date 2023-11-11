@@ -97,7 +97,7 @@ export class Player {
             }
 
             if (!moves.length) {
-                moves = [{ move: "struggle", pp: 0, valid: true }];
+                moves = [{ move: "struggle", pp: -1, valid: true }];
             }
         }
 
@@ -618,11 +618,11 @@ export class ActivePokemon {
 
     applyStatusDebuff() {
         if (this.base.status === "brn") {
-            this.stats.atk = Math.max(this.base.stats.atk / 2, 1);
+            this.stats.atk = Math.max(this.stats.atk / 2, 1);
         }
 
         if (this.base.status === "par") {
-            this.stats.spe = Math.max(this.base.stats.spe / 4, 1);
+            this.stats.spe = Math.max(this.stats.spe / 4, 1);
         }
     }
 }

@@ -98,7 +98,7 @@ export const moveList = {
             if (target.base.status === "frz" || target.base.status === "slp") {
                 battle.pushEvent({
                     type: "info",
-                    id: user.owner.id,
+                    id: target.owner.id,
                     why: target.base.status === "frz" ? "thaw" : "wake",
                 });
 
@@ -452,9 +452,9 @@ export const moveList = {
     }),
     growth: new StageMove({
         name: "Growth",
-        pp: 20,
+        pp: 40,
         type: "normal",
-        stages: [["atk", 1]],
+        stages: [["spc", 1]],
     }),
     harden: new StageMove({
         name: "Harden",
@@ -520,7 +520,7 @@ export const moveList = {
         pp: 40,
         type: "bug",
         acc: 95,
-        stages: [["spe", -2]],
+        stages: [["spe", -1]],
     }),
     swordsdance: new StageMove({
         name: "Swords Dance",
