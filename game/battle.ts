@@ -1,9 +1,16 @@
 import { type BattleEvent, type DamageReason, type PlayerId } from "./events";
-import { moveList, type MoveId, moveListToId } from "./moveList";
+import { moveList, type MoveId } from "./moveList";
 import { Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
 import { TransformedPokemon } from "./transformed";
-import { clamp, floatTo255, randChance255, randRangeInclusive, stageMultipliers, type Type } from "./utils";
+import {
+    clamp,
+    floatTo255,
+    randChance255,
+    randRangeInclusive,
+    stageMultipliers,
+    type Type,
+} from "./utils";
 
 export type Choice =
     | { type: "switch"; turn: number; to: number }
@@ -91,7 +98,7 @@ export class Player {
             moves.length = 0;
             for (const move of metronome) {
                 if (move) {
-                    moves = [{ move: moveListToId.get(move)!, pp: -1, valid: true }];
+                    moves = [{ move: battle.moveIdOf(move)!, pp: -1, valid: true }];
                     break;
                 }
             }
@@ -122,11 +129,11 @@ export class Player {
             return false;
         } else if (this.active.base.status === "frz") {
             // https://bulbapedia.bulbagarden.net/wiki/List_of_battle_glitches_(Generation_I)#Defrost_move_forcing
-            // XXX: Gen 1 doesn't let you pick your move when frozen, so if you are defrosted 
-            // before your turn, the game can desync. The logic we implement follows with what the 
-            // opponent player's game would do :shrug: 
+            // XXX: Gen 1 doesn't let you pick your move when frozen, so if you are defrosted
+            // before your turn, the game can desync. The logic we implement follows with what the
+            // opponent player's game would do :shrug:
 
-            // Gen 1 also doesn't let you pick your move while asleep, but you can't wake up and act 
+            // Gen 1 also doesn't let you pick your move while asleep, but you can't wake up and act
             // on the same turn, nor can you act on the turn haze removes your non-volatile status,
             // so it doesn't matter.
             if (this.active.lastMove && this.active.lastMove !== moveList[move]) {
@@ -148,10 +155,17 @@ export class Battle {
     private readonly players: [Player, Player];
     private _turn = 0;
     private readonly events: BattleEvent[] = [];
+    private readonly moveListToId;
     victor: Player | null = null;
 
     private constructor(player1: Player, player2: Player) {
         this.players = [player1, player2];
+        const rev = new Map<Move, MoveId>();
+        for (const k in moveList) {
+            // @ts-ignore
+            rev.set(moveList[k], k);
+        }
+        this.moveListToId = rev;
     }
 
     static start(player1: Player, player2: Player): [Battle, Turn] {
@@ -243,6 +257,10 @@ export class Battle {
 
     opponentOf(player: Player): Player {
         return this.players[0] === player ? this.players[1] : this.players[0];
+    }
+
+    moveIdOf(move: Move) {
+        return this.moveListToId.get(move);
     }
 
     private runTurn() {

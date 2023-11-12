@@ -10,7 +10,6 @@ import {
     type Type,
     isSpecial
 } from "../utils";
-import { moveListToId } from "../moveList";
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
 type Flag =
@@ -64,7 +63,7 @@ export class DamagingMove extends Move {
             battle.pushEvent({
                 type: "charge",
                 id: user.owner.id,
-                move: moveListToId.get(this)!,
+                move: battle.moveIdOf(this)!,
             });
             user.charging = this;
             if (this.flag === "charge_invuln") {

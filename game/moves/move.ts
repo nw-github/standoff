@@ -1,5 +1,4 @@
 import type { ActivePokemon, Battle } from "../battle";
-import { moveListToId } from "../moveList";
 import type { Type } from "../utils";
 
 export abstract class Move {
@@ -24,7 +23,7 @@ export abstract class Move {
                 battle.pushEvent({
                     type: "move",
                     src: user.owner.id,
-                    move: moveListToId.get(this)!,
+                    move: battle.moveIdOf(this)!,
                     disabled: true,
                 });
                 return false;
@@ -41,7 +40,7 @@ export abstract class Move {
         battle.pushEvent({
             type: "move",
             src: user.owner.id,
-            move: moveListToId.get(this)!,
+            move: battle.moveIdOf(this)!,
             thrashing: user.thrashing ? true : undefined,
         });
         user.lastMove = this;

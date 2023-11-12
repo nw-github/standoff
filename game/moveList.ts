@@ -1333,12 +1333,3 @@ export const moveList = {
         why: "whirlwind",
     }),
 };
-
-export const moveListToId = (() => {
-    const rev = new Map<Move, MoveId>();
-    for (const k in moveList) {
-        // @ts-ignore
-        rev.set(moveList[k], k);
-    }
-    return rev;
-})();
