@@ -22,7 +22,7 @@ export class BooleanFlagMove extends Move {
         this.flag = flag;
     }
 
-    override execute(battle: Battle, user: ActivePokemon, _: ActivePokemon): boolean {
+    override execute(battle: Battle, user: ActivePokemon): boolean {
         if (user.flags[this.flag]) {
             battle.pushEvent({
                 type: "failed",

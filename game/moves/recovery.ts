@@ -21,7 +21,7 @@ export class RecoveryMove extends Move {
         this.why = why;
     }
 
-    override execute(battle: Battle, user: ActivePokemon, _: ActivePokemon): boolean {
+    override execute(battle: Battle, user: ActivePokemon): boolean {
         const diff = user.base.stats.hp - user.base.hp;
         if (diff === 0 || diff % 255 === 0) {
             battle.pushEvent({

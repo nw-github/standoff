@@ -28,11 +28,11 @@ class SwitchMove extends Move {
         super("", 0, "normal", undefined, +2);
     }
 
-    override use(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
-        return this.execute(battle, user, target);
+    override use(battle: Battle, user: ActivePokemon): boolean {
+        return this.execute(battle, user);
     }
 
-    override execute(battle: Battle, user: ActivePokemon, _: ActivePokemon): boolean {
+    override execute(battle: Battle, user: ActivePokemon): boolean {
         user.switchTo(this.poke, battle);
         return false;
     }
