@@ -38,7 +38,7 @@ defineEmits<{ (e: "click"): void }>();
 const { choice } = defineProps<{ choice: MoveChoice }>();
 const move = moveList[choice.move];
 const spc = isSpecial(move.type);
-const desc = "Description of move goes here...";
+const desc = describeMove(choice.move);
 </script>
 
 <style scoped>

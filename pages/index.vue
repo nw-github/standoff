@@ -62,7 +62,7 @@
 
 <script setup lang="ts">
 import type { BattleEvent, InfoReason } from "../game/events";
-import type { Player, Stages } from "../game/battle";
+import type { Player } from "../game/battle";
 import type { Pokemon, Status } from "../game/pokemon";
 import { moveList } from "../game/moveList";
 import { hpPercentExact } from "../game/utils";
@@ -267,9 +267,10 @@ const stringifyEvents = (events: BattleEvent[]) => {
             if (e.why !== "explosion") {
                 const diff = hpBefore - hpAfter;
                 res.push(
-                    `- ${target} ${diff < 0 ? "gained" : "lost"} ${roundTo(Math.abs(
-                        diff
-                    ), 1)}% of its health. (${roundTo(hpAfter, 1)}% remaining)`
+                    `- ${target} ${diff < 0 ? "gained" : "lost"} ${roundTo(
+                        Math.abs(diff),
+                        1
+                    )}% of its health. (${roundTo(hpAfter, 1)}% remaining)`
                 );
             }
 
@@ -353,19 +354,10 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 myTeam.value[active.value].status = e.status;
             }
         } else if (e.type === "stages") {
-            const table: Record<Stages, string> = {
-                atk: "attack",
-                def: "defense",
-                spc: "special",
-                spe: "speed",
-                acc: "acccuracy",
-                eva: "evasion",
-            };
-
             const name = pname(e.id);
             for (const [stage, amount] of e.stages) {
                 res.push(
-                    `${name}'s ${table[stage]} ${amount > 0 ? "rose" : "fell"}${
+                    `${name}'s ${stageTable[stage]} ${amount > 0 ? "rose" : "fell"}${
                         Math.abs(amount) > 1 ? " sharply" : ""
                     }!`
                 );

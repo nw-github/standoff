@@ -44,10 +44,6 @@ defineEmits<{ (e: "click"): void }>();
 
 const { poke } = defineProps<{ poke: Pokemon; disabled: boolean }>();
 const species = speciesList[poke.speciesId];
-
-const toTitleCase = (s: string) => {
-    return s.slice(0, 1).toUpperCase() + s.slice(1);
-};
 </script>
 
 <style scoped>
