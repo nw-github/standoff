@@ -1,6 +1,6 @@
 <template>
     <Tooltip>
-        <button :disabled="disabled || !poke.hp">
+        <button @click="$emit('click')" :disabled="disabled || !poke.hp">
             {{ poke.name }}
         </button>
 
@@ -39,6 +39,8 @@ import { speciesList } from "../game/species";
 import { Pokemon } from "../game/pokemon";
 import { hpPercentExact } from "../game/utils";
 import { moveList } from "../game/moveList";
+
+defineEmits<{ (e: "click"): void }>();
 
 const { poke } = defineProps<{ poke: Pokemon; disabled: boolean }>();
 const species = speciesList[poke.speciesId];

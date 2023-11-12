@@ -1,6 +1,6 @@
 <template>
     <Tooltip>
-        <button :disabled="!choice.valid">
+        <button @click="$emit('click')" :disabled="!choice.valid">
             {{ move.name }}
             <span v-if="choice.pp !== -1">({{ choice.pp }}/{{ move.pp }})</span>
         </button>
@@ -32,6 +32,8 @@
 import type { MoveChoice } from "../game/battle";
 import { moveList } from "../game/moveList";
 import { isSpecial } from "../game/utils";
+
+defineEmits<{ (e: "click"): void }>();
 
 const { choice } = defineProps<{ choice: MoveChoice }>();
 const move = moveList[choice.move];
