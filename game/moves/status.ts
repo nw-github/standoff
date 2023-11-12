@@ -1,7 +1,7 @@
 import type { ActivePokemon, Battle } from "../battle";
 import { Move } from "./move";
 import type { Status } from "../pokemon";
-import { checkAccuracy, type Type } from "../utils";
+import { checkAccuracy, getEffectiveness, type Type } from "../utils";
 
 export class StatusMove extends Move {
     readonly status: Status;
@@ -29,6 +29,16 @@ export class StatusMove extends Move {
                 type: "failed",
                 src: target.owner.id,
                 why: "generic",
+            });
+            return false;
+        }
+
+        if ((this.type === "electric" && getEffectiveness(this.type, target.types) === 0) ||
+            (this.type === "poison" && target.types.includes("poison"))) {
+            battle.pushEvent({
+                type: "failed",
+                src: target.owner.id,
+                why: "immune",
             });
             return false;
         }
