@@ -1,8 +1,9 @@
 <template>
     <Tooltip>
         <button @click="$emit('click')" :disabled="!choice.valid">
-            {{ move.name }}
-            <span v-if="choice.pp !== -1">({{ choice.pp }}/{{ move.pp }})</span>
+            <span class="info type">{{ toTitleCase(move.type) }}</span>
+            <span class="name">{{ move.name }}</span>
+            <span class="info pp" v-if="choice.pp !== -1">{{ choice.pp }}/{{ move.pp }}</span>
         </button>
 
         <template #tooltip>
@@ -42,6 +43,29 @@ const desc = describeMove(choice.move);
 </script>
 
 <style scoped>
+button {
+    display: grid;
+    border-radius: 5px;
+    width: 200px;
+}
+
+button span {
+    padding: 2px;
+}
+
+.type {
+    text-align: left;
+}
+
+.pp {
+    text-align: right;
+}
+
+.name {
+    text-align: center;
+    font-size: 1.2em;
+}
+
 .mb-number {
     display: inline-block;
     width: 30px;

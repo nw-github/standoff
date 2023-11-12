@@ -22,8 +22,9 @@
         </div>
 
         <div v-if="choices && !selectionText.length">
-            <div>
+            <div class="moves">
                 <MoveButton
+                    class="move-button"
                     v-for="(choice, i) in choices.moves"
                     :choice="choice"
                     @click="() => selectMove(i)"
@@ -32,8 +33,9 @@
 
             <br />
 
-            <div>
+            <div class="team">
                 <SwitchButton
+                    class="switch-button"
                     v-for="(poke, i) in myTeam"
                     :poke="poke"
                     :disabled="i === active || !choices.canSwitch"
@@ -58,6 +60,15 @@
 .selection-text {
     font-style: italic;
 }
+
+.moves {
+    width: 500px;
+}
+
+.move-button {
+    padding: 5px;
+}
+
 </style>
 
 <script setup lang="ts">
@@ -129,7 +140,6 @@ onMounted(() => {
         } else if (resp.type === "sv_leave") {
             delete players[resp.id];
         } else if (resp.type === "sv_turn") {
-            active.value = nextActive;
             turns.value = [...turns.value, [resp.turn, stringifyEvents(JSON.parse(resp.events))]];
             choices.value = resp.choices;
             selectionText.value = "";
@@ -209,6 +219,7 @@ const cancelMove = () => {
         })
     );
     selectionText.value = "";
+    nextActive = active.value;
 };
 
 const pname = (id: string, title: boolean = true) => {
@@ -231,6 +242,10 @@ const stringifyEvents = (events: BattleEvent[]) => {
             }
 
             player.active = { ...e };
+            if (e.src === myId.value) {
+                active.value = nextActive;
+            }
+
             res.push(`${player.name} sent in ${e.name}! (${e.hp}/${e.maxHp})`);
         } else if (e.type === "damage") {
             const src = pname(e.src);
