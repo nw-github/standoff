@@ -9,6 +9,7 @@ import {
     randRangeInclusive,
     type Type,
     isSpecial,
+    calcDamage,
 } from "../utils";
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
@@ -129,22 +130,13 @@ export class DamagingMove extends Move {
             ? ["spc", "spc"]
             : ["atk", "def"];
         const atk = user.getStat(atks, isCrit);
-        let def = Math.floor(
-            target.getStat(defs, isCrit, true) / (this.flag === "explosion" ? 2 : 1)
-        );
-        const applyLightScreen = atks === "spc" && target.flags.light_screen;
-        const applyReflect = atks === "atk" && target.flags.reflect;
-        if (!isCrit && (applyLightScreen || applyReflect)) {
-            def *= 2;
-            if (def > 1024) {
-                def -= def % 1024;
-            }
-        }
-
+        const ls = atks === "spc" && target.flags.light_screen;
+        const reflect = atks === "atk" && target.flags.reflect;
+        const explosion = this.flag === "explosion" ? 2 : 1;
+        const def = Math.floor(target.getStat(defs, isCrit, true, ls || reflect) / explosion);
         const lvl = user.base.level;
-        const crit = isCrit ? 2 : 1;
         const stab = isStab ? 1.5 : 1;
-        let dmg = ((((2 * lvl * crit) / 5 + 2) * this.power! * (atk / def)) / 50 + 2) * stab * eff;
+        let dmg = calcDamage({ lvl, atk, def, stab, eff, pow: this.power!, crit: isCrit ? 2 : 1 });
         if (dmg === 0) {
             battle.pushEvent({
                 type: "failed",

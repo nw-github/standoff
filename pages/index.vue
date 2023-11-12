@@ -277,6 +277,8 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 res.push(`A critical hit!`);
             } else if (e.why === "rest") {
                 res.push(`${src} started sleeping!`);
+            } else if (e.why === "confusion") {
+                res.push("It hurt itself in its confusion!");
             }
 
             if (e.why !== "explosion") {
@@ -343,6 +345,10 @@ const stringifyEvents = (events: BattleEvent[]) => {
         } else if (e.type === "victory") {
             res.push(`${players[e.id].name} wins!`);
         } else if (e.type === "hit_sub") {
+            if (e.confusion) {
+                res.push("It hurt itself in its confusion!");
+            }
+
             const target = pname(e.target);
             res.push(`${target}'s substitute took the hit!`);
             if (e.broken) {
@@ -388,6 +394,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
                 payday: "Coins scattered everywhere!",
                 became_confused: "{} became confused!",
                 confused: "{} is confused!",
+                confused_end: "{} snapped out of its confusion!",
                 recharge: "{} must recharge!",
                 frozen: "{} is frozen solid!",
                 sleep: "{} is fast asleep!",

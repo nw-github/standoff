@@ -45,15 +45,10 @@ export const hpPercent = (current: number, max: number) => {
 
 export const scaleAccuracy255 = (acc: number, user: ActivePokemon, target: ActivePokemon) => {
     // https://bulbapedia.bulbagarden.net/wiki/Accuracy#Generation_I_and_II
-    return clamp(
-        Math.floor(
-            acc *
-                (stageMultipliers[user.stages["acc"]] / 100) *
-                (stageMultipliers[-target.stages["eva"]] / 100)
-        ),
-        1,
-        255
-    );
+    acc *=
+        (stageMultipliers[user.stages["acc"]] / 100) *
+        (stageMultipliers[-target.stages["eva"]] / 100);
+    return clamp(Math.floor(acc), 1, 255);
 };
 
 export const checkAccuracy = (
@@ -79,6 +74,26 @@ export const checkAccuracy = (
         return false;
     }
     return true;
+};
+
+export const calcDamage = ({
+    lvl,
+    crit,
+    pow,
+    atk,
+    def,
+    stab,
+    eff,
+}: {
+    lvl: number;
+    crit: number;
+    pow: number;
+    atk: number;
+    def: number;
+    stab: number;
+    eff: number;
+}) => {
+    return Math.floor(((((2 * lvl * crit) / 5 + 2) * pow * (atk / def)) / 50 + 2) * stab * eff);
 };
 
 export const getEffectiveness = (atk: Type, def: Type[]) => {

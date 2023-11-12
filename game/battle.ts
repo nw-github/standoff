@@ -4,6 +4,7 @@ import { Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
 import { TransformedPokemon } from "./transformed";
 import {
+    calcDamage,
     clamp,
     floatTo255,
     randChance255,
@@ -61,8 +62,8 @@ export class Player {
     readonly active: ActivePokemon;
     readonly name: string;
     readonly team: Pokemon[];
+    readonly id: PlayerId;
     choice: ChosenMove | null = null;
-    id: PlayerId;
     choices?: { canSwitch: boolean; moves: MoveChoice[] };
 
     constructor(name: string, id: PlayerId, team: Pokemon[]) {
@@ -283,6 +284,7 @@ export class Battle {
 
         let skipEnd = false;
         for (const { move, user, choice } of choices) {
+            const target = this.opponentOf(user.owner).active;
             if (!(move instanceof SwitchMove)) {
                 if (user.hazed) {
                     continue;
@@ -335,16 +337,32 @@ export class Battle {
                 }
 
                 if (user.confusion) {
-                    this.pushEvent({
-                        type: "info",
-                        id: user.owner.id,
-                        why: "confused",
-                    });
-                    // TODO: confusion damage
+                    --user.confusion;
+                    if (user.confusion === 0) {
+                        this.pushEvent({
+                            type: "info",
+                            id: user.owner.id,
+                            why: "confused_end",
+                        });
+                    } else {
+                        this.pushEvent({
+                            type: "info",
+                            id: user.owner.id,
+                            why: "confused",
+                        });
+
+                        if (randChance255(floatTo255(50))) {
+                            if (user.handleConfusionDamage(this, target)) {
+                                skipEnd = true;
+                                break;
+                            } else {
+                                continue;
+                            }
+                        }
+                    }
                 }
             }
 
-            const target = this.opponentOf(user.owner).active;
             if (move.use(this, user, target, choice?.indexInMoves)) {
                 // A pokemon has died, skip all end of turn events
                 if (!this.victor) {
@@ -472,7 +490,12 @@ export class ActivePokemon {
         this.applyStatusDebuff();
     }
 
-    getStat(stat: keyof ActivePokemon["stats"], isCrit?: boolean, def?: boolean): number {
+    getStat(
+        stat: keyof ActivePokemon["stats"],
+        isCrit?: boolean,
+        def?: boolean,
+        screen?: boolean
+    ): number {
         if (!def && isCrit && this.base instanceof TransformedPokemon) {
             return this.base.base.stats[stat];
         }
@@ -481,7 +504,15 @@ export class ActivePokemon {
             return this.base.stats[stat];
         }
 
-        return this.stats[stat];
+        let res = this.stats[stat];
+        if (screen) {
+            res *= 2;
+            if (res > 1024) {
+                res -= res % 1024;
+            }
+        }
+
+        return res;
     }
 
     inflictDamage(
@@ -503,6 +534,7 @@ export class ActivePokemon {
                 src: src.owner.id,
                 target: this.owner.id,
                 broken: this.substitute === 0,
+                confusion: why === "confusion",
                 eff,
             });
             dealt = hpBefore - this.substitute;
@@ -600,7 +632,7 @@ export class ActivePokemon {
             return false;
         }
 
-        this.confusion = randRangeInclusive(1, 4);
+        this.confusion = randRangeInclusive(2, 5);
         if (!thrashing) {
             battle.pushEvent({
                 type: "info",
@@ -655,5 +687,25 @@ export class ActivePokemon {
         if (this.base.status === "par") {
             this.stats.spe = Math.max(this.stats.spe / 4, 1);
         }
+    }
+
+    handleConfusionDamage(battle: Battle, target: ActivePokemon) {
+        const dmg = calcDamage({
+            lvl: this.base.level,
+            crit: 1,
+            pow: 40,
+            def: this.getStat("def", false, true, target.flags.reflect),
+            atk: this.stats.atk,
+            stab: 1,
+            eff: 1,
+        });
+
+        if (this.substitute && target.substitute) {
+            target.inflictDamage(dmg, this, battle, false, "confusion");
+        } else if (!this.substitute) {
+            return this.inflictDamage(dmg, this, battle, false, "confusion").dead;
+        }
+
+        return false;
     }
 }

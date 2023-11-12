@@ -41,7 +41,8 @@ export type DamageReason =
     | "seeded"
     | "seeder"
     | "psn"
-    | "brn";
+    | "brn"
+    | "confusion";
 
 type DamageEvent = {
     type: "damage";
@@ -60,6 +61,7 @@ type HitSubstituteEvent = {
     src: PlayerId;
     target: PlayerId;
     broken: boolean;
+    confusion: boolean;
     eff?: number;
 };
 
@@ -112,6 +114,7 @@ export type InfoReason =
     | "seeded"
     | "became_confused"
     | "confused"
+    | "confused_end"
     | "recharge"
     | "frozen"
     | "sleep"
