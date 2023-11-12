@@ -21,7 +21,7 @@
             <div ref="textboxScrollDiv"></div>
         </div>
 
-        <div v-if="choices && !madeSelection">
+        <div v-if="choices && !selectionText.length">
             <div>
                 <MoveButton
                     v-for="(choice, i) in choices.moves"
@@ -41,7 +41,10 @@
                 />
             </div>
         </div>
-        <button @click="cancelMove" v-else-if="choices">Cancel</button>
+        <div v-else-if="choices">
+            <div class="selection-text">{{ selectionText }}...</div>
+            <button @click="cancelMove">Cancel</button>
+        </div>
     </div>
 </template>
 
@@ -50,6 +53,10 @@
     height: 60vh;
     width: 70vw;
     overflow-y: scroll;
+}
+
+.selection-text {
+    font-style: italic;
 }
 </style>
 
@@ -76,7 +83,7 @@ const myId = ref("");
 const players = reactive<Record<string, ClientPlayer>>({});
 const turns = ref<[number, string[]][]>([]);
 const choices = ref<Player["choices"] | undefined>();
-const madeSelection = ref<boolean>(false);
+const selectionText = ref("");
 const myTeam = ref<Pokemon[]>([]);
 const active = ref<number>(0);
 
@@ -125,7 +132,7 @@ onMounted(() => {
             active.value = nextActive;
             turns.value = [...turns.value, [resp.turn, stringifyEvents(JSON.parse(resp.events))]];
             choices.value = resp.choices;
-            madeSelection.value = false;
+            selectionText.value = "";
             currentTurn = resp.turn + 1;
 
             if (resp.choices) {
@@ -153,7 +160,7 @@ onMounted(() => {
         }
         turns.value = [];
         choices.value = undefined;
-        madeSelection.value = false;
+        selectionText.value = "";
     };
 });
 
@@ -172,7 +179,9 @@ const selectMove = (index: number) => {
             },
         })
     );
-    madeSelection.value = true;
+    selectionText.value = `${players[myId.value].active!.name} will use ${
+        moveList[choices.value!.moves[index].move].name
+    }`;
 };
 
 const selectSwitch = (index: number) => {
@@ -186,7 +195,9 @@ const selectSwitch = (index: number) => {
             },
         })
     );
-    madeSelection.value = true;
+    selectionText.value = `${players[myId.value].active!.name} will be replaced by ${
+        myTeam.value[index].name
+    }`;
     nextActive = index;
 };
 
@@ -197,7 +208,7 @@ const cancelMove = () => {
             turn: currentTurn,
         })
     );
-    madeSelection.value = false;
+    selectionText.value = "";
 };
 
 const pname = (id: string, title: boolean = true) => {
