@@ -24,6 +24,15 @@ export class StatusMove extends Move {
     }
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        if (target.substitute && this.status !== "par" && this.status !== "slp") {
+            battle.pushEvent({
+                type: "failed",
+                src: target.owner.id,
+                why: "generic",
+            });
+            return false;
+        }
+
         if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
             return false;
         }

@@ -663,7 +663,7 @@ export const moveList = {
         name: "Blizzard",
         pp: 5,
         type: "ice",
-        power: 110,
+        power: 120,
         acc: 90,
         effect: [10, "frz"],
     }),
@@ -673,7 +673,7 @@ export const moveList = {
         type: "ground",
         power: 65,
         acc: 85,
-        effect: [10, "confusion"],
+        effect: [10, "flinch"],
     }),
     cometpunch: new DamagingMove({
         name: "Comet Punch",
@@ -802,7 +802,7 @@ export const moveList = {
         name: "Fire Blast",
         pp: 5,
         type: "fire",
-        power: 110,
+        power: 120,
         acc: 85,
         effect: [30, "brn"],
     }),
@@ -897,7 +897,7 @@ export const moveList = {
         type: "normal",
         power: 80,
         acc: 90,
-        effect: [10, "confusion"],
+        effect: [10, "flinch"],
     }),
     icebeam: new DamagingMove({
         name: "Ice Beam",
@@ -1074,7 +1074,7 @@ export const moveList = {
         type: "fight",
         power: 60,
         acc: 85,
-        effect: [30, "confusion"],
+        effect: [30, "flinch"],
     }),
     selfdestruct: new DamagingMove({
         name: "Self-Destruct",
@@ -1160,7 +1160,7 @@ export const moveList = {
         type: "normal",
         power: 65,
         acc: 100,
-        effect: [30, "confusion"],
+        effect: [30, "flinch"],
     }),
     strength: new DamagingMove({
         name: "Strength",
@@ -1296,7 +1296,6 @@ export const moveList = {
         type: "water",
         power: 80,
         acc: 100,
-        effect: [20, "confusion"],
     }),
     wingattack: new DamagingMove({
         name: "Wing Attack",

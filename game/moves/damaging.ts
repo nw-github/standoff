@@ -8,7 +8,7 @@ import {
     randChance255,
     randRangeInclusive,
     type Type,
-    isSpecial
+    isSpecial,
 } from "../utils";
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
@@ -240,7 +240,7 @@ export class DamagingMove extends Move {
             user.recharge = this;
         }
 
-        if (!hadSub && this.effect) {
+        if (this.effect) {
             const [chance, effect] = this.effect;
             if (effect === "brn" && target.base.status === "frz") {
                 target.base.status = null;
@@ -257,14 +257,15 @@ export class DamagingMove extends Move {
                 return dead;
             }
 
-            if (Array.isArray(effect)) {
-                target.inflictStages(effect, battle);
-            } else if (effect === "confusion") {
-                if (target.confusion !== 0) {
-                    return dead;
+            if (effect === "confusion") {
+                if (target.confusion === 0 && randChance255(floatTo255(this.effect[0]))) {
+                    target.inflictConfusion(battle);
                 }
-
-                target.inflictConfusion(battle);
+                return dead;
+            } else if (!hadSub) {
+                return dead;
+            } else if (Array.isArray(effect)) {
+                target.inflictStages(effect, battle);
             } else if (effect === "flinch") {
                 target.flinch = battle.turn;
             } else {

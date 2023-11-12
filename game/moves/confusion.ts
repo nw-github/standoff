@@ -8,6 +8,15 @@ export class ConfusionMove extends Move {
     }
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        if (target.substitute) {
+            battle.pushEvent({
+                type: "failed",
+                src: target.owner.id,
+                why: "generic",
+            });
+            return false;
+        }
+
         if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
             return false;
         }
