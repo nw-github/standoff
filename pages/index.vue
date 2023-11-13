@@ -88,7 +88,7 @@ import { moveList } from "../game/moveList";
 
 const status = ref("loading...");
 const myId = ref("");
-const battlers = ref(new Set<string>());
+const battlers = ref<string[]>([]);
 const players = reactive<Record<string, ClientPlayer>>({});
 const turns = ref<[number, string[]][]>([]);
 const choices = ref<Player["choices"] | undefined>();
@@ -98,6 +98,13 @@ const active = ref(0);
 const hasStarted = ref(false);
 
 const textboxScrollDiv = ref<HTMLDivElement | null>(null);
+
+const addBattler = (id: string) => {
+    if (!battlers.value.includes(id)) {
+        battlers.value.push(id);
+        battlers.value.sort((a, _) => a !== myId.value ? -1 : 1);
+    }
+};
 
 let currentTurn: number;
 let nextActive: number = 0;
@@ -131,18 +138,18 @@ onMounted(() => {
 
             if (resp.team) {
                 myTeam.value = resp.team;
-                battlers.value.add(resp.id);
+                addBattler(resp.id);
             }
             for (const { id, name, isSpectator } of resp.players) {
                 players[id] = { name, isSpectator };
                 if (!isSpectator) {
-                    battlers.value.add(id);
+                    addBattler(id);
                 }
             }
         } else if (resp.type === "sv_join") {
             players[resp.id] = resp;
             if (!resp.isSpectator) {
-                battlers.value.add(resp.id);
+                addBattler(resp.id);
             }
         } else if (resp.type === "sv_leave") {
             delete players[resp.id];
@@ -179,7 +186,7 @@ onMounted(() => {
         turns.value = [];
         choices.value = undefined;
         selectionText.value = "";
-        battlers.value.clear();
+        battlers.value.length = 0;
     };
 });
 
