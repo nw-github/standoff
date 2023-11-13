@@ -27,7 +27,7 @@
 
     position: absolute;
     z-index: 1;
-    bottom: 125%;
+    bottom: 100%;
     left: 50%;
     margin-left: -120px;
 }

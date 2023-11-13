@@ -125,7 +125,6 @@ export class DamagingMove extends Move {
         }
 
         const isCrit = randChance255(this.critChance(user));
-        const isStab = user.types.includes(this.type);
         const [atks, defs]: ["spc" | "atk", "spc" | "def"] = isSpecial(this.type)
             ? ["spc", "spc"]
             : ["atk", "def"];
@@ -134,9 +133,16 @@ export class DamagingMove extends Move {
         const reflect = atks === "atk" && target.flags.reflect;
         const explosion = this.flag === "explosion" ? 2 : 1;
         const def = Math.floor(target.getStat(defs, isCrit, true, ls || reflect) / explosion);
-        const lvl = user.base.level;
-        const stab = isStab ? 1.5 : 1;
-        let dmg = calcDamage({ lvl, atk, def, stab, eff, pow: this.power!, crit: isCrit ? 2 : 1 });
+        const stab = user.types.includes(this.type) ? 1.5 : 1;
+        let dmg = calcDamage({
+            lvl: user.base.level,
+            pow: this.power!,
+            crit: isCrit ? 2 : 1,
+            atk,
+            def,
+            stab,
+            eff,
+        });
         if (dmg === 0) {
             battle.pushEvent({
                 type: "failed",

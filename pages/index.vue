@@ -1,27 +1,34 @@
 <template>
-    <div>
-        <h1>Status: {{ status }}</h1>
-        <ul>
-            <li v-for="(player, id) in players">
-                <span v-if="id === myId">(Me) </span>
-                {{ player.name }}: {{ id }} {{ player.isSpectator ? "(spectator)" : "" }}
-            </li>
-        </ul>
+    <h1>Status: {{ status }}</h1>
+    <ul>
+        <li v-for="(player, id) in players">
+            <template v-if="id === myId">(Me) </template>
+            {{ player.name }}: {{ id }} {{ player.isSpectator ? "(spectator)" : "" }}
+        </li>
+    </ul>
+    <div class="everything">
+        <div class="battlefield" v-if="hasStarted">
+            <ActivePokemon
+                v-for="id in battlers"
+                :poke="players[id].active!"
+                :base="id === myId ? myTeam[active] : undefined"
+            />
+        </div>
 
         <div class="textbox">
-            <div v-for="[turnNo, turn] in turns">
+            <template v-for="[turnNo, turn] in turns">
                 <h2>Turn {{ turnNo }}</h2>
                 <ul>
                     <li v-for="event in turn">
                         {{ event }}
                     </li>
                 </ul>
-            </div>
+            </template>
 
             <div ref="textboxScrollDiv"></div>
         </div>
 
-        <div v-if="choices && !selectionText.length">
+        <template v-if="choices && !selectionText.length">
             <div class="moves">
                 <MoveButton
                     class="move-button"
@@ -30,8 +37,6 @@
                     @click="() => selectMove(i)"
                 />
             </div>
-
-            <br />
 
             <div class="team">
                 <SwitchButton
@@ -42,19 +47,24 @@
                     @click="() => selectSwitch(i)"
                 />
             </div>
-        </div>
-        <div v-else-if="choices">
+        </template>
+        <template v-else-if="choices">
             <div class="selection-text">{{ selectionText }}...</div>
             <button @click="cancelMove">Cancel</button>
-        </div>
+        </template>
     </div>
 </template>
 
 <style scoped>
+.everything {
+    display: flex;
+}
+
 .textbox {
     height: 60vh;
     width: 70vw;
-    overflow-y: scroll;
+    overflow-y: auto;
+    background-color: #ccc;
 }
 
 .selection-text {
@@ -68,35 +78,24 @@
 .move-button {
     padding: 5px;
 }
-
 </style>
 
 <script setup lang="ts">
-import type { BattleEvent, InfoReason } from "../game/events";
-import type { Player } from "../game/battle";
-import type { Pokemon, Status } from "../game/pokemon";
+import type { BattleEvent } from "../game/events";
+import type { ActivePokemon, Player } from "../game/battle";
+import type { Pokemon } from "../game/pokemon";
 import { moveList } from "../game/moveList";
-import { hpPercentExact } from "../game/utils";
-
-type ClientPlayer = {
-    name: string;
-    isSpectator: boolean;
-    active?: {
-        dexId: number;
-        name: string;
-        hp: number;
-        status: Status | null;
-    };
-};
 
 const status = ref("loading...");
 const myId = ref("");
+const battlers = ref(new Set<string>());
 const players = reactive<Record<string, ClientPlayer>>({});
 const turns = ref<[number, string[]][]>([]);
 const choices = ref<Player["choices"] | undefined>();
 const selectionText = ref("");
 const myTeam = ref<Pokemon[]>([]);
-const active = ref<number>(0);
+const active = ref(0);
+const hasStarted = ref(false);
 
 const textboxScrollDiv = ref<HTMLDivElement | null>(null);
 
@@ -129,14 +128,22 @@ onMounted(() => {
             for (const key in players) {
                 delete players[key];
             }
-            for (const { id, name, isSpectator } of resp.players) {
-                players[id] = { name, isSpectator };
-            }
+
             if (resp.team) {
                 myTeam.value = resp.team;
+                battlers.value.add(resp.id);
+            }
+            for (const { id, name, isSpectator } of resp.players) {
+                players[id] = { name, isSpectator };
+                if (!isSpectator) {
+                    battlers.value.add(id);
+                }
             }
         } else if (resp.type === "sv_join") {
             players[resp.id] = resp;
+            if (!resp.isSpectator) {
+                battlers.value.add(resp.id);
+            }
         } else if (resp.type === "sv_leave") {
             delete players[resp.id];
         } else if (resp.type === "sv_turn") {
@@ -144,6 +151,7 @@ onMounted(() => {
             choices.value = resp.choices;
             selectionText.value = "";
             currentTurn = resp.turn + 1;
+            hasStarted.value = true;
 
             if (resp.choices) {
                 for (const { pp, indexInMoves } of resp.choices.moves) {
@@ -171,6 +179,7 @@ onMounted(() => {
         turns.value = [];
         choices.value = undefined;
         selectionText.value = "";
+        battlers.value.clear();
     };
 });
 
@@ -222,213 +231,29 @@ const cancelMove = () => {
     nextActive = active.value;
 };
 
-const pname = (id: string, title: boolean = true) => {
-    if (id === myId.value) {
-        return players[id].active!.name;
-    } else if (title) {
-        return `The opposing ${players[id].active!.name}`;
-    } else {
-        return `the opposing ${players[id].active!.name}`;
-    }
-};
-
 const stringifyEvents = (events: BattleEvent[]) => {
-    const res = [];
+    const res: string[] = [];
     for (const e of events) {
+        stringifyEvent(players, myId.value, e, res);
         if (e.type === "switch") {
             const player = players[e.src];
-            if (player.active && player.active.hp) {
-                res.push(`${player.name} withdrew ${player.active.name}!`);
-            }
-
             player.active = { ...e };
             if (e.src === myId.value) {
                 active.value = nextActive;
+                player.active.stats = { ...myTeam.value[active.value].stats };
             }
-
-            res.push(`${player.name} sent in ${e.name}! (${e.hp}/${e.maxHp})`);
         } else if (e.type === "damage") {
-            const src = pname(e.src);
-            const target = pname(e.target);
-
-            let { hpBefore, hpAfter } = e;
-            players[e.target].active!.hp = hpAfter;
+            players[e.target].active!.hp = e.hpAfter;
             if (e.target === myId.value) {
-                myTeam.value[active.value].hp = hpAfter;
-                hpBefore = hpPercentExact(hpBefore, e.maxHp);
-                hpAfter = hpPercentExact(hpAfter, e.maxHp);
-            }
-
-            if (e.why === "recoil") {
-                res.push(`${src} was hurt by recoil!`);
-            } else if (e.why === "drain") {
-                res.push(`${src} had it's energy drained!`);
-            } else if (e.why === "crash") {
-                res.push(`${src} kept going and crashed!`);
-            } else if (e.why === "recover") {
-                res.push(`${src} regained health!`);
-            } else if (e.why === "seeded") {
-                res.push(`${src}'s health was sapped by Leech Seed!`);
-            } else if (e.why === "psn") {
-                res.push(`${src} is hurt by poison!`);
-            } else if (e.why === "brn") {
-                res.push(`${src} is hurt by its burn!`);
-            } else if (e.why === "attacked" && e.isCrit) {
-                res.push(`A critical hit!`);
-            } else if (e.why === "rest") {
-                res.push(`${src} started sleeping!`);
-            } else if (e.why === "confusion") {
-                res.push("It hurt itself in its confusion!");
-            }
-
-            if (e.why !== "explosion") {
-                const diff = hpBefore - hpAfter;
-                res.push(
-                    `- ${target} ${diff < 0 ? "gained" : "lost"} ${roundTo(
-                        Math.abs(diff),
-                        1
-                    )}% of its health. (${roundTo(hpAfter, 1)}% remaining)`
-                );
-            }
-
-            if (e.why === "substitute") {
-                res.push(`${src} put in a substitute!`);
-            } else if (e.why === "attacked") {
-                const eff = e.eff ?? 1;
-                if (eff !== 1) {
-                    res.push(` - It's ${eff > 1 ? "super effective!" : "not very effective..."}`);
-                }
-            } else if (e.why === "ohko") {
-                res.push(` - It's a one-hit KO!`);
-            }
-
-            if (hpAfter === 0) {
-                res.push(`${target} fainted!`);
-            }
-        } else if (e.type === "failed") {
-            const src = pname(e.src);
-            switch (e.why) {
-                case "immune":
-                    res.push(`It doesn't affect ${src}...`);
-                    break;
-                case "miss":
-                    res.push(`${src} missed!`);
-                    break;
-                case "cant_substitute":
-                    res.push(`${src} doesn't have enough HP to create a substitute!`);
-                    break;
-                case "has_substitute":
-                    res.push(`${src} already has a substitute!`);
-                    break;
-                case "whirlwind":
-                case "generic":
-                    res.push(`But it failed!`);
-                    break;
-                case "flinch":
-                    res.push(`${src} flinched!`);
-                    break;
-                case "mist":
-                    res.push(`${src} is protected by the mist!`);
-                    break;
-                case "splash":
-                    res.push(`No effect!`);
-                    break;
-            }
-        } else if (e.type === "move") {
-            if (e.thrashing) {
-                res.push(`${pname(e.src)}'s thrashing about!`);
-            } else if (e.disabled) {
-                res.push(`${pname(e.src)}'s ${moveList[e.move].name} is disabled!`);
-            } else {
-                res.push(`${pname(e.src)} used ${moveList[e.move].name}!`);
-            }
-        } else if (e.type === "victory") {
-            res.push(`${players[e.id].name} wins!`);
-        } else if (e.type === "hit_sub") {
-            if (e.confusion) {
-                res.push("It hurt itself in its confusion!");
-            }
-
-            const target = pname(e.target);
-            res.push(`${target}'s substitute took the hit!`);
-            if (e.broken) {
-                res.push(`${target}'s substitute broke!`);
-            }
-
-            const eff = e.eff ?? 1;
-            if (eff !== 1) {
-                res.push(` - It's ${eff > 1 ? "super effective!" : "not very effective..."}`);
+                myTeam.value[active.value].hp = e.hpAfter;
             }
         } else if (e.type === "status") {
-            const table: Record<Status, string> = {
-                psn: "was poisoned",
-                par: "was paralyzed",
-                slp: "fell asleep",
-                frz: "was frozen",
-                tox: "was badly poisoned",
-                brn: "was burned",
-            };
-
-            res.push(`${pname(e.id)} ${table[e.status]}!`);
             // TODO: remove status
             if (e.id === myId.value) {
                 myTeam.value[active.value].status = e.status;
             }
         } else if (e.type === "stages") {
-            const name = pname(e.id);
-            for (const [stage, amount] of e.stages) {
-                res.push(
-                    `${name}'s ${stageTable[stage]} ${amount > 0 ? "rose" : "fell"}${
-                        Math.abs(amount) > 1 ? " sharply" : ""
-                    }!`
-                );
-            }
-        } else if (e.type === "info") {
-            const messages: Record<InfoReason, string> = {
-                seeded: "{} was seeded!",
-                mist: "{}'s' shrouded in mist!",
-                light_screen: "{}'s protected against special attacks!",
-                reflect: "{} is gained armor!",
-                focus: "{} is getting pumped!",
-                conversion: "Converted type to match {l}!",
-                payday: "Coins scattered everywhere!",
-                became_confused: "{} became confused!",
-                confused: "{} is confused!",
-                confused_end: "{} snapped out of its confusion!",
-                recharge: "{} must recharge!",
-                frozen: "{} is frozen solid!",
-                sleep: "{} is fast asleep!",
-                wake: "{} woke up!",
-                haze: "All status changes were removed!",
-                thaw: "{} thawed out!",
-                paralyze: "{}'s fully paralyzed!",
-            };
-
-            res.push(messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)));
-        } else if (e.type === "transform") {
-            res.push(`${pname(e.src)} transformed into ${pname(e.target, false)}!`);
-        } else if (e.type === "disable") {
-            if (e.move) {
-                res.push(`${pname(e.id)}'s ${moveList[e.move].name} was disabled!`);
-            } else {
-                res.push(`${pname(e.id)}'s disabled no longer!`);
-            }
-        } else if (e.type === "charge") {
-            if (e.move === "skullbash") {
-                res.push(`${pname(e.id)} lowered its head!`);
-            } else if (e.move === "razorwind") {
-                res.push(`${pname(e.id)} made a whirlwind!`);
-            } else if (e.move === "skyattack") {
-                res.push(`${pname(e.id)} is glowing!`);
-            } else if (e.move === "solarbeam") {
-                res.push(`${pname(e.id)} took in sunlight!`);
-            } else if (e.move === "dig") {
-                res.push(`${pname(e.id)} dug a hole!`);
-            } else if (e.move === "fly") {
-                res.push(`${pname(e.id)} flew up high!`);
-            }
-        } else {
-            res.push(JSON.stringify(e));
+            players[myId.value].active!.stats = e.stats;
         }
     }
     return res;

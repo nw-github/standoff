@@ -69,12 +69,12 @@ const initSocket = (socket: WebSocket, players: Players, lobby: Lobby) => {
         const isRegistered = socket.uuid in players;
         if (!isRegistered && resp.type === "cl_join") {
             const pokemon = [
-                new Pokemon("alakazam", {}, {}, 100, randomMoves([])),
-                new Pokemon("tauros", {}, {}, 100, randomMoves([])),
-                new Pokemon("snorlax", {}, {}, 100, randomMoves([])),
-                new Pokemon("zapdos", {}, {}, 100, randomMoves([])),
-                new Pokemon("starmie", {}, {}, 100, randomMoves([])),
-                new Pokemon("exeggutor", {}, {}, 100, randomMoves([])),
+                new Pokemon("alakazam", {}, {}, 100, randomMoves(["rest"])),
+                new Pokemon("tauros", {}, {}, 100, randomMoves(["swordsdance"])),
+                new Pokemon("snorlax", {}, {}, 100, randomMoves(["bodyslam"])),
+                new Pokemon("zapdos", {}, {}, 100, randomMoves(["thunder"])),
+                new Pokemon("starmie", {}, {}, 100, randomMoves(["crabhammer"])),
+                new Pokemon("rhydon", {}, {}, 100, randomMoves(["earthquake"])),
             ];
             const num = randRangeInclusive(1, pokemon.length - 1);
             const tmp = pokemon[0];

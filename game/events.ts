@@ -1,4 +1,4 @@
-import type { BooleanFlag, Stages } from "./battle";
+import type { ActivePokemon, BooleanFlag, Stages } from "./battle";
 import type { MoveId } from "./moveList";
 import { type Status } from "./pokemon";
 import type { SpeciesId } from "./species";
@@ -106,6 +106,7 @@ type StagesEvent = {
     type: "stages";
     id: PlayerId;
     stages: [Stages, number][];
+    stats?: ActivePokemon["stats"];
 };
 
 export type InfoReason =

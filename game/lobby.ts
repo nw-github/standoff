@@ -150,6 +150,9 @@ export class Lobby extends EventEmitter {
                     hp: hpPercent(val.hp, val.maxHp),
                     maxHp: 100,
                 };
+            } else if (type === "stages" && val.id !== player.id) {
+                // FIXME: this might not be accurate if two status moves were used in the same turn.
+                return { ...val, stats: {...player.active.stats} };
             }
 
             return val;

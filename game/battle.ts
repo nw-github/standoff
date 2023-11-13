@@ -603,7 +603,6 @@ export class ActivePokemon {
     }
 
     inflictStages(mods: [Stages, number][], battle: Battle) {
-        // TODO: update stats
         mods = mods.filter(([stat]) => Math.abs(this.stages[stat]) !== 6);
 
         const opponent = battle.opponentOf(this.owner).active;
@@ -631,6 +630,7 @@ export class ActivePokemon {
                 type: "stages",
                 id: this.owner.id,
                 stages: mods,
+                stats: {...this.stats},
             });
         }
 
