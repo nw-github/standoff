@@ -95,7 +95,7 @@ export class DamagingMove extends Move {
             }
         }
         // https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_I
-        const eff = getEffectiveness(this.type, target.base.species.types);
+        const eff = getEffectiveness(this.type, target.types);
         if (eff === 0) {
             battle.pushEvent({
                 type: "failed",
