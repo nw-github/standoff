@@ -139,7 +139,7 @@ export const stageMultipliers: Record<number, number> = {
 };
 
 export const typeChart: Record<Type, Partial<Record<Type, number>>> = {
-    normal: { ghost: 0 },
+    normal: { ghost: 0, rock: 0.5 },
     rock: { bug: 2, fire: 2, flying: 2, ice: 2, fight: 0.5, ground: 0.5 },
     ground: { rock: 2, poison: 2, bug: 0.5, flying: 0, grass: 0.5, fire: 2, electric: 2 },
     ghost: { normal: 0, ghost: 2, psychic: 0 },

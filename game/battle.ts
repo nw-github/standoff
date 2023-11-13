@@ -269,16 +269,26 @@ export class Battle {
             .filter(player => player.choice)
             .map(player => player.choice!)
             .sort((a, b) => {
-                if (a.move.priority !== b.move.priority) {
-                    return (b.move.priority ?? 0) - (a.move.priority ?? 0);
+                const aPri = a.move.priority ?? 0, bPri = b.move.priority ?? 0;
+                if (aPri !== bPri) {
+                    console.log(
+                        `Priority: ${a.move.name} (${aPri}) vs`,
+                        `${b.move.name} (${bPri})`
+                    );
+                    return bPri - aPri;
                 }
 
                 const aSpe = a.user.owner.active.getStat("spe");
                 const bSpe = b.user.owner.active.getStat("spe");
                 if (aSpe === bSpe) {
+                    console.log(`Speed tie: ${aSpe}`);
                     return randChance255(128) ? -1 : 1;
                 }
 
+                console.log(
+                    `Speed: ${a.user.base.name} (${aSpe}) vs`,
+                    `${b.user.base.name} (${bSpe})`
+                );
                 return bSpe - aSpe;
             });
 
@@ -681,11 +691,11 @@ export class ActivePokemon {
 
     applyStatusDebuff() {
         if (this.base.status === "brn") {
-            this.stats.atk = Math.max(this.stats.atk / 2, 1);
+            this.stats.atk = Math.floor(Math.max(this.stats.atk / 2, 1));
         }
 
         if (this.base.status === "par") {
-            this.stats.spe = Math.max(this.stats.spe / 4, 1);
+            this.stats.spe = Math.floor(Math.max(this.stats.spe / 4, 1));
         }
     }
 

@@ -165,6 +165,7 @@ export class DamagingMove extends Move {
             `(${defs} ${def})`,
             `(Stab ${stab})`,
             `(Rand ${rand})`,
+            `(Eff ${eff})`,
             `(Crit? ${isCrit})`,
             ` = ${dmg}`
         );
