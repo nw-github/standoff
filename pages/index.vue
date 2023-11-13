@@ -11,7 +11,7 @@
             <ActivePokemon
                 v-for="id in battlers"
                 :poke="players[id].active!"
-                :base="id === myId ? myTeam[active] : undefined"
+                :base="id === myId ? activeInTeam : undefined"
             />
         </div>
 
@@ -45,7 +45,7 @@
                     class="switch-button"
                     v-for="(poke, i) in myTeam"
                     :poke="poke"
-                    :disabled="i === active || !choices.canSwitch"
+                    :disabled="i === activeIndex || !choices.canSwitch"
                     @click="() => selectSwitch(i)"
                 />
             </div>
@@ -96,7 +96,8 @@ const turns = ref<[number, string[]][]>([]);
 const choices = ref<Player["choices"] | undefined>();
 const selectionText = ref("");
 const myTeam = ref<Pokemon[]>([]);
-const active = ref(0);
+const activeIndex = ref(0);
+const activeInTeam = computed<Pokemon | undefined>(() => myTeam.value[activeIndex.value]);
 const hasStarted = ref(false);
 
 const textboxScrollDiv = ref<HTMLDivElement | null>(null);
@@ -165,7 +166,7 @@ onMounted(() => {
             if (resp.choices) {
                 for (const { pp, indexInMoves } of resp.choices.moves) {
                     if (indexInMoves !== undefined) {
-                        myTeam.value[active.value].pp[indexInMoves] = pp;
+                        activeInTeam.value!.pp[indexInMoves] = pp;
                     }
                 }
             }
@@ -237,7 +238,7 @@ const cancelMove = () => {
         })
     );
     selectionText.value = "";
-    nextActive = active.value;
+    nextActive = activeIndex.value;
 };
 
 const stringifyEvents = (events: BattleEvent[]) => {
@@ -248,18 +249,22 @@ const stringifyEvents = (events: BattleEvent[]) => {
             const player = players[e.src];
             player.active = { ...e };
             if (e.src === myId.value) {
-                active.value = nextActive;
-                player.active.stats = { ...myTeam.value[active.value].stats };
+                if (activeInTeam.value?.status === "tox") {
+                    activeInTeam.value.status = "psn";
+                }
+
+                activeIndex.value = nextActive;
+                player.active.stats = { ...activeInTeam.value!.stats };
             }
         } else if (e.type === "damage") {
             players[e.target].active!.hp = e.hpAfter;
             if (e.target === myId.value) {
-                myTeam.value[active.value].hp = e.hpAfter;
+                activeInTeam.value!.hp = e.hpAfter;
             }
         } else if (e.type === "status") {
             // TODO: remove status
             if (e.id === myId.value) {
-                myTeam.value[active.value].status = e.status;
+                activeInTeam.value!.status = e.status;
             }
         } else if (e.type === "stages") {
             players[myId.value].active!.stats = e.stats;

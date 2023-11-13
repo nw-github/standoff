@@ -246,7 +246,7 @@ export const stringifyEvent = (
         const src = pname(e.src);
         switch (e.why) {
             case "immune":
-                res.push(`It doesn't affect ${src}...`);
+                res.push(`It doesn't affect ${pname(e.src, false)}...`);
                 break;
             case "miss":
                 res.push(`${src} missed!`);

@@ -33,15 +33,15 @@ import { speciesList } from "../game/species";
 import { moveList } from "../game/moveList";
 import { hpPercentExact } from "../game/utils";
 
-const { poke, active } = defineProps<{ active?: ClientActivePokemon; poke: Pokemon }>();
-const species = speciesList[poke.speciesId];
+const props = defineProps<{ active?: ClientActivePokemon; poke: Pokemon }>();
+const species = computed(() => speciesList[props.poke.speciesId]);
 
 const statClass = (stat: "atk" | "def" | "spe" | "spc") => {
-    if (!active || poke.stats[stat] === active.stats![stat]) {
+    if (!props.active || props.poke.stats[stat] === props.active.stats![stat]) {
         return "";
     }
 
-    return poke.stats[stat] > active.stats![stat] ? "down" : "up";
+    return props.poke.stats[stat] > props.active.stats![stat] ? "down" : "up";
 };
 </script>
 

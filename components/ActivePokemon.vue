@@ -73,9 +73,11 @@ import { hpPercent } from "../game/utils";
 import { calcStat, type Pokemon } from "../game/pokemon";
 import { speciesList } from "../game/species";
 
-const { poke, base } = defineProps<{ poke: ClientActivePokemon; base?: Pokemon }>();
-const species = speciesList[poke.speciesId];
-const minSpe = calcStat(species.stats.spe, poke.level, 0, 0);
-const maxSpe = calcStat(species.stats.spe, poke.level, 15, 65535);
-const hp = computed(() => base ? hpPercent(base.hp, base.stats.hp) : poke.hp);
+const props = defineProps<{ poke: ClientActivePokemon; base?: Pokemon }>();
+const species = computed(() => speciesList[props.poke.speciesId]);
+const minSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 0, 0));
+const maxSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 15, 65535));
+const hp = computed(() =>
+    props.base ? hpPercent(props.base.hp, props.base.stats.hp) : props.poke.hp
+);
 </script>
