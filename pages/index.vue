@@ -6,7 +6,7 @@
             {{ player.name }}: {{ id }} {{ player.isSpectator ? "(spectator)" : "" }}
         </li>
     </ul>
-    <div class="everything">
+    <div class="game">
         <div class="battlefield" v-if="hasStarted">
             <ActivePokemon
                 v-for="id in battlers"
@@ -27,7 +27,9 @@
 
             <div ref="textboxScrollDiv"></div>
         </div>
+    </div>
 
+    <div class="selections">
         <template v-if="choices && !selectionText.length">
             <div class="moves">
                 <MoveButton
@@ -56,7 +58,7 @@
 </template>
 
 <style scoped>
-.everything {
+.game {
     display: flex;
 }
 

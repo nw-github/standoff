@@ -29,8 +29,7 @@ export class Pokemon {
         dvs.hp = ((dvs.atk & 1) << 3) | ((dvs.def & 1) << 2) | ((dvs.spc & 1) << 1) | (dvs.spe & 1);
 
         const calcStatBase = (stat: keyof Stats) => {
-            const s = Math.min(Math.ceil(Math.sqrt(statexp[stat] ?? 65535)), 255);
-            return Math.floor((((this.species.stats[stat] + dvs[stat]!) * 2 + s / 4) * level) / 100);
+            return calcStat(this.species.stats[stat], level, dvs[stat], statexp[stat]);
         };
 
         this.speciesId = speciesId;
@@ -41,11 +40,11 @@ export class Pokemon {
         this.level = level;
         // https://bulbapedia.bulbagarden.net/wiki/Individual_values#Usage
         this.stats = {
-            hp: calcStatBase("hp") + level + 10,
-            atk: calcStatBase("atk") + 5,
-            def: calcStatBase("def") + 5,
-            spc: calcStatBase("spc") + 5,
-            spe: calcStatBase("spe") + 5,
+            hp: calcStatBase("hp") + level + 5,
+            atk: calcStatBase("atk"),
+            def: calcStatBase("def"),
+            spc: calcStatBase("spc"),
+            spe: calcStatBase("spe"),
         };
         this.hp = this.stats.hp;
     }
@@ -54,3 +53,8 @@ export class Pokemon {
         return speciesList[this.speciesId];
     }
 }
+
+export const calcStat = (base: number, level: number, dv?: number, statexp?: number) => {
+    const s = Math.min(Math.ceil(Math.sqrt(statexp ?? 65535)), 255);
+    return Math.floor((((base + (dv ?? 15)) * 2 + s / 4) * level) / 100) + 5;
+};

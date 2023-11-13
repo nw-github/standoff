@@ -19,6 +19,7 @@ export type ClientActivePokemon = {
     speciesId: SpeciesId;
     name: string;
     hp: number;
+    level: number;
     status: Status | null;
     stats?: ActivePokemon["stats"],
 };
@@ -300,7 +301,7 @@ export const stringifyEvent = (
             psn: "was poisoned",
             par: "was paralyzed",
             slp: "fell asleep",
-            frz: "was frozen",
+            frz: "was frozen solid",
             tox: "was badly poisoned",
             brn: "was burned",
         };

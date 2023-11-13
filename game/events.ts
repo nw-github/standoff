@@ -23,6 +23,7 @@ type SwitchEvent = {
     type: "switch";
     src: PlayerId;
     speciesId: SpeciesId;
+    level: number;
     hp: number;
     maxHp: number;
     status: Status | null;

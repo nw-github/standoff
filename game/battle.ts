@@ -472,6 +472,7 @@ export class ActivePokemon {
             maxHp: base.stats.hp,
             src: this.owner.id,
             name: base.name,
+            level: base.level,
         });
 
         this.base = base;
@@ -483,6 +484,7 @@ export class ActivePokemon {
             // @ts-ignore
             this.flags[k] = false;
         }
+
         this.types = [...base.species.types];
         this.stats = { ...base.stats };
         this.substitute = 0;

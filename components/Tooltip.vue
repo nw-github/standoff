@@ -1,23 +1,25 @@
 <template>
-    <div class="tt-wrapper">
-        <slot />
+    <div class="wrapper">
+        <div class="element">
+            <slot />
+        </div>
 
-        <span class="tt-content">
+        <span class="tooltip">
             <slot name="tooltip" />
         </span>
     </div>
 </template>
 
 <style scoped>
-.tt-wrapper {
+.wrapper {
     position: relative;
     display: inline-block;
 }
 
-.tt-content {
+.tooltip {
     visibility: hidden;
     opacity: 0;
-    transition: opacity 0.7s;
+    transition: opacity 0.6s;
 
     background-color: #555;
     color: #fff;
@@ -32,7 +34,7 @@
     margin-left: -120px;
 }
 
-.tt-wrapper:hover .tt-content {
+.element:hover + .tooltip {
     visibility: visible;
     opacity: 1;
 }
