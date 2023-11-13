@@ -576,8 +576,8 @@ export class ActivePokemon {
         return { dealt, brokeSub, dead: this.base.hp === 0 };
     }
 
-    inflictStatus(status: Status, battle: Battle) {
-        if (this.base.status !== null) {
+    inflictStatus(status: Status, battle: Battle, override: boolean = false) {
+        if (!override && this.base.status !== null) {
             return false;
         }
 

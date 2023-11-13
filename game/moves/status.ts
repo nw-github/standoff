@@ -43,6 +43,12 @@ export class StatusMove extends Move {
             return false;
         }
 
+        if (this.status === "slp" && target.recharge) {
+            // https://www.youtube.com/watch?v=x2AgAdQwyGI
+            target.inflictStatus(this.status, battle, true);
+            return false;
+        }
+
         if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
             return false;
         }
