@@ -1,6 +1,7 @@
 import type { BooleanFlag, Stages } from "./battle";
 import type { MoveId } from "./moveList";
 import { type Status } from "./pokemon";
+import type { SpeciesId } from "./species";
 
 export type BattleEvent =
     | SwitchEvent
@@ -21,7 +22,7 @@ export type PlayerId = string;
 type SwitchEvent = {
     type: "switch";
     src: PlayerId;
-    dexId: number;
+    speciesId: SpeciesId;
     hp: number;
     maxHp: number;
     status: Status | null;

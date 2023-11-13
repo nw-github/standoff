@@ -466,7 +466,7 @@ export class ActivePokemon {
 
         battle.pushEvent({
             type: "switch",
-            dexId: base.species.dexId,
+            speciesId: base.speciesId,
             status: base.status,
             hp: base.hp,
             maxHp: base.stats.hp,

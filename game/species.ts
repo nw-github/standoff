@@ -45,6 +45,19 @@ export const speciesList = {
             spe: 55,
         },
     } as Species,
+    rhydon: {
+        dexId: 112,
+        name: "Rhydon",
+        types: ["ground", "rock"],
+        moves: [],
+        stats: {
+            hp: 105,
+            atk: 130,
+            def: 120,
+            spc: 45,
+            spe: 40,
+        },
+    } as Species,
     starmie: {
         dexId: 121,
         name: "Starmie",
