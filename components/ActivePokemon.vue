@@ -1,7 +1,7 @@
 <template>
     <div class="self">
         <div class="healthbar">
-            <div class="hp-fill" :style="{ width: `${hp}%` }">_</div>
+            <div class="hp-fill" :style="{ width: `${hp}%` }"></div>
             <div class="hp-text">{{ hp }}%</div>
         </div>
         <Tooltip>
@@ -35,6 +35,7 @@
 .hp-fill {
     background-color: #007f00;
     width: 100%;
+    height: 100%;
     position: absolute;
     border-radius: 5px;
     transition: width 0.5s;
