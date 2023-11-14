@@ -257,11 +257,11 @@ export class DamagingMove extends Move {
             }
 
             if (effect === "confusion") {
-                if (target.confusion === 0 && randChance255(floatTo255(this.effect[0]))) {
+                if (target.confusion === 0) {
                     target.inflictConfusion(battle);
                 }
                 return dead;
-            } else if (!hadSub) {
+            } else if (hadSub) {
                 return dead;
             } else if (Array.isArray(effect)) {
                 target.inflictStages(effect, battle);
