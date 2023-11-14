@@ -1,7 +1,7 @@
 import { WebSocket, WebSocketServer } from "ws";
 import { v4 as uuid } from "uuid";
 
-import { Lobby } from "../../game/lobby";
+import { Lobby } from "./lobby";
 import { ClientMessage, ServerMessage, wsStringify } from "../../utils/wsMessage";
 import { Pokemon } from "../../game/pokemon";
 import { MoveId, moveList } from "../../game/moveList";

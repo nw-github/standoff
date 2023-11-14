@@ -1,8 +1,8 @@
-import { type Pokemon } from "./pokemon";
-import { Battle, type Choice, Player, SelectionError, type Turn } from "./battle";
-import { type PlayerId, type BattleEvent } from "./events";
+import { type Pokemon } from "../../game/pokemon";
+import { Battle, type Choice, Player, SelectionError, type Turn } from "../../game/battle";
+import { type PlayerId, type BattleEvent } from "../../game/events";
 import { EventEmitter } from "events";
-import { hpPercent } from "./utils";
+import { hpPercent } from "../../game/utils";
 
 export declare interface Lobby {
     on(
