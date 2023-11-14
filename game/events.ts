@@ -101,13 +101,14 @@ type StatusEvent = {
     type: "status";
     id: PlayerId;
     status: Status;
+    stats: ActivePokemon["stats"];
 };
 
 type StagesEvent = {
     type: "stages";
     id: PlayerId;
     stages: [Stages, number][];
-    stats?: ActivePokemon["stats"];
+    stats: ActivePokemon["stats"];
 };
 
 export type InfoReason =

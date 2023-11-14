@@ -594,13 +594,14 @@ export class ActivePokemon {
 
         this.base.status = status;
         this.handledStatus = false;
+        this.applyStatusDebuff();
         battle.pushEvent({
             type: "status",
             id: this.owner.id,
             status,
+            stats: {...this.stats},
         });
 
-        this.applyStatusDebuff();
         return true;
     }
 

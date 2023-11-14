@@ -67,6 +67,7 @@
     width: 70vw;
     overflow-y: auto;
     background-color: #ccc;
+    padding: 5px;
 }
 
 .selection-text {
@@ -265,6 +266,7 @@ const stringifyEvents = (events: BattleEvent[]) => {
             // TODO: remove status
             if (e.id === myId.value) {
                 activeInTeam.value!.status = e.status;
+                players[e.id].active!.stats = e.stats;
             }
         } else if (e.type === "stages") {
             players[myId.value].active!.stats = e.stats;
