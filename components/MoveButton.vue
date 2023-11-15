@@ -1,6 +1,13 @@
 <template>
     <Tooltip>
-        <button @click="$emit('click')" :disabled="!choice.valid">
+        <button
+            @click="$emit('click')"
+            :disabled="!choice.valid"
+            :style="{
+                backgroundImage: `linear-gradient(#fff, ${bgColor[move.type]})`,
+                borderColor: hex2rgba(bgColor[move.type], 0.8),
+            }"
+        >
             <span class="info type">{{ toTitleCase(move.type) }}</span>
             <span class="name">{{ move.name }}</span>
             <span class="info pp">{{ choice.pp !== -1 ? choice.pp : "--" }}/{{ move.pp }}</span>
@@ -23,7 +30,9 @@
                     Priority
                 </li>
                 <li class="padtop">{{ desc }}</li>
-                <li class="padtop category" v-if="move.power">* {{ spc ? "Special" : "Physical" }}</li>
+                <li class="padtop category" v-if="move.power">
+                    * {{ spc ? "Special" : "Physical" }}
+                </li>
             </ul>
         </template>
     </Tooltip>
@@ -32,7 +41,7 @@
 <script setup lang="ts">
 import type { MoveChoice } from "../game/battle";
 import { moveList } from "../game/moveList";
-import { isSpecial } from "../game/utils";
+import { isSpecial, type Type } from "../game/utils";
 
 defineEmits<{ (e: "click"): void }>();
 
@@ -40,6 +49,32 @@ const { choice } = defineProps<{ choice: MoveChoice }>();
 const move = moveList[choice.move];
 const spc = isSpecial(move.type);
 const desc = describeMove(choice.move);
+
+const bgColor: Record<Type, string> = {
+    normal: "#ACAC7B",
+    rock: "#BDA439",
+    ground: "#E6C56A",
+    ghost: "#735A9C",
+    poison: "#A441A4",
+    bug: "#ACBD20",
+    flying: "#AC94F6",
+    fight: "#C53129",
+    water: "#6A94F6",
+    grass: "#7BCD52",
+    fire: "#F68331",
+    electric: "#FFD531",
+    ice: "#9CDEDE",
+    psychic: "#FF5A8B",
+    dragon: "#7339FF",
+};
+
+const hex2rgba = (rgb: string, a: number) => {
+    return `rgba(${rgb
+        .slice(1)
+        .match(/.{2}/g)!
+        .map(n => parseInt(n, 16))
+        .join(", ")}, ${a})`;
+};
 </script>
 
 <style scoped>
@@ -47,6 +82,12 @@ button {
     display: grid;
     border-radius: 5px;
     width: 200px;
+    border: 1px solid;
+    border-bottom: 0px;
+}
+
+.info {
+    color: #333;
 }
 
 .type {
