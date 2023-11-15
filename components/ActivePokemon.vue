@@ -4,8 +4,15 @@
             <div class="hp-fill" :style="{ width: `${hp}%` }"></div>
             <div class="hp-text">{{ hp }}%</div>
         </div>
+        <div class="effects">
+            <div v-if="poke.status" class="status center-item" :class="poke.status">
+                {{ poke.status.toUpperCase() }}
+            </div>
+        </div>
         <Tooltip>
-            <img class="sprite" />
+            <div class="sprite-container center-item">
+                <img class="sprite" :src="sprite" />
+            </div>
 
             <template #tooltip>
                 <template v-if="base">
@@ -24,12 +31,43 @@
 </template>
 
 <style scoped>
+.effects {
+    height: 1.4em;
+}
+
+.status {
+    height: 100%;
+    width: 2.5em;
+    color: white;
+    border-radius: 5px;
+}
+
+.psn, .tox {
+    background-color: #C562C5;
+}
+
+.brn {
+    background-color: #E67352;
+}
+
+.frz {
+    background-color: #8BB4E6;
+}
+
+.slp {
+    background-color: #A4A48B;
+}
+
+.par {
+    background-color: #BEBE18;
+}
+
 .healthbar {
     background-color: #333;
     border-radius: 5px;
     position: relative;
     height: 20px;
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 
 .hp-fill {
@@ -53,6 +91,10 @@
     height: 200px;
 }
 
+.sprite {
+    width: 80%;
+}
+
 .self {
     width: 200px;
     padding: 5px;
@@ -60,6 +102,12 @@
 
 .info {
     font-style: italic;
+}
+
+.center-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 ul {

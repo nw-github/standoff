@@ -278,8 +278,8 @@ const stringifyEvents = (events: BattleEvent[]) => {
             }
         } else if (e.type === "status") {
             // TODO: remove status
+            players[e.id].active!.status = e.status;
             if (e.id === myId.value) {
-                activeInTeam.value!.status = e.status;
                 players[e.id].active!.stats = e.stats;
             }
         } else if (e.type === "stages") {

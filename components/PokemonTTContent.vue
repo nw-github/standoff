@@ -1,9 +1,6 @@
 <template>
     <ul class="tt-list">
-        <li>
-            {{ poke.name }} ({{ species.types.map(toTitleCase).join("/") }})
-            <template v-if="poke.status">({{ poke.status.toUpperCase() }})</template>
-        </li>
+        <li>{{ poke.name }} ({{ species.types.map(toTitleCase).join("/") }})</li>
         <li>
             {{ poke.hp }}/{{ poke.stats.hp }} HP ({{
                 roundTo(hpPercentExact(poke.hp, poke.stats.hp), 2)
