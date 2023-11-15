@@ -17,18 +17,7 @@
                 />
             </div>
 
-            <div class="textbox">
-                <template v-for="[turnNo, turn] in turns">
-                    <h2>Turn {{ turnNo }}</h2>
-                    <ul>
-                        <li v-for="event in turn">
-                            {{ event }}
-                        </li>
-                    </ul>
-                </template>
-
-                <div ref="textboxScrollDiv"></div>
-            </div>
+            <Textbox class="textbox" :players="players" :my-id="myId" :events="turns" ref="textbox" />
         </div>
 
         <div class="selections">
@@ -85,8 +74,6 @@ main {
 .textbox {
     width: 100%;
     height: 50vh;
-    overflow-y: auto;
-    background-color: #ccc;
 }
 
 .selection-text {
@@ -102,7 +89,8 @@ main {
     grid-template-columns: 1fr 1fr;
 }
 
-.move-button, .switch-button {
+.move-button,
+.switch-button {
     padding: 5px 5px 5px 0px;
 }
 </style>
@@ -112,20 +100,20 @@ import type { BattleEvent } from "../game/events";
 import type { ActivePokemon, Player } from "../game/battle";
 import type { Pokemon } from "../game/pokemon";
 import { moveList } from "../game/moveList";
+import type { Textbox } from "#build/components";
 
 const status = ref("loading...");
 const myId = ref("");
 const battlers = ref<string[]>([]);
 const players = reactive<Record<string, ClientPlayer>>({});
-const turns = ref<[number, string[]][]>([]);
+const turns = ref<[number, BattleEvent[]][]>([]);
 const choices = ref<Player["choices"] | undefined>();
 const selectionText = ref("");
 const myTeam = ref<Pokemon[]>([]);
 const activeIndex = ref(0);
 const activeInTeam = computed<Pokemon | undefined>(() => myTeam.value[activeIndex.value]);
 const hasStarted = ref(false);
-
-const textboxScrollDiv = ref<HTMLDivElement | null>(null);
+const textbox = ref<InstanceType<typeof Textbox>>();
 
 const addBattler = (id: string) => {
     if (!battlers.value.includes(id)) {
@@ -182,7 +170,6 @@ onMounted(() => {
         } else if (resp.type === "sv_leave") {
             delete players[resp.id];
         } else if (resp.type === "sv_turn") {
-            turns.value = [...turns.value, [resp.turn, stringifyEvents(JSON.parse(resp.events))]];
             choices.value = resp.choices;
             selectionText.value = "";
             currentTurn = resp.turn + 1;
@@ -196,8 +183,12 @@ onMounted(() => {
                 }
             }
 
-            await nextTick();
-            textboxScrollDiv.value?.scrollIntoView();
+            await textbox.value!.enterTurn(pushToTextbox => {
+                for (const e of JSON.parse(resp.events) as BattleEvent[]) {
+                    pushToTextbox(e);
+                    processEvent(e);
+                }
+            });
         } else if (resp.type === "sv_cancel") {
             console.log(resp.error);
         } else if (resp.type === "sv_choice") {
@@ -215,6 +206,7 @@ onMounted(() => {
         choices.value = undefined;
         selectionText.value = "";
         battlers.value.length = 0;
+        textbox.value?.clear();
     };
 });
 
@@ -266,43 +258,38 @@ const cancelMove = () => {
     nextActive = activeIndex.value;
 };
 
-const stringifyEvents = (events: BattleEvent[]) => {
-    const res: string[] = [];
-    for (const e of events) {
-        stringifyEvent(players, myId.value, e, res);
-        if (e.type === "switch") {
-            const player = players[e.src];
-            player.active = { ...e };
-            if (e.src === myId.value) {
-                if (activeInTeam.value?.status === "tox") {
-                    activeInTeam.value.status = "psn";
-                }
-
-                activeIndex.value = nextActive;
-                player.active.stats = { ...activeInTeam.value!.stats };
-            }
-        } else if (e.type === "damage") {
-            players[e.target].active!.hp = e.hpAfter;
-            if (e.target === myId.value) {
-                activeInTeam.value!.hp = e.hpAfter;
+const processEvent = (e: BattleEvent) => {
+    if (e.type === "switch") {
+        const player = players[e.src];
+        player.active = { ...e };
+        if (e.src === myId.value) {
+            if (activeInTeam.value?.status === "tox") {
+                activeInTeam.value.status = "psn";
             }
 
-            if (e.why === "rest") {
-                players[e.target].active!.status = "slp";
-            }
-        } else if (e.type === "status") {
-            // TODO: remove status
-            players[e.id].active!.status = e.status;
-            if (e.id === myId.value) {
-                players[e.id].active!.stats = e.stats;
-            }
-        } else if (e.type === "stages") {
-            players[myId.value].active!.stats = e.stats;
-        } else if (e.type === "transform") {
-            const target = players[e.target].active!;
-            players[e.src].active!.transformed = target.transformed ?? target.speciesId;
+            activeIndex.value = nextActive;
+            player.active.stats = { ...activeInTeam.value!.stats };
         }
+    } else if (e.type === "damage") {
+        players[e.target].active!.hp = e.hpAfter;
+        if (e.target === myId.value) {
+            activeInTeam.value!.hp = e.hpAfter;
+        }
+
+        if (e.why === "rest") {
+            players[e.target].active!.status = "slp";
+        }
+    } else if (e.type === "status") {
+        // TODO: remove status
+        players[e.id].active!.status = e.status;
+        if (e.id === myId.value) {
+            players[e.id].active!.stats = e.stats;
+        }
+    } else if (e.type === "stages") {
+        players[myId.value].active!.stats = e.stats;
+    } else if (e.type === "transform") {
+        const target = players[e.target].active!;
+        players[e.src].active!.transformed = target.transformed ?? target.speciesId;
     }
-    return res;
 };
 </script>
