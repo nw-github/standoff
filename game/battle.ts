@@ -116,6 +116,10 @@ export class Player {
         };
     }
 
+    isAllDead() {
+        return this.team.every(poke => poke.hp <= 0);
+    }
+
     private isValidMove(move: MoveId, i: number) {
         // TODO: research these interactions
         //       user hyper beams, opponent disables:
@@ -375,7 +379,6 @@ export class Battle {
             }
 
             if (move.use(this, user, target, choice?.indexInMoves)) {
-                // A pokemon has died, skip all end of turn events
                 if (!this.victor) {
                     if (target.owner.team.every(poke => poke.hp <= 0)) {
                         this.victor = user.owner;
@@ -383,17 +386,22 @@ export class Battle {
                         this.victor = target.owner;
                     }
                 }
-
                 skipEnd = true;
                 break;
             }
 
             if (move.power && user.handleStatusDamage(this)) {
+                if (user.owner.isAllDead()) {
+                    this.victor = target.owner;
+                }
                 skipEnd = true;
                 break;
             }
 
             if (user.seeded && user.tickCounter(this, "seeded")) {
+                if (user.owner.isAllDead()) {
+                    this.victor = target.owner;
+                }
                 skipEnd = true;
                 break;
             }
@@ -401,7 +409,12 @@ export class Battle {
 
         if (!skipEnd) {
             for (const { user } of choices) {
-                user.handleStatusDamage(this);
+                if (user.handleStatusDamage(this)) {
+                    if (user.owner.isAllDead()) {
+                        this.victor = this.opponentOf(user.owner);
+                    }
+                    break;
+                }
             }
         }
 
