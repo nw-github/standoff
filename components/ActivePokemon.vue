@@ -1,7 +1,7 @@
 <template>
     <div class="self">
         <div class="healthbar">
-            <div class="hp-fill" :style="{ width: `${hp}%` }"></div>
+            <div class="hp-fill" :style="{ width: `${hp}%`, backgroundColor: hpColor(hp) }"></div>
             <div class="hp-text">{{ hp }}%</div>
         </div>
         <div class="effects">
@@ -42,24 +42,25 @@
     border-radius: 5px;
 }
 
-.psn, .tox {
-    background-color: #C562C5;
+.psn,
+.tox {
+    background-color: #c562c5;
 }
 
 .brn {
-    background-color: #E67352;
+    background-color: #e67352;
 }
 
 .frz {
-    background-color: #8BB4E6;
+    background-color: #8bb4e6;
 }
 
 .slp {
-    background-color: #A4A48B;
+    background-color: #a4a48b;
 }
 
 .par {
-    background-color: #BEBE18;
+    background-color: #bebe18;
 }
 
 .healthbar {
@@ -71,12 +72,11 @@
 }
 
 .hp-fill {
-    background-color: #007f00;
     width: 100%;
     height: 100%;
     position: absolute;
     border-radius: 5px;
-    transition: width 0.5s;
+    transition: width 0.5s, background-color 0.5s;
 }
 
 .hp-text {
@@ -130,12 +130,39 @@ const hp = computed(() =>
     props.base ? hpPercent(props.base.hp, props.base.stats.hp) : props.poke.hp
 );
 const sprite = computed(() => {
-    const root = "/sprites/sprites/pokemon/versions/generation-v/black-white/animated";
     const dexId = speciesList[props.poke.transformed ?? props.poke.speciesId].dexId;
     if (props.base) {
-        return `${root}/back/${dexId}.gif`;
+        return `/sprites/pokemon/back/${dexId}.gif`;
     } else {
-        return `${root}/${dexId}.gif`;
+        return `/sprites/pokemon/${dexId}.gif`;
     }
 });
+
+// https://stackoverflow.com/questions/8022885/rgb-to-hsv-color-in-javascript/54070620#54070620
+const rgb2hsv = (r: number, g: number, b: number) => {
+    const v = Math.max(r, g, b);
+    const c = v - Math.min(r, g, b);
+    const h = c && (v == r ? (g - b) / c : v == g ? 2 + (b - r) / c : 4 + (r - g) / c);
+    return { h: 60 * (h < 0 ? h + 6 : h), s: v && c / v, v };
+};
+
+const hsv2rgb = (h: number, s: number, v: number) => {
+    const f = (n: number, k = (n + h / 60) % 6) => v - v * s * Math.max(Math.min(k, 4 - k, 1), 0);
+    return [f(5), f(3), f(1)];
+};
+
+const lerp = (a: number, b: number, t: number) => {
+    return a * (1 - t) + b * t;
+};
+
+const hpColor = (num: number) => {
+    const red = rgb2hsv(0xc0, 0, 0);
+    const green = rgb2hsv(0, 0x7f, 0);
+    const [r, g, b] = hsv2rgb(
+        lerp(red.h, green.h, num / 100),
+        lerp(red.s, green.s, num / 100),
+        lerp(red.v, green.v, num / 100),
+    );
+    return `rgb(${r}, ${g}, ${b})`;
+};
 </script>

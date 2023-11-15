@@ -89,7 +89,7 @@ main {
 }
 
 .move-button, .switch-button {
-    padding: 5px;
+    padding: 5px 5px 5px 0px;
 }
 </style>
 

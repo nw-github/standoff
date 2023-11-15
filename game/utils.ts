@@ -40,7 +40,12 @@ export const hpPercentExact = (current: number, max: number) => {
 };
 
 export const hpPercent = (current: number, max: number) => {
-    return Math.round(hpPercentExact(current, max));
+    // TODO: research how the game fills the hp bar
+    const percent = Math.round(hpPercentExact(current, max));
+    if (percent === 0 && current !== 0) {
+        return 1;
+    }
+    return percent;
 };
 
 export const scaleAccuracy255 = (acc: number, user: ActivePokemon, target: ActivePokemon) => {

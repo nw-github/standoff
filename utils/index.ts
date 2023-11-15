@@ -225,7 +225,7 @@ export const stringifyEvent = (
                 `- ${target} ${diff < 0 ? "gained" : "lost"} ${roundTo(
                     Math.abs(diff),
                     1
-                )}% of its health. (${roundTo(hpAfter, 1)}% remaining)`
+                )}% of its health.`
             );
         }
 
