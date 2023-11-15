@@ -81,4 +81,13 @@ const maxSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level
 const hp = computed(() =>
     props.base ? hpPercent(props.base.hp, props.base.stats.hp) : props.poke.hp
 );
+const sprite = computed(() => {
+    const root = "/sprites/sprites/pokemon/versions/generation-v/black-white/animated";
+    const dexId = speciesList[props.poke.transformed ?? props.poke.speciesId].dexId;
+    if (props.base) {
+        return `${root}/back/${dexId}.gif`;
+    } else {
+        return `${root}/${dexId}.gif`;
+    }
+});
 </script>

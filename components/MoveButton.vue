@@ -3,7 +3,7 @@
         <button @click="$emit('click')" :disabled="!choice.valid">
             <span class="info type">{{ toTitleCase(move.type) }}</span>
             <span class="name">{{ move.name }}</span>
-            <span class="info pp" v-if="choice.pp !== -1">{{ choice.pp }}/{{ move.pp }}</span>
+            <span class="info pp">{{ choice.pp !== -1 ? choice.pp : "--" }}/{{ move.pp }}</span>
         </button>
 
         <template #tooltip>
@@ -47,10 +47,6 @@ button {
     display: grid;
     border-radius: 5px;
     width: 200px;
-}
-
-button span {
-    padding: 2px;
 }
 
 .type {

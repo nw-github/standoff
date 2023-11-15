@@ -21,7 +21,8 @@ export type ClientActivePokemon = {
     hp: number;
     level: number;
     status: Status | null;
-    stats?: ActivePokemon["stats"],
+    stats?: ActivePokemon["stats"];
+    transformed?: SpeciesId;
 };
 
 export type ClientPlayer = {
@@ -185,7 +186,7 @@ export const stringifyEvent = (
             res.push(`${player.name} withdrew ${player.active.name}!`);
         }
 
-        res.push(`${player.name} sent in ${e.name}! (${e.hp}/${e.maxHp})`);
+        res.push(`${player.name} sent in ${e.name}!`);
     } else if (e.type === "damage") {
         const src = pname(e.src);
         const target = pname(e.target);

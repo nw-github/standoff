@@ -12,8 +12,9 @@
         <li>
             <template v-for="(val, stat) in poke.stats">
                 <template v-if="stat !== 'hp'">
+                    <template v-if="stat !== 'atk'"> / </template>
                     <span :class="statClass(stat)">{{ active?.stats?.[stat] ?? val }}</span>
-                    {{ toTitleCase(stat) }} /
+                    {{ toTitleCase(stat) }}
                 </template>
             </template>
         </li>

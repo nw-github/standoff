@@ -1,63 +1,69 @@
 <template>
-    <h1>Status: {{ status }}</h1>
-    <ul>
-        <li v-for="(player, id) in players">
-            <template v-if="id === myId">(Me) </template>
-            {{ player.name }}: {{ id }} {{ player.isSpectator ? "(spectator)" : "" }}
-        </li>
-    </ul>
-    <div class="game">
-        <div class="battlefield" v-if="hasStarted">
-            <ActivePokemon
-                v-for="id in battlers"
-                :poke="players[id].active!"
-                :base="id === myId ? activeInTeam : undefined"
-            />
+    <main>
+        <h1>Status: {{ status }}</h1>
+        <ul>
+            <li v-for="(player, id) in players">
+                <template v-if="id === myId">(Me) </template>
+                {{ player.name }}: {{ id }} {{ player.isSpectator ? "(spectator)" : "" }}
+            </li>
+        </ul>
+        <div class="game">
+            <div class="battlefield" v-if="hasStarted">
+                <ActivePokemon
+                    v-for="id in battlers"
+                    :poke="players[id].active!"
+                    :base="id === myId ? activeInTeam : undefined"
+                />
+            </div>
+
+            <div class="textbox">
+                <template v-for="[turnNo, turn] in turns">
+                    <h2>Turn {{ turnNo }}</h2>
+                    <ul>
+                        <li v-for="event in turn">
+                            {{ event }}
+                        </li>
+                    </ul>
+                </template>
+
+                <div ref="textboxScrollDiv"></div>
+            </div>
         </div>
 
-        <div class="textbox">
-            <template v-for="[turnNo, turn] in turns">
-                <h2>Turn {{ turnNo }}</h2>
-                <ul>
-                    <li v-for="event in turn">
-                        {{ event }}
-                    </li>
-                </ul>
+        <div class="selections">
+            <template v-if="choices && !selectionText.length">
+                <div class="moves">
+                    <MoveButton
+                        class="move-button"
+                        v-for="(choice, i) in choices.moves"
+                        :choice="choice"
+                        @click="() => selectMove(i)"
+                    />
+                </div>
+
+                <div class="team">
+                    <SwitchButton
+                        class="switch-button"
+                        v-for="(poke, i) in myTeam"
+                        :poke="poke"
+                        :disabled="i === activeIndex || !choices.canSwitch"
+                        @click="() => selectSwitch(i)"
+                    />
+                </div>
             </template>
-
-            <div ref="textboxScrollDiv"></div>
+            <template v-else-if="choices">
+                <div class="selection-text">{{ selectionText }}...</div>
+                <button @click="cancelMove">Cancel</button>
+            </template>
         </div>
-    </div>
-
-    <div class="selections">
-        <template v-if="choices && !selectionText.length">
-            <div class="moves">
-                <MoveButton
-                    class="move-button"
-                    v-for="(choice, i) in choices.moves"
-                    :choice="choice"
-                    @click="() => selectMove(i)"
-                />
-            </div>
-
-            <div class="team">
-                <SwitchButton
-                    class="switch-button"
-                    v-for="(poke, i) in myTeam"
-                    :poke="poke"
-                    :disabled="i === activeIndex || !choices.canSwitch"
-                    @click="() => selectSwitch(i)"
-                />
-            </div>
-        </template>
-        <template v-else-if="choices">
-            <div class="selection-text">{{ selectionText }}...</div>
-            <button @click="cancelMove">Cancel</button>
-        </template>
-    </div>
+    </main>
 </template>
 
 <style scoped>
+main {
+    padding: 10px;
+}
+
 .game {
     display: flex;
 }
@@ -67,18 +73,22 @@
     width: 70vw;
     overflow-y: auto;
     background-color: #ccc;
-    padding: 5px;
 }
 
 .selection-text {
     font-style: italic;
 }
 
-.moves {
-    width: 500px;
+.selections {
+    display: flex;
 }
 
-.move-button {
+.moves {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.move-button, .switch-button {
     padding: 5px;
 }
 </style>
@@ -106,7 +116,7 @@ const textboxScrollDiv = ref<HTMLDivElement | null>(null);
 const addBattler = (id: string) => {
     if (!battlers.value.includes(id)) {
         battlers.value.push(id);
-        battlers.value.sort((a, _) => a !== myId.value ? -1 : 1);
+        battlers.value.sort((a, _) => (a !== myId.value ? -1 : 1));
     }
 };
 
@@ -262,6 +272,10 @@ const stringifyEvents = (events: BattleEvent[]) => {
             if (e.target === myId.value) {
                 activeInTeam.value!.hp = e.hpAfter;
             }
+
+            if (e.why === "rest") {
+                players[e.target].active!.status = "slp";
+            }
         } else if (e.type === "status") {
             // TODO: remove status
             if (e.id === myId.value) {
@@ -270,6 +284,9 @@ const stringifyEvents = (events: BattleEvent[]) => {
             }
         } else if (e.type === "stages") {
             players[myId.value].active!.stats = e.stats;
+        } else if (e.type === "transform") {
+            const target = players[e.target].active!;
+            players[e.src].active!.transformed = target.transformed ?? target.speciesId;
         }
     }
     return res;
