@@ -74,6 +74,8 @@ button {
     list-style: none;
     padding: 0;
     margin: 0;
+    width: max-content;
+    max-width: 300px;
 }
 
 .padtop {

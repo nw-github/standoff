@@ -48,6 +48,7 @@ const statClass = (stat: "atk" | "def" | "spe" | "spc") => {
     list-style: none;
     padding: 0;
     margin: 0;
+    width: max-content;
 }
 
 .down {

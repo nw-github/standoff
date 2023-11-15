@@ -23,7 +23,6 @@
 
     background-color: #555;
     color: #fff;
-    min-width: 300px;
     border-radius: 4px;
     padding: 10px 10px;
 
