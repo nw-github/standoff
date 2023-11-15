@@ -280,7 +280,6 @@ const processEvent = (e: BattleEvent) => {
             players[e.target].active!.status = "slp";
         }
     } else if (e.type === "status") {
-        // TODO: remove status
         players[e.id].active!.status = e.status;
         if (e.id === myId.value) {
             players[e.id].active!.stats = e.stats;
@@ -290,6 +289,10 @@ const processEvent = (e: BattleEvent) => {
     } else if (e.type === "transform") {
         const target = players[e.target].active!;
         players[e.src].active!.transformed = target.transformed ?? target.speciesId;
+    } else if (e.type === "info") {
+        if (e.why === "wake" || e.why === "thaw" || e.why === "haze") {
+            players[e.id].active!.status = null;
+        }
     }
 };
 </script>
