@@ -30,7 +30,7 @@ export abstract class Move {
             }
         }
 
-        if (moveIndex !== undefined) {
+        if (moveIndex !== undefined && !user.thrashing) {
             user.base.pp[moveIndex]--;
             if (user.base.pp[moveIndex] < 0) {
                 user.base.pp[moveIndex] = 63;
