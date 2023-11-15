@@ -2,14 +2,18 @@ import type { ActivePokemon, Battle } from "../battle";
 import type { Type } from "../utils";
 
 export abstract class Move {
+    readonly pp: number;
+
     constructor(
         readonly name: string,
-        readonly pp: number,
+        pp: number,
         readonly type: Type,
         readonly acc?: number,
         readonly priority?: number,
         readonly power?: number,
-    ) {}
+    ) {
+        this.pp = Math.min(Math.floor(pp * 8 / 5), 61);
+    }
 
     use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number): boolean {
         if (user.disabled) {
