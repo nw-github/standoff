@@ -269,7 +269,8 @@ export class Battle {
             .filter(player => player.choice)
             .map(player => player.choice!)
             .sort((a, b) => {
-                const aPri = a.move.priority ?? 0, bPri = b.move.priority ?? 0;
+                const aPri = a.move.priority ?? 0,
+                    bPri = b.move.priority ?? 0;
                 if (aPri !== bPri) {
                     console.log(
                         `Priority: ${a.move.name} (${aPri}) vs`,
@@ -599,7 +600,7 @@ export class ActivePokemon {
             type: "status",
             id: this.owner.id,
             status,
-            stats: {...this.stats},
+            stats: { ...this.stats },
         });
 
         return true;
@@ -613,15 +614,7 @@ export class ActivePokemon {
             this.stages[stat] = clamp(this.stages[stat] + count, -6, 6);
 
             if (stat === "atk" || stat === "def" || stat == "spc" || stat === "spe") {
-                this.stats[stat] = Math.floor(
-                    this.base.stats[stat] * (stageMultipliers[this.stages[stat]] / 100)
-                );
-                // https://www.smogon.com/rb/articles/rby_mechanics_guide#stat-mechanics
-                if (count < 0) {
-                    this.stats[stat] %= 1024;
-                }
-
-                this.stats[stat] = clamp(this.stats[stat], 1, 999);
+                this.applyStages(stat, count < 0);
             }
 
             // https://bulbapedia.bulbagarden.net/wiki/List_of_battle_glitches_(Generation_I)#Stat_modification_errors
@@ -633,7 +626,7 @@ export class ActivePokemon {
                 type: "stages",
                 id: this.owner.id,
                 stages: mods,
-                stats: {...this.stats},
+                stats: { ...this.stats },
             });
         }
 
@@ -720,5 +713,17 @@ export class ActivePokemon {
         }
 
         return false;
+    }
+
+    applyStages(stat: keyof ActivePokemon["stats"], negative: boolean) {
+        this.stats[stat] = Math.floor(
+            this.base.stats[stat] * (stageMultipliers[this.stages[stat]] / 100)
+        );
+        // https://www.smogon.com/rb/articles/rby_mechanics_guide#stat-mechanics
+        if (negative) {
+            this.stats[stat] %= 1024;
+        } else {
+            this.stats[stat] = clamp(this.stats[stat], 1, 999);
+        }
     }
 }

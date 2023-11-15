@@ -253,8 +253,12 @@ export const moveList = {
             }
 
             for (const k in user.stages) {
-                // @ts-ignore
-                user.stages[k] = target.stages[k];
+                const realk = k as keyof typeof user.stages;
+
+                user.stages[realk] = target.stages[realk];
+                if (realk === "atk" || realk === "def" || realk == "spc" || realk === "spe") {
+                    user.applyStages(realk, false);
+                }
             }
 
             user.types = [...target.types];
@@ -559,7 +563,7 @@ export const moveList = {
     seismictoss: new FixedDamageMove({
         name: "Seismic Toss",
         pp: 20,
-        type: "normal",
+        type: "fight",
         acc: 100,
         dmg: "level",
     }),
@@ -945,6 +949,7 @@ export const moveList = {
         type: "fight",
         power: 50,
         acc: 100,
+        effect: [30, "flinch"],
     }),
     megadrain: new DamagingMove({
         name: "Mega Drain",
