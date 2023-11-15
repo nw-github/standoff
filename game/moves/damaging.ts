@@ -333,7 +333,7 @@ export class FixedDamageMove extends Move {
 
 export class OHKOMove extends Move {
     constructor({ name, pp, type, acc }: { name: string; pp: number; type: Type; acc?: number }) {
-        super(name, pp, type, acc, 0, 1);
+        super(name, pp, type, acc ?? 30, 0, 1);
     }
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
@@ -346,8 +346,16 @@ export class OHKOMove extends Move {
             return false;
         }
 
-        const acc = target.getStat("spe") > user.getStat("spe") ? 0 : this.acc;
-        if (acc && !checkAccuracy(acc, battle, user, target)) {
+        if (target.getStat("spe") > user.getStat("spe")) {
+            battle.pushEvent({
+                type: "failed",
+                src: target.owner.id,
+                why: "generic",
+            });
+            return false;
+        }
+
+        if (!checkAccuracy(this.acc!, battle, user, target)) {
             return false;
         }
 
