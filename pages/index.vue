@@ -10,6 +10,7 @@
         <div class="game">
             <div class="battlefield" v-if="hasStarted">
                 <ActivePokemon
+                    class="pokemon"
                     v-for="id in battlers"
                     :poke="players[id].active!"
                     :base="id === myId ? activeInTeam : undefined"
@@ -68,9 +69,22 @@ main {
     display: flex;
 }
 
+.battlefield {
+    min-width: 480px;
+    max-width: 480px;
+}
+
+.pokemon:first-child {
+    margin-left: auto;
+}
+
+.pokemon:last-child {
+    margin-right: auto;
+}
+
 .textbox {
-    height: 60vh;
-    width: 70vw;
+    width: 100%;
+    height: 50vh;
     overflow-y: auto;
     background-color: #ccc;
 }

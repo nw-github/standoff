@@ -11,7 +11,7 @@
         </div>
         <Tooltip>
             <div class="sprite-container center-item">
-                <img class="sprite" :src="sprite" />
+                <img class="sprite" :class="props.base ? 'back' : 'front'" :src="sprite" />
             </div>
 
             <template #tooltip>
@@ -22,7 +22,7 @@
                     <ul>
                         <li>{{ species.name }} ({{ species.types.map(toTitleCase).join("/") }})</li>
                         <li><br /></li>
-                        <li class="info">Speed: {{ minSpe }} to {{ maxSpe }}</li>
+                        <li class="info">{{ minSpe }} to {{ maxSpe }} Spe</li>
                     </ul>
                 </template>
             </template>
@@ -40,27 +40,6 @@
     width: 2.5em;
     color: white;
     border-radius: 5px;
-}
-
-.psn,
-.tox {
-    background-color: #c562c5;
-}
-
-.brn {
-    background-color: #e67352;
-}
-
-.frz {
-    background-color: #8bb4e6;
-}
-
-.slp {
-    background-color: #a4a48b;
-}
-
-.par {
-    background-color: #bebe18;
 }
 
 .healthbar {
@@ -88,11 +67,20 @@
 
 .sprite {
     width: 200px;
-    height: 200px;
 }
 
 .sprite {
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+}
+
+.back {
     width: 80%;
+}
+
+.front {
+    width: 65%;
 }
 
 .self {
@@ -114,6 +102,27 @@ ul {
     list-style: none;
     padding: 0;
     margin: 0;
+}
+
+.psn,
+.tox {
+    background-color: #c562c5;
+}
+
+.brn {
+    background-color: #e67352;
+}
+
+.frz {
+    background-color: #8bb4e6;
+}
+
+.slp {
+    background-color: #a4a48b;
+}
+
+.par {
+    background-color: #bebe18;
 }
 </style>
 
@@ -161,7 +170,7 @@ const hpColor = (num: number) => {
     const [r, g, b] = hsv2rgb(
         lerp(red.h, green.h, num / 100),
         lerp(red.s, green.s, num / 100),
-        lerp(red.v, green.v, num / 100),
+        lerp(red.v, green.v, num / 100)
     );
     return `rgb(${r}, ${g}, ${b})`;
 };

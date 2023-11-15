@@ -105,7 +105,7 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
     payday: "",
     charge: "The user charges on the first turn, and attacks on the second. ",
     charge_invuln:
-        "The user charges on the first turn, and attacks on the second. While charging, the user" +
+        "The user charges on the first turn, and attacks on the second. While charging, the user " +
         "can only be hit by moves that do not check accuracy.",
     multi_turn: "Locks the user in for 3-4 turns. ",
 };

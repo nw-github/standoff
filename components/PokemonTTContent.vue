@@ -52,10 +52,10 @@ const statClass = (stat: "atk" | "def" | "spe" | "spc") => {
 }
 
 .down {
-    color: red;
+    color: #FF0800;
 }
 
 .up {
-    color: green;
+    color: rgb(17, 231, 17);
 }
 </style>
