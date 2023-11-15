@@ -65,7 +65,7 @@
     color: #ccc;
 }
 
-.sprite {
+.sprite-container {
     width: 200px;
 }
 
