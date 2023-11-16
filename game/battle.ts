@@ -14,10 +14,11 @@ import {
 } from "./utils";
 
 export type Choice =
-    | { type: "switch"; turn: number; to: number }
-    | { type: "move"; turn: number; index: number };
+    | { type: "switch"; to: number }
+    | { type: "move"; index: number };
 
 export type MoveChoice = { move: MoveId; pp: number; valid: boolean; indexInMoves?: number };
+
 type ChosenMove = {
     move: Move;
     choice?: MoveChoice;
@@ -46,7 +47,6 @@ export class SelectionError extends Error {
             | "choose_too_late"
             | "game_over"
             | "invalid_choice"
-            | "battle_not_started"
     ) {
         super();
     }
@@ -197,8 +197,8 @@ export class Battle {
         player.choice = null;
     }
 
-    choose(player: Player, choice: Choice) {
-        if (choice.turn !== this._turn) {
+    choose(player: Player, choice: Choice, turn: number) {
+        if (turn !== this._turn) {
             throw new SelectionError("choose_too_late");
         }
 

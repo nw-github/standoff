@@ -6,7 +6,7 @@ import { Pokemon } from "../../game/pokemon";
 import { MoveId, moveList } from "../../game/moveList";
 import { hpPercent, randChoice, randRangeInclusive } from "../../game/utils";
 import { AlwaysFailMove } from "../../game/moves";
-import { Battle, Player, Turn } from "../../game/battle";
+import { Battle, Player, SelectionError, Turn } from "../../game/battle";
 import { BattleEvent } from "../../game/events";
 
 declare global {
@@ -52,12 +52,13 @@ type Account = {
     id: string;
     battles: Set<string>;
     name: string;
+    sockets: Set<string>;
 };
 
 type Room = {
     battle: Battle;
     turns: Turn[];
-    accounts: Account[];
+    accounts: Set<Account>;
 };
 
 class GameServer {
@@ -68,7 +69,7 @@ class GameServer {
     private accounts: Record<string, Account> = {};
     /** Room Id -> Room */
     private rooms: Record<string, Room> = {};
-    private mmWaiting: [Player, ClientSocket] | null = null;
+    private mmWaiting: [Player, Account] | null = null;
 
     constructor(server: any) {
         this.server = new Server<ClientMessage, ServerMessage>(server);
@@ -92,10 +93,11 @@ class GameServer {
             }
 
             if (!(name in accounts)) {
-                accounts[name] = { battles: new Set(), name, id: uuid() };
+                accounts[name] = { battles: new Set(), name, id: uuid(), sockets: new Set() };
             }
 
             const account = accounts[name];
+            account.sockets.add(socket.id);
             conns[socket.id] = account;
             return ack({ id: account.id, rooms: [...account.battles] });
         });
@@ -106,6 +108,10 @@ class GameServer {
             }
 
             ack();
+            if (this.mmWaiting?.[1] === account) {
+                return;
+            }
+
             const team = [
                 new Pokemon("alakazam", {}, {}, 100, randomMoves(["rest"])),
                 new Pokemon("tauros", {}, {}, 100, randomMoves(["swordsdance"])),
@@ -136,7 +142,7 @@ class GameServer {
             return ack({
                 team: player?.team,
                 choices: player?.choices,
-                players: room.accounts.map(account => ({
+                players: [...room.accounts.values()].map(account => ({
                     name: account.name,
                     id: account.id,
                     isSpectator: !account.battles.has(roomId),
@@ -147,12 +153,56 @@ class GameServer {
                 })),
             });
         });
+        socket.on("choose", (roomId, choice, turnId, ack) => {
+            const info = this.validatePlayer(socket, roomId);
+            if (typeof info === "string") {
+                return ack(info);
+            }
+
+            try {
+                const [player, room] = info;
+                const turn = room.battle.choose(player, choice, turnId);
+                ack();
+                if (!turn) {
+                    return;
+                }
+
+                for (const account of room.accounts) {
+                    const player = room.battle.players.find(pl => pl.id === account.id);
+                    const events = GameServer.censorEvents(turn.events, player);
+                    for (const socket of account.sockets) {
+                        this.server
+                            .to(socket)
+                            .emit("nextTurn", roomId, { turn: turn.turn, events }, player?.choices);
+                    }
+                }
+            } catch (err) {
+                if (err instanceof SelectionError) {
+                    return ack(err.type);
+                }
+            }
+        });
+        socket.on("cancel", (roomId, turn, ack) => {
+            const info = this.validatePlayer(socket, roomId);
+            if (typeof info === "string") {
+                return ack(info);
+            }
+
+            const [player, room] = info;
+            room.battle.cancel(player, turn);
+            ack();
+        });
         socket.on("disconnect", () => {
             // TODO: start room disconnect timer
-            delete conns[socket.id];
-            if (this.mmWaiting?.[1] === socket) {
-                this.mmWaiting = null;
+            const account = conns[socket.id];
+            if (account) {
+                account.sockets.delete(socket.id);
+                if (!account.sockets.size && this.mmWaiting?.[1] === account) {
+                    this.mmWaiting = null;
+                }
             }
+
+            delete conns[socket.id];
         });
     }
 
@@ -160,20 +210,40 @@ class GameServer {
         // highly advanced matchmaking algorithm
         const { rooms, conns } = this;
         if (this.mmWaiting) {
-            const [opponent, opponentSocket] = this.mmWaiting;
+            const [opponent, opponentAcc] = this.mmWaiting;
             const roomId = uuid();
             const [battle, turn0] = Battle.start(player, opponent);
-            rooms[roomId] = { battle, turns: [turn0], accounts: [] };
+            rooms[roomId] = { battle, turns: [turn0], accounts: new Set() };
 
-            for (const s of [socket, opponentSocket]) {
-                const account = conns[s.id];
+            for (const id of [socket.id, ...opponentAcc.sockets]) {
+                const account = conns[id];
                 account.battles.add(roomId);
-                rooms[roomId].accounts.push(account);
-                s.emit("foundMatch", roomId);
+                rooms[roomId].accounts.add(account);
+                this.server.to(id).emit("foundMatch", roomId);
             }
+            this.mmWaiting = null;
         } else {
-            this.mmWaiting = [player, socket];
+            this.mmWaiting = [player, conns[socket.id]];
         }
+    }
+
+    validatePlayer(socket: ClientSocket, roomId: string) {
+        const room = this.rooms[roomId];
+        if (!room) {
+            return "bad_room";
+        }
+
+        const account = this.conns[socket.id];
+        if (!account || !account.battles.has(roomId)) {
+            return "not_in_battle";
+        }
+
+        const player = room.battle.players.find(pl => pl.id === account.id);
+        if (!player) {
+            return "not_in_battle";
+        }
+
+        return [player, room] as [Player, Room];
     }
 
     static censorEvents(events: BattleEvent[], player?: Player) {

@@ -105,7 +105,7 @@ import type { Textbox } from "#build/components";
 import type { JoinRoomResponse } from "../server/utils/gameMessage";
 
 const { $conn } = useNuxtApp();
-const props = defineProps<{ init: JoinRoomResponse; room: string; }>();
+const props = defineProps<{ init: JoinRoomResponse; room: string }>();
 const myId = useMyId();
 const battlers = ref<string[]>([]);
 const players = reactive<Record<string, ClientPlayer>>({});
@@ -135,89 +135,43 @@ onMounted(async () => {
 
     hasLoaded.value = true;
 
-    await nextTick();
     for (const turn of props.init.turns) {
-        await displayTurn(turn, false);
+        await runTurn(turn, false, props.init.choices);
     }
 
-    choices.value = props.init.choices;
-    if (choices.value) {
-        for (const { pp, indexInMoves } of choices.value.moves) {
-            if (indexInMoves !== undefined) {
-                activeInTeam.value!.pp[indexInMoves] = pp;
-            }
+    $conn.on("nextTurn", async (roomId, turn, choices) => {
+        if (roomId === props.room) {
+            await runTurn(turn, true, choices);
         }
-    }
-
-    //     ws.onmessage = async ({ data }) => {
-    //         if (resp.type === "sv_join") {
-    //             players[resp.id] = resp;
-    //             if (!resp.isSpectator) {
-    //                 addBattler(resp.id);
-    //             }
-    //         } else if (resp.type === "sv_leave") {
-    //             delete players[resp.id];
-    //         } else if (resp.type === "sv_cancel") {
-    //             console.log(resp.error);
-    //         } else if (resp.type === "sv_choice") {
-    //             console.log(resp.error);
-    //         }
-    //     };
-    //     ws.onclose = () => {
-    //         status.value = "Connection to server closed!";
-    //         myId.value = "";
-    //         for (const key in players) {
-    //             delete players[key];
-    //         }
-    //         choices.value = undefined;
-    //         selectionText.value = "";
-    //         battlers.value.length = 0;
-    //         textbox.value?.clear();
-    //     };
+    });
 });
 
 const selectMove = (index: number) => {
-    // ws.send(
-    //     wsStringify<ClientMessage>({
-    //         type: "cl_choice",
-    //         choice: {
-    //             type: "move",
-    //             index,
-    //             turn: currentTurn,
-    //         },
-    //     })
-    // );
     selectionText.value = `${players[myId.value].active!.name} will use ${
         moveList[choices.value!.moves[index].move].name
     }`;
+
+    $conn.emit("choose", props.room, { type: "move", index }, currentTurn, err => {
+        // TODO: do something with the error
+    });
 };
 
-const selectSwitch = (index: number) => {
-    // ws.send(
-    //     wsStringify<ClientMessage>({
-    //         type: "cl_choice",
-    //         choice: {
-    //             type: "switch",
-    //             to: index,
-    //             turn: currentTurn,
-    //         },
-    //     })
-    // );
+const selectSwitch = (to: number) => {
     selectionText.value = `${players[myId.value].active!.name} will be replaced by ${
-        myTeam.value[index].name
+        myTeam.value[to].name
     }`;
-    nextActive = index;
+    nextActive = to;
+    $conn.emit("choose", props.room, { type: "switch", to }, currentTurn, err => {
+        // TODO: do something with the error
+    });
 };
 
 const cancelMove = () => {
-    // ws.send(
-    //     wsStringify<ClientMessage>({
-    //         type: "cl_cancel",
-    //         turn: currentTurn,
-    //     })
-    // );
     selectionText.value = "";
     nextActive = activeIndex.value;
+    $conn.emit("cancel", props.room, currentTurn, err => {
+        // TODO: do something with the error
+    });
 };
 
 const processEvent = (e: BattleEvent) => {
@@ -258,13 +212,26 @@ const processEvent = (e: BattleEvent) => {
     }
 };
 
-const displayTurn = async ({ events, turn }: Turn, _live: boolean) => {
+const runTurn = async ({ events, turn }: Turn, _live: boolean, newChoices?: Player["choices"]) => {
+    choices.value = undefined;
+    selectionText.value = "";
     currentTurn = turn + 1;
+
+    await nextTick();
     await textbox.value!.enterTurn(pushToTextbox => {
         for (const e of events) {
             pushToTextbox(e);
             processEvent(e);
         }
     });
+
+    choices.value = newChoices;
+    if (newChoices) {
+        for (const { pp, indexInMoves } of newChoices.moves) {
+            if (indexInMoves !== undefined) {
+                activeInTeam.value!.pp[indexInMoves] = pp;
+            }
+        }
+    }
 };
 </script>
