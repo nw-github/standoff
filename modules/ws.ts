@@ -1,6 +1,6 @@
 import { defineNuxtModule } from "nuxt/kit";
-import { wsInit } from "../server/utils/ws";
+import { gameServerInit } from "../server/utils/gameServer";
 
 export default defineNuxtModule((_options, nuxt) => {
-    nuxt.hook("listen", server => wsInit(server, true));
+    nuxt.hook("listen", server => gameServerInit(server, true));
 });

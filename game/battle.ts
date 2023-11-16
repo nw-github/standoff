@@ -44,7 +44,6 @@ export class SelectionError extends Error {
         readonly type:
             | "cancel_too_late"
             | "choose_too_late"
-            | "invalid_id"
             | "game_over"
             | "invalid_choice"
             | "battle_not_started"
@@ -60,16 +59,14 @@ export type Turn = {
 
 export class Player {
     readonly active: ActivePokemon;
-    readonly name: string;
     readonly team: Pokemon[];
     readonly id: PlayerId;
     choice: ChosenMove | null = null;
     choices?: { canSwitch: boolean; moves: MoveChoice[] };
 
-    constructor(name: string, id: PlayerId, team: Pokemon[]) {
+    constructor(id: PlayerId, team: Pokemon[]) {
         this.active = new ActivePokemon(team[0], this);
         this.team = team;
-        this.name = name;
         this.id = id;
     }
 
@@ -157,11 +154,11 @@ export class Player {
 }
 
 export class Battle {
-    private readonly players: [Player, Player];
-    private _turn = 0;
+    readonly players: [Player, Player];
     private readonly events: BattleEvent[] = [];
     private readonly moveListToId;
-    victor: Player | null = null;
+    private _turn = 0;
+    private _victor: Player | null = null;
 
     private constructor(player1: Player, player2: Player) {
         this.players = [player1, player2];
@@ -188,12 +185,11 @@ export class Battle {
         return this._turn;
     }
 
-    cancel(id: PlayerId, turn: number) {
-        const player = this.players.find(p => p.id === id);
-        if (!player) {
-            throw new SelectionError("invalid_id");
-        }
+    get victor() {
+        return this._victor;
+    }
 
+    cancel(player: Player, turn: number) {
         if (turn !== this._turn) {
             throw new SelectionError("cancel_too_late");
         }
@@ -201,16 +197,7 @@ export class Battle {
         player.choice = null;
     }
 
-    choose(id: PlayerId, choice: Choice) {
-        if (this.victor) {
-            throw new SelectionError("game_over");
-        }
-
-        const player = this.players.find(p => p.id === id);
-        if (!player) {
-            throw new SelectionError("invalid_id");
-        }
-
+    choose(player: Player, choice: Choice) {
         if (choice.turn !== this._turn) {
             throw new SelectionError("choose_too_late");
         }
@@ -379,11 +366,11 @@ export class Battle {
             }
 
             if (move.use(this, user, target, choice?.indexInMoves)) {
-                if (!this.victor) {
+                if (!this._victor) {
                     if (target.owner.team.every(poke => poke.hp <= 0)) {
-                        this.victor = user.owner;
+                        this._victor = user.owner;
                     } else if (user.owner.team.every(poke => poke.hp <= 0)) {
-                        this.victor = target.owner;
+                        this._victor = target.owner;
                     }
                 }
                 skipEnd = true;
@@ -392,7 +379,7 @@ export class Battle {
 
             if (move.power && user.handleStatusDamage(this)) {
                 if (user.owner.isAllDead()) {
-                    this.victor = target.owner;
+                    this._victor = target.owner;
                 }
                 skipEnd = true;
                 break;
@@ -400,7 +387,7 @@ export class Battle {
 
             if (user.seeded && user.tickCounter(this, "seeded")) {
                 if (user.owner.isAllDead()) {
-                    this.victor = target.owner;
+                    this._victor = target.owner;
                 }
                 skipEnd = true;
                 break;
@@ -411,7 +398,7 @@ export class Battle {
             for (const { user } of choices) {
                 if (user.handleStatusDamage(this)) {
                     if (user.owner.isAllDead()) {
-                        this.victor = this.opponentOf(user.owner);
+                        this._victor = this.opponentOf(user.owner);
                     }
                     break;
                 }
@@ -422,10 +409,10 @@ export class Battle {
     }
 
     private endTurn(): Turn {
-        if (this.victor) {
+        if (this._victor) {
             this.pushEvent({
                 type: "victory",
-                id: this.victor.id,
+                id: this._victor.id,
             });
         }
 
@@ -437,7 +424,7 @@ export class Battle {
         }
 
         return {
-            turn: this._turn++,
+            turn: this._victor ? this._turn : this._turn++,
             events: this.events.splice(0),
         };
     }
