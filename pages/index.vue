@@ -2,8 +2,8 @@
     <main>
         <h1>Status: {{ status }}</h1>
 
-        <button @click="enterMatchmaking" :enabled="myId.length && !findingMatch">
-            Enter Matchmaking
+        <button @click="enterMatchmaking" :disabled="!myId.length || cancelling">
+            {{ findingMatch ? "Cancel" : "Enter Matchmaking" }}
         </button>
 
         <h2>Rooms</h2>
@@ -28,6 +28,7 @@ const status = ref("Logging in...");
 const username = useState<string>("username", () => `Guest ${Math.round(Math.random() * 10000)}`);
 const myId = useMyId();
 const findingMatch = ref(false);
+const cancelling = ref(false);
 const rooms = ref<string[]>();
 const battles = ref<string[]>();
 
@@ -58,13 +59,23 @@ onMounted(() => {
 });
 
 const enterMatchmaking = () => {
-    findingMatch.value = true;
-    status.value = "Finding match...";
-    $conn.emit("enterMatchmaking", [], err => {
-        if (err) {
-            findingMatch.value = false;
-            status.value = `Matchmaking failed: ${err}`;
-        }
-    });
+    if (!findingMatch.value) {
+        findingMatch.value = true;
+        status.value = "Finding match...";
+        $conn.emit("enterMatchmaking", [], err => {
+            if (err) {
+                findingMatch.value = false;
+                status.value = `Matchmaking failed: ${err}`;
+            }
+        });
+    } else {
+        status.value = "Cancelling...";
+        cancelling.value = true;
+        findingMatch.value = false;
+        $conn.emit("exitMatchmaking", () => {
+            cancelling.value = false;
+            status.value = `Logged in as ${username.value}`;
+        });
+    }
 };
 </script>
