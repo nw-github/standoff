@@ -149,12 +149,12 @@ class GameServer {
             }
 
             const team = [
-                new Pokemon("alakazam", {}, {}, 100, randomMoves(["rest"])),
-                new Pokemon("tauros", {}, {}, 100, randomMoves(["swordsdance"])),
-                new Pokemon("snorlax", {}, {}, 100, randomMoves(["bodyslam"])),
-                new Pokemon("zapdos", {}, {}, 100, randomMoves(["thunder"])),
-                new Pokemon("starmie", {}, {}, 100, randomMoves(["crabhammer"])),
-                new Pokemon("rhydon", {}, {}, 100, randomMoves(["earthquake"])),
+                new Pokemon("alakazam", {}, {}, 100,["psychic", "recover", "seismictoss", "thunderwave"]),
+                new Pokemon("tauros", {}, {}, 100,  ["bodyslam", "hyperbeam", "blizzard", "earthquake"]),
+                new Pokemon("snorlax", {}, {}, 100, ["bodyslam", "reflect", "rest", "selfdestruct"]),
+                new Pokemon("zapdos", {}, {}, 100,  ["thunderbolt", "drillpeck", "thunderwave", "agility"]),
+                new Pokemon("starmie", {}, {}, 100, ["recover", "blizzard", "thunderbolt", "psychic"]),
+                new Pokemon("rhydon", {}, {}, 100,  ["earthquake", "rockslide", "bodyslam", "substitute"]),
             ];
             const num = randRangeInclusive(1, team.length - 1);
             const tmp = team[0];

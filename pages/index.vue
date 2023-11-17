@@ -9,14 +9,14 @@
         <h2>Rooms</h2>
         <ul>
             <li v-for="room in rooms">
-                <NuxtLink :to="`room/${room}`">Room</NuxtLink>
+                <NuxtLink :to="`room/${room}`">{{ room }}</NuxtLink>
             </li>
         </ul>
 
         <h2>My Battles</h2>
         <ul>
             <li v-for="room in battles">
-                <NuxtLink :to="`room/${room}`">Room</NuxtLink>
+                <NuxtLink :to="`room/${room}`">{{ room }}</NuxtLink>
             </li>
         </ul>
     </main>
