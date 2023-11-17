@@ -102,12 +102,7 @@ export class DamagingMove extends Move {
                 src: target.owner.id,
                 why: "immune",
             });
-            this.crashDamage(battle, user, target);
-            if (this.flag === "explosion") {
-                return user.inflictDamage(user.base.hp, user, battle, false, "explosion", true)
-                    .dead;
-            }
-            return false;
+            return this.damageOnMiss(battle, user, target);
         }
 
         if (this.flag === "dream_eater" && target.base.status !== "slp") {
@@ -120,8 +115,7 @@ export class DamagingMove extends Move {
         }
 
         if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
-            this.crashDamage(battle, user, target);
-            return false;
+            return this.damageOnMiss(battle, user, target);
         }
 
         const isCrit = randChance255(this.critChance(user));
@@ -288,15 +282,18 @@ export class DamagingMove extends Move {
         }
     }
 
-    private crashDamage(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
+    private damageOnMiss(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
         if (this.flag === "crash") {
             // https://www.smogon.com/dex/rb/moves/high-jump-kick/
             if (user.substitute && target.substitute) {
                 target.inflictDamage(1, user, battle, false, "attacked");
             } else if (!user.substitute) {
-                user.inflictDamage(1, user, battle, false, "crash", true);
+                return user.inflictDamage(1, user, battle, false, "crash", true).dead;
             }
+        } else if (this.flag === "explosion") {
+            return user.inflictDamage(user.base.hp, user, battle, false, "explosion", true).dead;
         }
+        return false;
     }
 }
 
