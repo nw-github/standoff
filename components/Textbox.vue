@@ -31,6 +31,7 @@ const turns = ref<string[][]>([]);
 const props = defineProps<{
     players: Record<string, ClientPlayer>;
     myId: string;
+    perspective: string;
 }>();
 
 const enterTurn = async (cb: (cb: (e: BattleEvent) => void) => void) => {
@@ -46,9 +47,8 @@ const enterTurn = async (cb: (cb: (e: BattleEvent) => void) => void) => {
 
 const htmlForEvent = (e: BattleEvent) => {
     const players = props.players;
-    const myId = props.myId;
     const pname = (id: string, title: boolean = true) => {
-        if (id === myId) {
+        if (id === props.perspective) {
             return players[id].active!.name;
         } else if (title) {
             return `The opposing ${players[id].active!.name}`;
@@ -70,7 +70,7 @@ const htmlForEvent = (e: BattleEvent) => {
         const target = pname(e.target);
 
         let { hpBefore, hpAfter } = e;
-        if (e.target === myId) {
+        if (e.target === props.myId) {
             hpBefore = hpPercentExact(hpBefore, e.maxHp);
             hpAfter = hpPercentExact(hpAfter, e.maxHp);
         }

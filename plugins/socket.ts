@@ -1,5 +1,5 @@
 import { io, type Socket } from "socket.io-client";
-import type { ServerMessage, ClientMessage } from "../server/utils/gameMessage";
+import type { ServerMessage, ClientMessage } from "../server/utils/gameServer";
 
 export default defineNuxtPlugin(_ => ({
     provide: {

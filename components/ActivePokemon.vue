@@ -131,7 +131,7 @@ import { hpPercent } from "../game/utils";
 import { calcStat, type Pokemon } from "../game/pokemon";
 import { speciesList } from "../game/species";
 
-const props = defineProps<{ poke: ClientActivePokemon; base?: Pokemon }>();
+const props = defineProps<{ poke: ClientActivePokemon; base?: Pokemon, back: boolean }>();
 const species = computed(() => speciesList[props.poke.speciesId]);
 const minSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 0, 0));
 const maxSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 15, 65535));
@@ -140,7 +140,7 @@ const hp = computed(() =>
 );
 const sprite = computed(() => {
     const dexId = speciesList[props.poke.transformed ?? props.poke.speciesId].dexId;
-    if (props.base) {
+    if (props.back) {
         return `/sprites/pokemon/back/${dexId}.gif`;
     } else {
         return `/sprites/pokemon/${dexId}.gif`;

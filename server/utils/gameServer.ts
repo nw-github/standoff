@@ -1,13 +1,41 @@
 import { v4 as uuid } from "uuid";
 import { Server, Socket } from "socket.io";
 
-import { ClientMessage, ServerMessage } from "./gameMessage";
 import { Pokemon } from "../../game/pokemon";
 import { MoveId, moveList } from "../../game/moveList";
 import { hpPercent, randChoice, randRangeInclusive } from "../../game/utils";
 import { AlwaysFailMove } from "../../game/moves";
-import { Battle, Player, SelectionError, Turn } from "../../game/battle";
+import { Battle, Player, SelectionError, Turn, Choice } from "../../game/battle";
 import { BattleEvent } from "../../game/events";
+
+export type LoginResponse = {
+    id: string;
+    rooms: string[];
+};
+
+export type JoinRoomResponse = {
+    team?: Pokemon[];
+    choices?: Player["choices"];
+    players: { id: string; name: string; isSpectator: boolean }[];
+    turns: Turn[];
+};
+
+export type ChoiceError = SelectionError["type"] | "bad_room" | "not_in_battle";
+
+export interface ClientMessage {
+    getRooms: (ack: (rooms: string[]) => void) => void;
+    login: (name: string, ack: (resp: LoginResponse | "bad_username") => void) => void;
+    enterMatchmaking: (team: Pokemon[], ack: (err?: "must_login" | "invalid_team") => void) => void;
+    exitMatchmaking: (ack: () => void) => void;
+    joinRoom: (room: string, ack: (resp: JoinRoomResponse | "bad_room") => void) => void;
+    choose: (room: string, choice: Choice, turn: number, ack: (err?: ChoiceError) => void) => void;
+    cancel: (room: string, turn: number, ack: (err?: ChoiceError) => void) => void;
+}
+
+export interface ServerMessage {
+    foundMatch: (roomId: string) => void;
+    nextTurn: (roomId: string, turn: Turn, choices?: Player["choices"]) => void;
+}
 
 declare global {
     var server: GameServer;
@@ -99,6 +127,14 @@ class GameServer {
             const account = accounts[name];
             account.sockets.add(socket.id);
             conns[socket.id] = account;
+
+            for (const room of [...socket.rooms]) {
+                if (room in rooms) {
+                    socket.leave(room);
+                    rooms[room].accounts.add(account);
+                }
+            }
+
             return ack({ id: account.id, rooms: [...account.battles] });
         });
         socket.on("enterMatchmaking", (_team, ack) => {
@@ -126,6 +162,13 @@ class GameServer {
             team[num] = tmp;
             this.enterMatchmaking(socket, new Player(account.id, team));
         });
+        socket.on("exitMatchmaking", ack => {
+            if (conns[socket.id] === this.mmWaiting?.[1]) {
+                this.mmWaiting = null;
+            }
+
+            ack();
+        });
         socket.on("joinRoom", async (roomId, ack) => {
             const room = rooms[roomId];
             if (!room) {
@@ -133,16 +176,21 @@ class GameServer {
             }
 
             const account = conns[socket.id];
-            socket.join(!account || !account.battles.has(roomId) ? `spectate/${roomId}` : roomId);
-
             const player = account
                 ? room.battle.players.find(pl => pl.id === account.id)
                 : undefined;
+            if (account) {
+                room.accounts.add(account);
+            } else {
+                socket.join(roomId);
+            }
+            // TODO: broadcast join message
+
             // FIXME: this team needs to be the one at the start of the battle
             return ack({
                 team: player?.team,
                 choices: player?.choices,
-                players: [...room.accounts.values()].map(account => ({
+                players: [...room.accounts].map(account => ({
                     name: account.name,
                     id: account.id,
                     isSpectator: !account.battles.has(roomId),
@@ -167,6 +215,7 @@ class GameServer {
                     return;
                 }
 
+                room.turns.push(turn);
                 for (const account of room.accounts) {
                     const player = room.battle.players.find(pl => pl.id === account.id);
                     const events = GameServer.censorEvents(turn.events, player);
@@ -176,6 +225,13 @@ class GameServer {
                             .emit("nextTurn", roomId, { turn: turn.turn, events }, player?.choices);
                     }
                 }
+
+                this.server
+                    .to(roomId)
+                    .emit("nextTurn", roomId, {
+                        turn: turn.turn,
+                        events: GameServer.censorEvents(turn.events),
+                    });
             } catch (err) {
                 if (err instanceof SelectionError) {
                     return ack(err.type);
@@ -192,6 +248,7 @@ class GameServer {
             room.battle.cancel(player, turn);
             ack();
         });
+        socket.on("getRooms", ack => ack(Object.keys(rooms)));
         socket.on("disconnect", () => {
             // TODO: start room disconnect timer
             const account = conns[socket.id];

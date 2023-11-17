@@ -14,11 +14,18 @@
                         v-if="players[id].active"
                         :poke="players[id].active!"
                         :base="id === myId ? activeInTeam : undefined"
+                        :back="id === perspective"
                     />
                 </template>
             </div>
 
-            <Textbox class="textbox" :players="players" :myId="myId" ref="textbox" />
+            <Textbox
+                class="textbox"
+                :players="players"
+                :myId="myId"
+                :perspective="perspective"
+                ref="textbox"
+            />
         </div>
 
         <div class="selections">
@@ -45,6 +52,10 @@
             <template v-else-if="choices">
                 <div class="selection-text">{{ selectionText }}...</div>
                 <button @click="cancelMove">Cancel</button>
+            </template>
+            <template v-else-if="!isBattler">
+                <!-- TODO: re-render textbox contents on switch sides -->
+                <button @click="switchSide" :disabled="true">Switch Side</button>
             </template>
         </div>
     </div>
@@ -102,7 +113,8 @@ import type { ActivePokemon, Player, Turn } from "../game/battle";
 import type { Pokemon } from "../game/pokemon";
 import { moveList } from "../game/moveList";
 import type { Textbox } from "#build/components";
-import type { JoinRoomResponse } from "../server/utils/gameMessage";
+import type { JoinRoomResponse } from "../server/utils/gameServer";
+import { randChoice } from "../game/utils";
 
 const { $conn } = useNuxtApp();
 const props = defineProps<{ init: JoinRoomResponse; room: string }>();
@@ -116,6 +128,8 @@ const activeIndex = ref(0);
 const activeInTeam = computed<Pokemon | undefined>(() => myTeam.value[activeIndex.value]);
 const textbox = ref<InstanceType<typeof Textbox>>();
 const hasLoaded = ref(false);
+const perspective = ref<string>("");
+const isBattler = ref(false);
 
 let currentTurn = 0;
 let nextActive = 0;
@@ -129,9 +143,11 @@ onMounted(async () => {
         players[id] = { name, isSpectator };
         if (!isSpectator && !battlers.value.includes(id)) {
             battlers.value.push(id);
-            battlers.value.sort((a, _) => (a !== myId.value ? -1 : 1));
         }
     }
+
+    isBattler.value = battlers.value.includes(myId.value);
+    setPerspective(isBattler.value ? myId.value : randChoice(battlers.value));
 
     hasLoaded.value = true;
 
@@ -174,6 +190,15 @@ const cancelMove = () => {
     });
 };
 
+const setPerspective = (id: string) => {
+    perspective.value = id;
+    battlers.value.sort((a, _) => (a !== perspective.value ? -1 : 1));
+};
+
+const switchSide = () => {
+    setPerspective(battlers.value.find(pl => pl !== perspective.value)!);
+};
+
 const processEvent = (e: BattleEvent) => {
     if (e.type === "switch") {
         const player = players[e.src];
@@ -201,7 +226,9 @@ const processEvent = (e: BattleEvent) => {
             players[e.id].active!.stats = e.stats;
         }
     } else if (e.type === "stages") {
-        players[myId.value].active!.stats = e.stats;
+        if (battlers.value.includes(myId.value)) {
+            players[myId.value].active!.stats = e.stats;
+        }
     } else if (e.type === "transform") {
         const target = players[e.target].active!;
         players[e.src].active!.transformed = target.transformed ?? target.speciesId;
