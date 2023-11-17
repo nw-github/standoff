@@ -1,1 +1,2 @@
-export const useMyId = () => useState<string>("myId", () => "");
+const myId = ref("");
+export const useMyId = () => myId;
