@@ -5,7 +5,7 @@ import { Pokemon } from "../../game/pokemon";
 import { MoveId, moveList } from "../../game/moveList";
 import { hpPercent, randChoice, randRangeInclusive } from "../../game/utils";
 import { AlwaysFailMove } from "../../game/moves";
-import { Battle, Player, SelectionError, Turn, Choice } from "../../game/battle";
+import { Battle, Player, SelectionError, Turn } from "../../game/battle";
 import { BattleEvent } from "../../game/events";
 
 export type LoginResponse = {
@@ -20,7 +20,7 @@ export type JoinRoomResponse = {
     turns: Turn[];
 };
 
-export type ChoiceError = SelectionError["type"] | "bad_room" | "not_in_battle";
+export type ChoiceError = SelectionError["type"] | "bad_room" | "not_in_battle" | "too_late";
 
 export interface ClientMessage {
     getRooms: (ack: (rooms: string[]) => void) => void;
@@ -33,7 +33,13 @@ export interface ClientMessage {
 
     joinRoom: (room: string, ack: (resp: JoinRoomResponse | "bad_room") => void) => void;
     leaveRoom: (room: string, ack: (resp?: "bad_room" | "must_login") => void) => void;
-    choose: (room: string, choice: Choice, turn: number, ack: (err?: ChoiceError) => void) => void;
+    choose: (
+        room: string,
+        idx: number,
+        type: "move" | "switch",
+        turn: number,
+        ack: (err?: ChoiceError) => void
+    ) => void;
     cancel: (room: string, turn: number, ack: (err?: ChoiceError) => void) => void;
 }
 
@@ -257,35 +263,45 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
 
             socket.account.leaveRoom(room, true, this);
         });
-        socket.on("choose", (roomId, choice, turnId, ack) => {
+        socket.on("choose", (roomId, index, type, turnId, ack) => {
             const info = this.validatePlayer(socket, roomId);
             if (typeof info === "string") {
                 return ack(info);
             }
 
             const [player, room] = info;
+            if (turnId !== room.battle.turn) {
+                return ack("too_late");
+            }
+
             try {
-                const turn = room.battle.choose(player, choice, turnId);
-                ack();
-                if (!turn) {
-                    return;
+                if (type === "move") {
+                    room.battle.chooseMove(player, index);
+                } else if (type === "switch") {
+                    room.battle.chooseSwitch(player, index);
                 }
-
-                room.turns.push(turn);
-                for (const account of room.accounts) {
-                    account.nextTurn(room, turn);
-                }
-
-                this.to(`${ANON_SPECTATE}${roomId}`).emit("nextTurn", roomId, {
-                    turn: turn.turn,
-                    events: GameServer.censorEvents(turn.events),
-                });
             } catch (err) {
                 if (err instanceof SelectionError) {
                     return ack(err.type);
                 }
                 throw err;
             }
+
+            ack();
+            const turn = room.battle.nextTurn();
+            if (!turn) {
+                return;
+            }
+
+            room.turns.push(turn);
+            for (const account of room.accounts) {
+                account.nextTurn(room, turn);
+            }
+
+            this.to(`${ANON_SPECTATE}${roomId}`).emit("nextTurn", roomId, {
+                turn: turn.turn,
+                events: GameServer.censorEvents(turn.events),
+            });
         });
         socket.on("cancel", (roomId, turn, ack) => {
             const info = this.validatePlayer(socket, roomId);
@@ -294,14 +310,11 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             }
 
             const [player, room] = info;
-            try {
-                room.battle.cancel(player, turn);
-            } catch (err) {
-                if (err instanceof SelectionError) {
-                    return ack(err.type);
-                }
-                throw err;
+            if (turn !== room.battle.turn) {
+                return ack("too_late");
             }
+
+            room.battle.cancel(player);
             ack();
         });
         socket.on("getRooms", ack => ack(Object.keys(rooms)));

@@ -13,8 +13,6 @@ import {
     type Type,
 } from "./utils";
 
-export type Choice = { type: "switch"; to: number } | { type: "move"; index: number };
-
 export type MoveChoice = { move: MoveId; pp: number; valid: boolean; indexInMoves?: number };
 
 type ChosenMove = {
@@ -39,9 +37,7 @@ class SwitchMove extends Move {
 }
 
 export class SelectionError extends Error {
-    constructor(
-        readonly type: "cancel_too_late" | "choose_too_late" | "game_over" | "invalid_choice"
-    ) {
+    constructor(readonly type: "game_over" | "invalid_choice") {
         super();
     }
 }
@@ -183,58 +179,42 @@ export class Battle {
         return this._victor;
     }
 
-    cancel(player: Player, turn: number) {
-        if (turn !== this._turn) {
-            throw new SelectionError("cancel_too_late");
-        }
-
+    cancel(player: Player) {
         player.choice = null;
     }
 
-    choose(player: Player, choice: Choice, turn: number) {
-        if (turn !== this._turn) {
-            throw new SelectionError("choose_too_late");
-        }
-
-        if (choice.type === "move") {
-            const validChoice = player.choices?.moves[choice.index];
-            if (!validChoice?.valid) {
-                throw new SelectionError("invalid_choice");
-            }
-
-            player.choice = {
-                choice: validChoice,
-                move: moveList[validChoice.move],
-                user: player.active,
-            };
-        } else if (choice.type === "switch") {
-            if (!player.choices?.canSwitch) {
-                throw new SelectionError("invalid_choice");
-            }
-
-            const selected = player.team[choice.to];
-            const current = player.active.base;
-            if (!selected || selected === current || !selected.hp) {
-                throw new SelectionError("invalid_choice");
-            }
-
-            if (current instanceof TransformedPokemon && selected === current.base) {
-                throw new SelectionError("invalid_choice");
-            }
-
-            player.choice = {
-                move: new SwitchMove(selected),
-                user: player.active,
-            };
-        } else {
+    chooseMove(player: Player, index: number) {
+        const validChoice = player.choices?.moves[index];
+        if (!validChoice?.valid) {
             throw new SelectionError("invalid_choice");
         }
 
-        if (!this.players.every(player => !player.choices || player.choice)) {
-            return null;
+        player.choice = {
+            choice: validChoice,
+            move: moveList[validChoice.move],
+            user: player.active,
+        };
+    }
+
+    chooseSwitch(player: Player, index: number) {
+        if (!player.choices?.canSwitch) {
+            throw new SelectionError("invalid_choice");
         }
 
-        return this.runTurn();
+        const selected = player.team[index];
+        const current = player.active.base;
+        if (!selected || selected === current || !selected.hp) {
+            throw new SelectionError("invalid_choice");
+        }
+
+        if (current instanceof TransformedPokemon && selected === current.base) {
+            throw new SelectionError("invalid_choice");
+        }
+
+        player.choice = {
+            move: new SwitchMove(selected),
+            user: player.active,
+        };
     }
 
     pushEvent(event: BattleEvent) {
@@ -249,7 +229,11 @@ export class Battle {
         return this.moveListToId.get(move);
     }
 
-    private runTurn() {
+    nextTurn() {
+        if (!this.players.every(player => !player.choices || player.choice)) {
+            return null;
+        }
+
         const choices = this.players
             .filter(player => player.choice)
             .map(player => player.choice!)

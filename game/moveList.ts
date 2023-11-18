@@ -203,7 +203,7 @@ export const moveList = Object.freeze({
         name: "Substitute",
         pp: 10,
         type: "normal",
-        execute(battle, user, _) {
+        execute(battle, user) {
             if (user.substitute > 0) {
                 battle.pushEvent({
                     type: "failed",
