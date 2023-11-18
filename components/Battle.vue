@@ -1,9 +1,9 @@
 <template>
     <div class="battle">
         <ul>
-            <li v-for="({ name, isSpectator }, id) in players">
+            <li v-for="({ name, isSpectator, connected }, id) in players">
                 <template v-if="id === myId">(Me) </template>
-                {{ name }}: {{ id }} {{ isSpectator ? "(spectator)" : "" }}
+                {{ name }}: {{ id }} {{ isSpectator ? "(spectator)" : "" }} {{ !connected ? "(disconnected)" : "" }}
             </li>
         </ul>
         <div class="game" v-if="hasLoaded">
@@ -108,7 +108,6 @@ main {
 </style>
 
 <script setup lang="ts">
-import type { BattleEvent } from "../game/events";
 import type { ActivePokemon, Player, Turn } from "../game/battle";
 import type { Pokemon } from "../game/pokemon";
 import { moveList } from "../game/moveList";
@@ -132,15 +131,13 @@ const perspective = ref<string>("");
 const isBattler = ref(false);
 
 let currentTurn = 0;
-let nextActive = 0;
-
 onMounted(async () => {
     if (process.server) {
         return;
     }
 
     for (const { isSpectator, id, name } of props.init.players) {
-        players[id] = { name, isSpectator };
+        players[id] = { name, isSpectator, connected: true };
         if (!isSpectator && !battlers.value.includes(id)) {
             battlers.value.push(id);
         }
@@ -160,6 +157,28 @@ onMounted(async () => {
             await runTurn(turn, true, choices);
         }
     });
+
+    $conn.on("userJoin", (roomId, name, id, isSpectator) => {
+        if (roomId === props.room) {
+            players[id] = { name, isSpectator, connected: true };
+        }
+    });
+
+    $conn.on("userLeave", (roomId, id) => {
+        if (roomId === props.room) {
+            if (!(id in battlers)) {
+                delete players[id];
+            } else {
+                players[id].connected = false;
+            }
+        }
+    });
+
+    $conn.on("userDisconnect", (roomId, id) => {
+        if (roomId === props.room) {
+            players[id].connected = false;
+        }
+    });
 });
 
 const selectMove = (index: number) => {
@@ -167,24 +186,22 @@ const selectMove = (index: number) => {
         moveList[choices.value!.moves[index].move].name
     }`;
 
-    $conn.emit("choose", props.room, { type: "move", index }, currentTurn, err => {
+    $conn.emit("choose", props.room, index, "move", currentTurn, err => {
         // TODO: do something with the error
     });
 };
 
-const selectSwitch = (to: number) => {
+const selectSwitch = (index: number) => {
     selectionText.value = `${players[myId.value].active!.name} will be replaced by ${
-        myTeam.value[to].name
+        myTeam.value[index].name
     }`;
-    nextActive = to;
-    $conn.emit("choose", props.room, { type: "switch", to }, currentTurn, err => {
+    $conn.emit("choose", props.room, index, "switch", currentTurn, err => {
         // TODO: do something with the error
     });
 };
 
 const cancelMove = () => {
     selectionText.value = "";
-    nextActive = activeIndex.value;
     $conn.emit("cancel", props.room, currentTurn, err => {
         // TODO: do something with the error
     });
@@ -199,56 +216,66 @@ const switchSide = () => {
     setPerspective(battlers.value.find(pl => pl !== perspective.value)!);
 };
 
-const processEvent = (e: BattleEvent) => {
-    if (e.type === "switch") {
-        const player = players[e.src];
-        player.active = { ...e };
-        if (e.src === myId.value) {
-            if (activeInTeam.value?.status === "tox") {
-                activeInTeam.value.status = "psn";
-            }
-
-            activeIndex.value = nextActive;
-            player.active.stats = { ...activeInTeam.value!.stats };
-        }
-    } else if (e.type === "damage") {
-        players[e.target].active!.hp = e.hpAfter;
-        if (e.target === myId.value) {
-            activeInTeam.value!.hp = e.hpAfter;
-        }
-
-        if (e.why === "rest") {
-            players[e.target].active!.status = "slp";
-        }
-    } else if (e.type === "status") {
-        players[e.id].active!.status = e.status;
-        if (e.id === myId.value) {
-            players[e.id].active!.stats = e.stats;
-        }
-    } else if (e.type === "stages") {
-        if (battlers.value.includes(myId.value)) {
-            players[myId.value].active!.stats = e.stats;
-        }
-    } else if (e.type === "transform") {
-        const target = players[e.target].active!;
-        players[e.src].active!.transformed = target.transformed ?? target.speciesId;
-    } else if (e.type === "info") {
-        if (e.why === "wake" || e.why === "thaw" || e.why === "haze") {
-            players[e.id].active!.status = null;
-        }
-    }
-};
-
-const runTurn = async ({ events, turn }: Turn, _live: boolean, newChoices?: Player["choices"]) => {
+const runTurn = async ({ events, turn }: Turn, live: boolean, newChoices?: Player["choices"]) => {
     choices.value = undefined;
     selectionText.value = "";
     currentTurn = turn + 1;
 
     await nextTick();
-    await textbox.value!.enterTurn(pushToTextbox => {
-        for (const e of events) {
-            pushToTextbox(e);
-            processEvent(e);
+    await textbox.value!.enterTurn(events, live, e => {
+        if (e.type === "switch") {
+            const player = players[e.src];
+            player.active = { ...e };
+            if (e.src === myId.value) {
+                if (activeInTeam.value?.status === "tox") {
+                    activeInTeam.value.status = "psn";
+                }
+
+                activeIndex.value = e.indexInTeam;
+                player.active.stats = { ...activeInTeam.value!.stats };
+            }
+        } else if (e.type === "damage") {
+            players[e.target].active!.hp = e.hpAfter;
+            if (e.target === myId.value) {
+                activeInTeam.value!.hp = e.hpAfter;
+            }
+
+            if (e.why === "rest") {
+                players[e.target].active!.status = "slp";
+            }
+        } else if (e.type === "status") {
+            players[e.id].active!.status = e.status;
+            if (e.id === myId.value) {
+                players[e.id].active!.stats = e.stats;
+            }
+        } else if (e.type === "stages") {
+            if (battlers.value.includes(myId.value)) {
+                players[myId.value].active!.stats = e.stats;
+            }
+        } else if (e.type === "transform") {
+            const target = players[e.target].active!;
+            players[e.src].active!.transformed = target.transformed ?? target.speciesId;
+        } else if (e.type === "info") {
+            if (e.why === "haze") {
+                for (const player in players) {
+                    const active = players[player].active;
+                    if (!active) {
+                        continue;
+                    }
+    
+                    if (player === e.id && active.status === "tox") {
+                        active.status = "psn";
+                    } else if (player !== e.id) {
+                        active.status = null;
+                    }
+                }
+
+                if (battlers.value.includes(myId.value)) {
+                    players[myId.value].active!.stats = {...activeInTeam.value!.stats};
+                }
+            } else if (e.why === "wake" || e.why === "thaw") {
+                players[e.id].active!.status = null;
+            }
         }
     });
 

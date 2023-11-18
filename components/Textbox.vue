@@ -34,15 +34,29 @@ const props = defineProps<{
     perspective: string;
 }>();
 
-const enterTurn = async (cb: (cb: (e: BattleEvent) => void) => void) => {
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+const enterTurn = async (events: BattleEvent[], live: boolean, cb: (e: BattleEvent) => void) => {
     turns.value.push([]);
 
-    cb((e) => {
-        turns.value[turns.value.length - 1].push(...htmlForEvent(e));
-    });
+    for (const e of events) {
+        if (live) {
+            await delay(300);
+        }
 
-    await nextTick();
-    textboxScrollDiv.value?.scrollIntoView();
+        turns.value[turns.value.length - 1].push(...htmlForEvent(e));
+        cb(e);
+
+        if (live) {
+            await nextTick();
+            textboxScrollDiv.value?.scrollIntoView();
+        }
+    }
+
+    if (!live) {
+        await nextTick();
+        textboxScrollDiv.value?.scrollIntoView();
+    }
 };
 
 const htmlForEvent = (e: BattleEvent) => {
@@ -95,6 +109,13 @@ const htmlForEvent = (e: BattleEvent) => {
             res.push(`${src} started sleeping!`);
         } else if (e.why === "confusion") {
             res.push("It hurt itself in its confusion!");
+        } else if (e.why === "attacked") {
+            const eff = e.eff ?? 1;
+            if (eff !== 1) {
+                res.push(` - It's ${eff > 1 ? "super effective!" : "not very effective..."}`);
+            }
+        } else if (e.why === "ohko") {
+            res.push(` - It's a one-hit KO!`);
         }
 
         if (e.why !== "explosion") {
@@ -109,13 +130,6 @@ const htmlForEvent = (e: BattleEvent) => {
 
         if (e.why === "substitute") {
             res.push(`${src} put in a substitute!`);
-        } else if (e.why === "attacked") {
-            const eff = e.eff ?? 1;
-            if (eff !== 1) {
-                res.push(` - It's ${eff > 1 ? "super effective!" : "not very effective..."}`);
-            }
-        } else if (e.why === "ohko") {
-            res.push(` - It's a one-hit KO!`);
         }
 
         if (hpAfter === 0) {

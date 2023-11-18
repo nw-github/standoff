@@ -26,6 +26,7 @@ export type ClientActivePokemon = {
 export type ClientPlayer = {
     name: string;
     isSpectator: boolean;
+    connected: boolean;
     active?: ClientActivePokemon;
 };
 

@@ -430,6 +430,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
                     ...e,
                     hp: hpPercent(e.hp, e.maxHp),
                     maxHp: 100,
+                    indexInTeam: -1,
                 };
             } else if ((e.type === "stages" || e.type === "status") && e.id !== player?.id) {
                 // FIXME: this might not be accurate if two status moves were used in the same turn.

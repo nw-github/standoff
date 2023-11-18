@@ -37,7 +37,7 @@ onMounted(() => {
         return;
     }
 
-    status.value = `Logging in as ${username}...`;
+    status.value = `Logging in as ${username.value}...`;
 
     $conn.emit("login", username.value, (resp) => {
         if (resp === "bad_username") {

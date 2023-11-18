@@ -28,6 +28,7 @@ type SwitchEvent = {
     maxHp: number;
     status: Status | null;
     name: string;
+    indexInTeam: number;
 };
 
 export type DamageReason =

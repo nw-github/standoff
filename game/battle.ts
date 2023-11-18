@@ -355,7 +355,7 @@ export class Battle {
                 break;
             }
 
-            if (move.power && user.handleStatusDamage(this)) {
+            if (user.handleStatusDamage(this)) {
                 if (user.owner.isAllDead()) {
                     this._victor = target.owner;
                 }
@@ -408,7 +408,8 @@ export class Battle {
     }
 }
 
-export type Stages = keyof ActivePokemon["stages"];
+export type Stages = (typeof stageKeys)[number];
+export type BooleanFlag = (typeof booleanFlags)[number];
 
 export const booleanFlags = ["light_screen", "reflect", "mist", "focus"] as const;
 export const statKeys = ["atk", "def", "spc", "spe"] as const;
@@ -420,7 +421,7 @@ export class ActivePokemon {
     stats = { atk: 0, def: 0, spc: 0, spe: 0 };
     types: Type[] = [];
     base: Pokemon;
-    flags: Partial<Record<(typeof booleanFlags)[number], boolean>> = {};
+    flags: Partial<Record<BooleanFlag, boolean>> = {};
     substitute = 0;
     confusion = 0;
     flinch = 0;
@@ -454,6 +455,7 @@ export class ActivePokemon {
             src: this.owner.id,
             name: base.name,
             level: base.level,
+            indexInTeam: this.owner.team.indexOf(base),
         });
 
         this.base = base;
