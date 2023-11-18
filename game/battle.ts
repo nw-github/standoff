@@ -13,9 +13,7 @@ import {
     type Type,
 } from "./utils";
 
-export type Choice =
-    | { type: "switch"; to: number }
-    | { type: "move"; index: number };
+export type Choice = { type: "switch"; to: number } | { type: "move"; index: number };
 
 export type MoveChoice = { move: MoveId; pp: number; valid: boolean; indexInMoves?: number };
 
@@ -42,11 +40,7 @@ class SwitchMove extends Move {
 
 export class SelectionError extends Error {
     constructor(
-        readonly type:
-            | "cancel_too_late"
-            | "choose_too_late"
-            | "game_over"
-            | "invalid_choice"
+        readonly type: "cancel_too_late" | "choose_too_late" | "game_over" | "invalid_choice"
     ) {
         super();
     }
@@ -432,7 +426,9 @@ export class Battle {
 
 export type Stages = keyof ActivePokemon["stages"];
 
-export type BooleanFlag = "light_screen" | "reflect" | "mist" | "focus";
+export const booleanFlags = ["light_screen", "reflect", "mist", "focus"] as const;
+export const statKeys = ["atk", "def", "spc", "spe"] as const;
+export const stageKeys = [...statKeys, "acc", "eva"] as const;
 
 export class ActivePokemon {
     readonly owner: Player;
@@ -440,7 +436,7 @@ export class ActivePokemon {
     stats = { atk: 0, def: 0, spc: 0, spe: 0 };
     types: Type[] = [];
     base: Pokemon;
-    flags: Partial<Record<BooleanFlag, boolean>> = {};
+    flags: Partial<Record<(typeof booleanFlags)[number], boolean>> = {};
     substitute = 0;
     confusion = 0;
     flinch = 0;
@@ -477,12 +473,11 @@ export class ActivePokemon {
         });
 
         this.base = base;
-        for (const k in this.stages) {
-            // @ts-ignore
+        for (const k of stageKeys) {
             this.stages[k] = 0;
         }
-        for (const k in this.flags) {
-            // @ts-ignore
+
+        for (const k of booleanFlags) {
             this.flags[k] = false;
         }
 

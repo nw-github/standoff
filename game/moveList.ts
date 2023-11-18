@@ -1,3 +1,4 @@
+import { booleanFlags, stageKeys } from "./battle";
 import {
     Move,
     BooleanFlagMove,
@@ -16,7 +17,7 @@ import { checkAccuracy, randChoice, randRangeInclusive } from "./utils";
 
 export type MoveId = keyof typeof moveList;
 
-export const moveList = {
+export const moveList = Object.freeze({
     conversion: new UniqueMove({
         name: "Conversion",
         pp: 30,
@@ -74,13 +75,11 @@ export const moveList = {
                 why: "haze"
             });
 
-            for (const k in user.stages) {
-                // @ts-ignore
+            for (const k of stageKeys) {
                 user.stages[k] = target.stages[k] = 0;
             }
 
-            for (const k in user.flags) {
-                // @ts-ignore
+            for (const k of booleanFlags) {
                 user.flags[k] = target.flags[k] = false;
             }
 
@@ -121,6 +120,15 @@ export const moveList = {
                     type: "failed",
                     src: target.owner.id,
                     why: "immune",
+                });
+                return false;
+            }
+
+            if (target.seeded) {
+                battle.pushEvent({
+                    type: "failed",
+                    src: target.owner.id,
+                    why: "generic",
                 });
                 return false;
             }
@@ -252,12 +260,10 @@ export const moveList = {
                 user.base = new TransformedPokemon(user.base, target.base);
             }
 
-            for (const k in user.stages) {
-                const realk = k as keyof typeof user.stages;
-
-                user.stages[realk] = target.stages[realk];
-                if (realk === "atk" || realk === "def" || realk == "spc" || realk === "spe") {
-                    user.applyStages(realk, false);
+            for (const k of stageKeys) {
+                user.stages[k] = target.stages[k];
+                if (k === "atk" || k === "def" || k == "spc" || k === "spe") {
+                    user.applyStages(k, false);
                 }
             }
 
@@ -1336,4 +1342,4 @@ export const moveList = {
         type: "normal",
         why: "whirlwind",
     }),
-};
+});

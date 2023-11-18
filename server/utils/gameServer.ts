@@ -351,7 +351,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             return "not_in_battle";
         }
 
-        return [player, room] as [Player, Room];
+        return [player, room] as const;
     }
 
     private createRandomTeam() {
@@ -387,48 +387,12 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         };
 
         const team = [
-            new Pokemon(
-                "alakazam",
-                {},
-                {},
-                100,
-                randomMoves(["psychic", "recover", "seismictoss", "thunderwave"])
-            ),
-            new Pokemon(
-                "tauros",
-                {},
-                {},
-                100,
-                randomMoves(["bodyslam", "hyperbeam", "blizzard", "earthquake"])
-            ),
-            new Pokemon(
-                "snorlax",
-                {},
-                {},
-                100,
-                randomMoves(["bodyslam", "reflect", "rest", "selfdestruct"])
-            ),
-            new Pokemon(
-                "zapdos",
-                {},
-                {},
-                100,
-                randomMoves(["thunderbolt", "drillpeck", "thunderwave", "agility"])
-            ),
-            new Pokemon(
-                "starmie",
-                {},
-                {},
-                100,
-                randomMoves(["recover", "blizzard", "thunderbolt", "psychic"])
-            ),
-            new Pokemon(
-                "rhydon",
-                {},
-                {},
-                100,
-                randomMoves(["earthquake", "rockslide", "bodyslam", "substitute"])
-            ),
+            new Pokemon("alakazam", {}, {}, 100, randomMoves()),
+            new Pokemon("tauros", {}, {}, 100, randomMoves()),
+            new Pokemon("snorlax", {}, {}, 100, randomMoves()),
+            new Pokemon("zapdos", {}, {}, 100, randomMoves()),
+            new Pokemon("starmie", {}, {}, 100, randomMoves()),
+            new Pokemon("rhydon", {}, {}, 100, randomMoves()),
         ];
         const num = randRangeInclusive(1, team.length - 1);
         const tmp = team[0];
