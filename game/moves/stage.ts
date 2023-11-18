@@ -40,7 +40,7 @@ export class StageMove extends Move {
             target = user;
         }
 
-        if (!target.inflictStages(this.stages, battle)) {
+        if (!target.inflictStages(user.owner, this.stages, battle)) {
             battle.pushEvent({
                 type: "failed",
                 src: target.owner.id,

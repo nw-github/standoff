@@ -70,7 +70,7 @@ const descriptions: Partial<Record<MoveId, string>> = {
     disable: "Disables a move from the target's move set at random.",
     haze:
         "Removes the effects of Leech Seed, Mist, Reflect, Light Screen, Focus Energy, and " +
-        "Disable, the stat reduction for burn and paralysis, confusion, and all stat stages" +
+        "Disable, the stat reduction for burn and paralysis, confusion, and all stat stages " +
         "for both the user and the target. Also turns bad poison into regular poison for the " +
         "user, and removes any non-volatile status for the target. ",
     leechseed:

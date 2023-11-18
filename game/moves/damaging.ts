@@ -258,7 +258,7 @@ export class DamagingMove extends Move {
             } else if (hadSub) {
                 return dead;
             } else if (Array.isArray(effect)) {
-                target.inflictStages(effect, battle);
+                target.inflictStages(user.owner, effect, battle);
             } else if (effect === "flinch") {
                 target.flinch = battle.turn;
             } else {

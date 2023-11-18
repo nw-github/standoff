@@ -585,10 +585,10 @@ export class ActivePokemon {
         return true;
     }
 
-    inflictStages(mods: [Stages, number][], battle: Battle) {
+    inflictStages(user: Player, mods: [Stages, number][], battle: Battle) {
         mods = mods.filter(([stat]) => Math.abs(this.stages[stat]) !== 6);
 
-        const opponent = battle.opponentOf(this.owner).active;
+        const opponent = battle.opponentOf(user).active;
         for (const [stat, count] of mods) {
             this.stages[stat] = clamp(this.stages[stat] + count, -6, 6);
 
