@@ -1,17 +1,17 @@
 <template>
     <div class="self">
         <div class="healthbar">
-            <div class="hp-fill" :style="{ width: `${hp}%`, backgroundColor: hpColor(hp) }"></div>
+            <div class="hp-fill"></div>
             <div class="hp-text">{{ hp }}%</div>
         </div>
         <div class="effects">
-            <div v-if="poke.status" class="status center-item" :class="poke.status">
+            <div v-if="poke.status" class="status center-item">
                 {{ poke.status.toUpperCase() }}
             </div>
         </div>
         <Tooltip>
             <div class="sprite-container center-item">
-                <img class="sprite" :class="props.base ? 'back' : 'front'" :src="sprite" />
+                <img class="sprite" :src="sprite" />
             </div>
 
             <template #tooltip>
@@ -39,6 +39,7 @@
     height: 100%;
     width: 2.5em;
     color: white;
+    background-color: v-bind("poke.status ? statusColor[poke.status] : 'transparent'");
     border-radius: 5px;
 }
 
@@ -51,7 +52,8 @@
 }
 
 .hp-fill {
-    width: 100%;
+    width: v-bind("hp + '%'");
+    background-color: v-bind("hpColor(hp)");
     height: 100%;
     position: absolute;
     border-radius: 5px;
@@ -73,14 +75,7 @@
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
-}
-
-.back {
-    width: 80%;
-}
-
-.front {
-    width: 65%;
+    width: v-bind("props.back ? '80%' : '65%'");
 }
 
 .self {
@@ -102,27 +97,6 @@ ul {
     list-style: none;
     padding: 0;
     margin: 0;
-}
-
-.psn,
-.tox {
-    background-color: #c562c5;
-}
-
-.brn {
-    background-color: #e67352;
-}
-
-.frz {
-    background-color: #8bb4e6;
-}
-
-.slp {
-    background-color: #a4a48b;
-}
-
-.par {
-    background-color: #bebe18;
 }
 </style>
 
