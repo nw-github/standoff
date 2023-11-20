@@ -30,6 +30,7 @@ import type { Pokemon } from "../game/pokemon";
 import { speciesList } from "../game/species";
 import { moveList } from "../game/moveList";
 import { hpPercentExact } from "../game/utils";
+import "assets/colors.css";
 
 const props = defineProps<{ active?: ClientActivePokemon; poke: Pokemon }>();
 const species = computed(() => speciesList[props.poke.speciesId]);
@@ -52,10 +53,10 @@ const statClass = (stat: "atk" | "def" | "spe" | "spc") => {
 }
 
 .down {
-    color: #FF0800;
+    color: var(--stat-down);
 }
 
 .up {
-    color: rgb(17, 231, 17);
+    color: var(--stat-up);
 }
 </style>

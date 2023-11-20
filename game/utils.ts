@@ -1,5 +1,10 @@
 import type { ActivePokemon, Battle } from "./battle";
 
+export type Stages = (typeof stageKeys)[number];
+
+export const statKeys = ["atk", "def", "spc", "spe"] as const;
+export const stageKeys = [...statKeys, "acc", "eva"] as const;
+
 export type Type =
     | "normal"
     | "rock"

@@ -1,4 +1,4 @@
-import { booleanFlags, stageKeys } from "./battle";
+import { booleanFlags } from "./battle";
 import {
     Move,
     BooleanFlagMove,
@@ -13,7 +13,7 @@ import {
     UniqueMove,
 } from "./moves";
 import { TransformedPokemon } from "./transformed";
-import { checkAccuracy, randChoice, randRangeInclusive } from "./utils";
+import { checkAccuracy, randChoice, randRangeInclusive, stageKeys } from "./utils";
 
 export type MoveId = keyof typeof moveList;
 

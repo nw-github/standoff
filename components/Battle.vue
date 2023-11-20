@@ -73,14 +73,9 @@ main {
 .battlefield {
     min-width: 480px;
     max-width: 480px;
-}
-
-.pokemon:first-child {
-    margin-left: auto;
-}
-
-.pokemon:last-child {
-    margin-right: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 50px;
 }
 
 .textbox {
@@ -113,7 +108,7 @@ import type { Pokemon } from "../game/pokemon";
 import { moveList } from "../game/moveList";
 import type { Textbox } from "#build/components";
 import type { JoinRoomResponse } from "../server/utils/gameServer";
-import { randChoice } from "../game/utils";
+import { clamp, randChoice } from "../game/utils";
 
 const { $conn } = useNuxtApp();
 const props = defineProps<{ init: JoinRoomResponse; room: string }>();
@@ -225,7 +220,7 @@ const runTurn = async ({ events, turn }: Turn, live: boolean, newChoices?: Playe
     await textbox.value!.enterTurn(events, live, e => {
         if (e.type === "switch") {
             const player = players[e.src];
-            player.active = { ...e };
+            player.active = { ...e, stages: {} };
             if (e.src === myId.value) {
                 if (activeInTeam.value?.status === "tox") {
                     activeInTeam.value.status = "psn";
@@ -252,9 +247,16 @@ const runTurn = async ({ events, turn }: Turn, live: boolean, newChoices?: Playe
             if (battlers.value.includes(myId.value)) {
                 players[myId.value].active!.stats = e.stats;
             }
+
+            const active = players[e.id].active!;
+            for (const [stat, val] of e.stages) {
+                active.stages[stat] = clamp((active.stages[stat] ?? 0) + val, -6, 6);
+            }
         } else if (e.type === "transform") {
             const target = players[e.target].active!;
-            players[e.src].active!.transformed = target.transformed ?? target.speciesId;
+            const src = players[e.src].active!;
+            src.transformed = target.transformed ?? target.speciesId;
+            src.stages = {...target.stages};
         } else if (e.type === "info") {
             if (e.why === "haze") {
                 for (const player in players) {
@@ -268,6 +270,8 @@ const runTurn = async ({ events, turn }: Turn, live: boolean, newChoices?: Playe
                     } else if (player !== e.id) {
                         active.status = null;
                     }
+
+                    active.stages = {};
                 }
 
                 if (battlers.value.includes(myId.value)) {

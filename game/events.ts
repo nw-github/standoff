@@ -1,7 +1,8 @@
-import type { ActivePokemon, BooleanFlag, Stages } from "./battle";
+import type { ActivePokemon, BooleanFlag } from "./battle";
 import type { MoveId } from "./moveList";
 import { type Status } from "./pokemon";
 import type { SpeciesId } from "./species";
+import type { Stages } from "./utils";
 
 export type BattleEvent =
     | SwitchEvent

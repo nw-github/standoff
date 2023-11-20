@@ -1,4 +1,4 @@
-import type { ActivePokemon, Battle, Stages } from "../battle";
+import type { ActivePokemon, Battle } from "../battle";
 import { Move } from "./move";
 import type { Status } from "../pokemon";
 import {
@@ -10,6 +10,7 @@ import {
     type Type,
     isSpecial,
     calcDamage,
+    type Stages,
 } from "../utils";
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";

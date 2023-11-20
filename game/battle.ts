@@ -9,7 +9,9 @@ import {
     floatTo255,
     randChance255,
     randRangeInclusive,
+    stageKeys,
     stageMultipliers,
+    type Stages,
     type Type,
 } from "./utils";
 
@@ -345,9 +347,9 @@ export class Battle {
 
             if (move.use(this, user, target, choice?.indexInMoves)) {
                 if (!this._victor) {
-                    if (target.owner.team.every(poke => poke.hp <= 0)) {
+                    if (target.owner.isAllDead()) {
                         this._victor = user.owner;
-                    } else if (user.owner.team.every(poke => poke.hp <= 0)) {
+                    } else if (user.owner.isAllDead()) {
                         this._victor = target.owner;
                     }
                 }
@@ -408,12 +410,9 @@ export class Battle {
     }
 }
 
-export type Stages = (typeof stageKeys)[number];
 export type BooleanFlag = (typeof booleanFlags)[number];
 
 export const booleanFlags = ["light_screen", "reflect", "mist", "focus"] as const;
-export const statKeys = ["atk", "def", "spc", "spe"] as const;
-export const stageKeys = [...statKeys, "acc", "eva"] as const;
 
 export class ActivePokemon {
     readonly owner: Player;

@@ -9,10 +9,10 @@ import {
     OHKOMove,
     FixedDamageMove,
 } from "../game/moves";
-import type { ActivePokemon, Stages } from "../game/battle";
+import type { ActivePokemon } from "../game/battle";
 import { moveList, type MoveId } from "../game/moveList";
 import type { SpeciesId } from "../game/species";
-import type { Type } from "../game/utils";
+import type { Stages } from "../game/utils";
 
 export type ClientActivePokemon = {
     speciesId: SpeciesId;
@@ -20,6 +20,7 @@ export type ClientActivePokemon = {
     hp: number;
     level: number;
     status: Status | null;
+    stages: Partial<Record<Stages, number>>;
     stats?: ActivePokemon["stats"];
     transformed?: SpeciesId;
 };
@@ -108,33 +109,6 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
         "The user charges on the first turn, and attacks on the second. While charging, the user " +
         "can only be hit by moves that do not check accuracy.",
     multi_turn: "Locks the user in for 3-4 turns. ",
-};
-
-export const typeColor: Record<Type, string> = {
-    normal: "#ACAC7B",
-    rock: "#BDA439",
-    ground: "#E6C56A",
-    ghost: "#735A9C",
-    poison: "#A441A4",
-    bug: "#ACBD20",
-    flying: "#AC94F6",
-    fight: "#C53129",
-    water: "#6A94F6",
-    grass: "#7BCD52",
-    fire: "#F68331",
-    electric: "#FFD531",
-    ice: "#9CDEDE",
-    psychic: "#FF5A8B",
-    dragon: "#7339FF",
-};
-
-export const statusColor: Record<Status, string> = {
-    psn: "#c562c5",
-    tox: "#c562c5",
-    brn: "#e67352",
-    frz: "#8bb4e6",
-    slp: "#a4a48b",
-    par: "#bebe18",
 };
 
 export const describeMove = (id: MoveId) => {

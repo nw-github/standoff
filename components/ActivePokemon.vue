@@ -1,16 +1,29 @@
 <template>
     <div class="self">
-        <div class="healthbar">
-            <div class="hp-fill"></div>
-            <div class="hp-text">{{ hp }}%</div>
-        </div>
-        <div class="effects">
-            <div v-if="poke.status" class="status center-item">
-                {{ poke.status.toUpperCase() }}
+        <div class="all-info">
+            <div class="info-text">
+                <span>{{ poke.name }}</span>
+                <span>Lv. {{ poke.level }}</span>
+            </div>
+
+            <div class="healthbar">
+                <div class="hp-fill"></div>
+                <div class="hp-text">{{ hp }}%</div>
+            </div>
+            <div class="effects">
+                <div class="status" v-if="poke.status">
+                    {{ poke.status.toUpperCase() }}
+                </div>
+
+                <template v-for="(val, stage) in poke.stages">
+                    <div v-if="val" :class="val > 0 ? 'up' : 'down'">
+                        {{ roundTo(stageMultipliers[val] / 100, 2) }}x {{ toTitleCase(stage) }}
+                    </div>
+                </template>
             </div>
         </div>
-        <Tooltip>
-            <div class="sprite-container center-item">
+        <Tooltip class="sprite-container">
+            <div class="center-item">
                 <img class="sprite" :src="sprite" />
             </div>
 
@@ -31,23 +44,11 @@
 </template>
 
 <style scoped>
-.effects {
-    height: 1.4em;
-}
-
-.status {
-    height: 100%;
-    width: 2.5em;
-    color: white;
-    background-color: v-bind("poke.status ? statusColor[poke.status] : 'transparent'");
-    border-radius: 5px;
-}
-
 .healthbar {
     background-color: #333;
     border-radius: 5px;
     position: relative;
-    height: 20px;
+    height: 1.2rem;
     margin-bottom: 5px;
 }
 
@@ -68,23 +69,63 @@
 }
 
 .sprite-container {
-    width: 200px;
+    width: 50%;
+}
+
+.all-info {
+    width: 50%;
+    order: v-bind("back ? 2 : 0");
+    position: relative;
+    top: 15%;
+    font-size: 0.9em;
+}
+
+.info-text {
+    display: flex;
+    justify-content: space-between;
 }
 
 .sprite {
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
-    width: v-bind("props.back ? '80%' : '65%'");
+    width: v-bind("back ? '80%' : '65%'");
+}
+
+.effects > * {
+    height: min-content;
+    width: max-content;
+    padding: 1px 3px;
+    color: white;
+    border-radius: 5px;
+}
+
+.status {
+    background-color: v-bind("poke.status ? statusColor[poke.status] : 'transparent'");
+}
+
+.down {
+    background-color: var(--stat-down);
+}
+
+.up {
+    background-color: var(--stat-up);
 }
 
 .self {
-    width: 200px;
+    width: 100%;
     padding: 5px;
+    display: flex;
+    gap: 1rem;
 }
 
 .info {
     font-style: italic;
+}
+
+.effects {
+    display: flex;
+    gap: 0.2rem;
 }
 
 .center-item {
@@ -101,11 +142,12 @@ ul {
 </style>
 
 <script setup lang="ts">
-import { hpPercent } from "../game/utils";
+import { hpPercent, stageMultipliers } from "../game/utils";
 import { calcStat, type Pokemon } from "../game/pokemon";
 import { speciesList } from "../game/species";
+import "assets/colors.css";
 
-const props = defineProps<{ poke: ClientActivePokemon; base?: Pokemon, back: boolean }>();
+const props = defineProps<{ poke: ClientActivePokemon; base?: Pokemon; back: boolean }>();
 const species = computed(() => speciesList[props.poke.speciesId]);
 const minSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 0, 0));
 const maxSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 15, 65535));
