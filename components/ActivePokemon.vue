@@ -49,7 +49,6 @@
     border-radius: 5px;
     position: relative;
     height: 1.2rem;
-    margin-bottom: 5px;
 }
 
 .hp-fill {
@@ -78,6 +77,9 @@
     position: relative;
     top: 15%;
     font-size: 0.9em;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
 }
 
 .info-text {
@@ -90,6 +92,12 @@
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
     width: v-bind("back ? '80%' : '65%'");
+}
+
+.effects {
+    display: flex;
+    gap: 0.2rem;
+    flex-wrap: wrap;
 }
 
 .effects > * {
@@ -121,11 +129,6 @@
 
 .info {
     font-style: italic;
-}
-
-.effects {
-    display: flex;
-    gap: 0.2rem;
 }
 
 .center-item {

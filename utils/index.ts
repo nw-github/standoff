@@ -108,7 +108,7 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
     charge_invuln:
         "The user charges on the first turn, and attacks on the second. While charging, the user " +
         "can only be hit by moves that do not check accuracy.",
-    multi_turn: "Locks the user in for 3-4 turns. ",
+    multi_turn: "Locks the user in for 3-4 turns. Afterwards, the user becomes confused.",
 };
 
 export const describeMove = (id: MoveId) => {
