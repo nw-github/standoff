@@ -427,7 +427,6 @@ export function gameServerInit(server: any, reset: boolean) {
         }
     }
 
-    console.log("initializing game server...");
     global.server = new GameServer(server);
     console.log("initialized game server!");
 }

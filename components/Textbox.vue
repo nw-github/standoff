@@ -79,69 +79,65 @@ const htmlForEvent = (e: BattleEvent) => {
         }
 
         res.push(`${player.name} sent in ${e.name}!`);
-    } else if (e.type === "damage") {
+    } else if (e.type === "damage" || e.type === "recover") {
         const src = pname(e.src);
         const target = pname(e.target);
-
-        let { hpBefore, hpAfter } = e;
-        if (e.target === props.myId) {
-            hpBefore = hpPercentExact(hpBefore, e.maxHp);
-            hpAfter = hpPercentExact(hpAfter, e.maxHp);
-        }
-
-        const effMsg = ` - It's ${(e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."}`;
-        if (e.why === "recoil") {
-            res.push(`${src} was hurt by recoil!`);
-        } else if (e.why === "crash") {
-            res.push(`${src} kept going and crashed!`);
-        } else if (e.why === "seeded") {
-            res.push(`${src}'s health was sapped by Leech Seed!`);
-        } else if (e.why === "psn") {
-            res.push(`${src} is hurt by poison!`);
-        } else if (e.why === "brn") {
-            res.push(`${src} is hurt by its burn!`);
-        } else if (e.why === "attacked" && e.isCrit) {
-            res.push(`A critical hit!`);
-        } else if (e.why === "confusion") {
-            res.push("It hurt itself in its confusion!");
-        } else if (e.why === "attacked" && e.hitCount === undefined && (e.eff ?? 1) !== 1) {
-            res.push(effMsg);
-        } else if (e.why === "ohko") {
-            res.push(` - It's a one-hit KO!`);
-        }
-
-        if (e.why !== "explosion") {
-            const diff = hpBefore - hpAfter;
-            res.push(
-                `- ${target} ${diff < 0 ? "gained" : "lost"} ${roundTo(
-                    Math.abs(diff),
-                    1
-                )}% of its health.`
-            );
-        }
-
-        if (e.why === "substitute") {
-            res.push(`${src} put in a substitute!`);
-        }
-
-        if ((e.hitCount ?? 0) > 0) {
-            if (e.eff !== 1) {
+        const percent = roundTo(hpPercentExact(e.hpBefore - e.hpAfter, e.maxHp), 1);
+        const dmgMsg = `- ${target} ${percent < 0 ? "gained" : "lost"} ${Math.abs(
+            percent
+        )}% of its health.`;
+        if (e.type === "damage") {
+            const effMsg = ` - It's ${
+                (e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."
+            }`;
+            if (e.why === "recoil") {
+                res.push(`${src} was hurt by recoil!`);
+            } else if (e.why === "crash") {
+                res.push(`${src} kept going and crashed!`);
+            } else if (e.why === "seeded") {
+                res.push(`${src}'s health was sapped by Leech Seed!`);
+            } else if (e.why === "psn") {
+                res.push(`${src} is hurt by poison!`);
+            } else if (e.why === "brn") {
+                res.push(`${src} is hurt by its burn!`);
+            } else if (e.why === "attacked" && e.isCrit) {
+                res.push(`A critical hit!`);
+            } else if (e.why === "confusion") {
+                res.push("It hurt itself in its confusion!");
+            } else if (e.why === "attacked" && e.hitCount === undefined && (e.eff ?? 1) !== 1) {
                 res.push(effMsg);
+            } else if (e.why === "ohko") {
+                res.push(` - It's a one-hit KO!`);
             }
-            res.push(`Hit ${e.hitCount} time(s)!`);
-        }
 
-        if (hpAfter === 0) {
-            res.push(`${target} fainted!`);
-        }
-    } else if (e.type === "recover") {
-        const src = pname(e.src);
-        if (e.why === "drain") {
-            res.push(`${src} had it's energy drained!`);
-        } else if (e.why === "recover") {
-            res.push(`${src} regained health!`);
-        } else if (e.why === "rest") {
-            res.push(`${src} started sleeping!`);
+            if (e.why !== "explosion") {
+                res.push(dmgMsg);
+            }
+
+            if (e.why === "substitute") {
+                res.push(`${src} put in a substitute!`);
+            }
+
+            if ((e.hitCount ?? 0) > 0) {
+                if (e.eff !== 1) {
+                    res.push(effMsg);
+                }
+                res.push(`Hit ${e.hitCount} time(s)!`);
+            }
+
+            if (e.hpAfter === 0) {
+                res.push(`${target} fainted!`);
+            }
+        } else {
+            if (e.why === "drain") {
+                res.push(`${src} had it's energy drained!`);
+            } else if (e.why === "recover") {
+                res.push(`${src} regained health!`);
+            } else if (e.why === "rest") {
+                res.push(`${src} started sleeping!`);
+            }
+
+            res.push(`- ${target} gained ${percent}% of its health.`);
         }
     } else if (e.type === "failed") {
         const src = pname(e.src);

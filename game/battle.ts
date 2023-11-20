@@ -180,7 +180,7 @@ export class Battle {
         this.moveListToId = rev;
     }
 
-    static start(player1: Player, player2: Player): [Battle, Turn] {
+    static start(player1: Player, player2: Player) {
         const self = new Battle(player1, player2);
 
         // TODO: is the initial switch order determined by speed?
@@ -188,7 +188,7 @@ export class Battle {
             player.active.switchTo(player.active.base, self);
         }
 
-        return [self, self.endTurn()];
+        return [self, self.endTurn()] as const;
     }
 
     get turn() {
@@ -656,7 +656,7 @@ export class ActivePokemon {
 
     tickCounter(battle: Battle, why: DamageReason) {
         const multiplier = this.base.status === "psn" && why === "psn" ? 1 : this.counter;
-        const dmg = Math.floor(multiplier * Math.max(this.base.stats.hp / 16, 1));
+        const dmg = Math.max(Math.floor((multiplier * this.base.stats.hp) / 16), 1);
         const { dead } = this.inflictDamage(dmg, this, battle, false, why, true);
         const opponent = battle.opponentOf(this.owner).active;
         if (why === "seeded" && opponent.base.hp < opponent.base.stats.hp) {
