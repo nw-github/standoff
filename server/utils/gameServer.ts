@@ -336,7 +336,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
 
     private enterMatchmaking(account: Account, format: FormatId) {
         // highly advanced matchmaking algorithm
-        const player = new Player(account.id, formatDescs[format].generate!())
+        const player = new Player(account.id, formatDescs[format].generate!());
         const mm = this.mmWaiting[format];
         if (mm) {
             const roomId = uuid();
@@ -348,6 +348,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             opponentAcc.joinBattle(this.rooms[roomId]);
 
             this.leaveMatchmaking(account);
+            this.leaveMatchmaking(opponentAcc);
         } else {
             this.mmWaiting[format] = [player, account];
             account.matchmaking = format;
@@ -356,10 +357,10 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
 
     private leaveMatchmaking(account: Account) {
         const format = account.matchmaking;
-        if (format) {
+        if (format && this.mmWaiting[format]?.[1] === account) {
             delete this.mmWaiting[format];
-            delete account.matchmaking;
         }
+        delete account.matchmaking;
     }
 
     private validatePlayer(socket: Socket, roomId: string) {

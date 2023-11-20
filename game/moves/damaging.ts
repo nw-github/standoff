@@ -164,16 +164,6 @@ export class DamagingMove extends Move {
             event.hitCount = 1;
         }
 
-        console.log(
-            `${this.name} (Pow ${this.power})`,
-            `(${atks} ${atk})`,
-            `(${defs} ${def})`,
-            `(Stab ${stab})`,
-            `(Rand ${rand})`,
-            `(Eff ${eff})`,
-            `(Crit? ${isCrit})`,
-            ` = ${dmg}`
-        );
         if (!brokeSub) {
             if (this.recoil) {
                 dead =

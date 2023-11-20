@@ -104,7 +104,7 @@ const htmlForEvent = (e: BattleEvent) => {
             res.push(`A critical hit!`);
         } else if (e.why === "confusion") {
             res.push("It hurt itself in its confusion!");
-        } else if (e.why === "attacked" && e.hitCount === undefined && e.eff !== 1) {
+        } else if (e.why === "attacked" && e.hitCount === undefined && (e.eff ?? 1) !== 1) {
             res.push(effMsg);
         } else if (e.why === "ohko") {
             res.push(` - It's a one-hit KO!`);

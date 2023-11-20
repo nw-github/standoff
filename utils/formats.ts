@@ -62,7 +62,7 @@ export const formatDescs: Record<FormatId, FormatDesc> = {
             return getRandomPokemon(
                 6,
                 () => true,
-                s => new Pokemon(s, {}, {}, 100, randomMoves(["recover"]))
+                s => new Pokemon(s, {}, {}, 100, randomMoves())
             );
         },
     },
