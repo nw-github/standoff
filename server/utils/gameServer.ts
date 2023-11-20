@@ -385,7 +385,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         const result = [...events];
         for (let i = 0; i < result.length; i++) {
             const e = result[i];
-            if (e.type === "damage" && e.target !== player?.id) {
+            if ((e.type === "damage" || e.type === "recover") && e.target !== player?.id) {
                 result[i] = {
                     ...e,
                     hpBefore: hpPercent(e.hpBefore, e.maxHp),

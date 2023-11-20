@@ -161,7 +161,7 @@ export class DamagingMove extends Move {
         );
 
         if (this.flag === "multi" || this.flag === "double") {
-            event!.hitCount = 1;
+            event.hitCount = 1;
         }
 
         console.log(
@@ -188,21 +188,14 @@ export class DamagingMove extends Move {
             }
 
             if (this.flag === "drain" || this.flag === "dream_eater") {
-                user.inflictDamage(
-                    -Math.max(Math.floor(dealt / 2), 1),
-                    target,
-                    battle,
-                    false,
-                    "drain",
-                    true
-                );
+                user.inflictRecovery(-Math.max(Math.floor(dealt / 2), 1), target, battle, "drain");
             } else if (this.flag === "explosion") {
                 dead =
                     user.inflictDamage(user.base.hp, user, battle, false, "explosion", true).dead ||
                     dead;
             } else if (this.flag === "double") {
                 if (!dead) {
-                    event!.hitCount = 0;
+                    event.hitCount = 0;
                     ({ dead, event } = target.inflictDamage(
                         dmg,
                         user,
@@ -212,7 +205,7 @@ export class DamagingMove extends Move {
                         false,
                         eff
                     ));
-                    event!.hitCount = 2;
+                    event.hitCount = 2;
                 }
             } else if (this.flag === "multi") {
                 let count = randChance255(96) ? 1 : null;
@@ -222,7 +215,7 @@ export class DamagingMove extends Move {
 
                 let hits = 1;
                 while (!dead && !brokeSub && count-- > 0) {
-                    event!.hitCount = 0;
+                    event.hitCount = 0;
                     ({ dead, brokeSub, event } = target.inflictDamage(
                         dmg,
                         user,
@@ -235,7 +228,7 @@ export class DamagingMove extends Move {
                     hits++;
                 }
 
-                event!.hitCount = hits;
+                event.hitCount = hits;
             } else if (this.flag === "payday") {
                 battle.pushEvent({
                     type: "info",

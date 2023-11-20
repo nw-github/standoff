@@ -4,6 +4,7 @@ import type {
     DamageEvent,
     DamageReason,
     PlayerId,
+    RecoveryReason,
 } from "./events";
 import { moveList, type MoveId } from "./moveList";
 import { Move } from "./moves";
@@ -261,24 +262,15 @@ export class Battle {
                 const aPri = a.move.priority ?? 0,
                     bPri = b.move.priority ?? 0;
                 if (aPri !== bPri) {
-                    console.log(
-                        `Priority: ${a.move.name} (${aPri}) vs`,
-                        `${b.move.name} (${bPri})`
-                    );
                     return bPri - aPri;
                 }
 
                 const aSpe = a.user.owner.active.getStat("spe");
                 const bSpe = b.user.owner.active.getStat("spe");
                 if (aSpe === bSpe) {
-                    console.log(`Speed tie: ${aSpe}`);
                     return randChance255(128) ? -1 : 1;
                 }
 
-                console.log(
-                    `Speed: ${a.user.base.name} (${aSpe}) vs`,
-                    `${b.user.base.name} (${bSpe})`
-                );
                 return bSpe - aSpe;
             });
 
@@ -553,14 +545,7 @@ export class ActivePokemon {
             };
         } else {
             const hpBefore = this.base.hp;
-            this.base.hp =
-                dmg > 0
-                    ? Math.max(this.base.hp - dmg, 0)
-                    : Math.min(this.base.hp - dmg, this.base.stats.hp);
-            if (this.base.hp === hpBefore) {
-                return { dealt: 0, brokeSub: false, dead: false };
-            }
-
+            this.base.hp = Math.max(this.base.hp - dmg, 0);
             return {
                 event: battle.pushEvent<DamageEvent>({
                     type: "damage",
@@ -578,6 +563,25 @@ export class ActivePokemon {
                 dead: this.base.hp === 0,
             };
         }
+    }
+
+    inflictRecovery(amount: number, src: ActivePokemon, battle: Battle, why: RecoveryReason) {
+        const hpBefore = this.base.hp;
+        this.base.hp = Math.min(this.base.hp + amount, this.base.stats.hp);
+        if (this.base.hp === hpBefore) {
+            return;
+        }
+
+        battle.pushEvent({
+            type: "recover",
+            src: src.owner.id,
+            target: this.owner.id,
+            maxHp: this.base.stats.hp,
+            hpAfter: this.base.hp,
+            hpBefore,
+            why,
+        });
+        return;
     }
 
     inflictStatus(status: Status, battle: Battle, override: boolean = false) {
@@ -656,7 +660,7 @@ export class ActivePokemon {
         const { dead } = this.inflictDamage(dmg, this, battle, false, why, true);
         const opponent = battle.opponentOf(this.owner).active;
         if (why === "seeded" && opponent.base.hp < opponent.base.stats.hp) {
-            opponent.inflictDamage(-dmg, this, battle, false, "seeder", true);
+            opponent.inflictRecovery(dmg, this, battle, "seeder");
         }
 
         if (this.base.status === "tox") {

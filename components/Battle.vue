@@ -232,7 +232,7 @@ const runTurn = async ({ events, turn }: Turn, live: boolean, newChoices?: Playe
                 activeIndex.value = e.indexInTeam;
                 player.active.stats = { ...activeInTeam.value!.stats };
             }
-        } else if (e.type === "damage") {
+        } else if (e.type === "damage" || e.type === "recover") {
             players[e.target].active!.hp = e.hpAfter;
             if (e.target === myId.value) {
                 activeInTeam.value!.hp = e.hpAfter;

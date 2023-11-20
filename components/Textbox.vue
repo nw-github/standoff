@@ -92,12 +92,8 @@ const htmlForEvent = (e: BattleEvent) => {
         const effMsg = ` - It's ${(e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."}`;
         if (e.why === "recoil") {
             res.push(`${src} was hurt by recoil!`);
-        } else if (e.why === "drain") {
-            res.push(`${src} had it's energy drained!`);
         } else if (e.why === "crash") {
             res.push(`${src} kept going and crashed!`);
-        } else if (e.why === "recover") {
-            res.push(`${src} regained health!`);
         } else if (e.why === "seeded") {
             res.push(`${src}'s health was sapped by Leech Seed!`);
         } else if (e.why === "psn") {
@@ -106,8 +102,6 @@ const htmlForEvent = (e: BattleEvent) => {
             res.push(`${src} is hurt by its burn!`);
         } else if (e.why === "attacked" && e.isCrit) {
             res.push(`A critical hit!`);
-        } else if (e.why === "rest") {
-            res.push(`${src} started sleeping!`);
         } else if (e.why === "confusion") {
             res.push("It hurt itself in its confusion!");
         } else if (e.why === "attacked" && e.hitCount === undefined && e.eff !== 1) {
@@ -139,6 +133,15 @@ const htmlForEvent = (e: BattleEvent) => {
 
         if (hpAfter === 0) {
             res.push(`${target} fainted!`);
+        }
+    } else if (e.type === "recover") {
+        const src = pname(e.src);
+        if (e.why === "drain") {
+            res.push(`${src} had it's energy drained!`);
+        } else if (e.why === "recover") {
+            res.push(`${src} regained health!`);
+        } else if (e.why === "rest") {
+            res.push(`${src} started sleeping!`);
         }
     } else if (e.type === "failed") {
         const src = pname(e.src);

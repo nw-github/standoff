@@ -1,10 +1,10 @@
 import type { ActivePokemon, Battle } from "../battle";
-import type { DamageReason } from "../events";
+import type { RecoveryReason } from "../events";
 import { Move } from "./move";
 import type { Type } from "../utils";
 
 export class RecoveryMove extends Move {
-    readonly why: DamageReason;
+    readonly why: RecoveryReason;
 
     constructor({
         name,
@@ -15,7 +15,7 @@ export class RecoveryMove extends Move {
         name: string;
         pp: number;
         type: Type;
-        why: DamageReason;
+        why: RecoveryReason;
     }) {
         super(name, pp, type);
         this.why = why;
@@ -33,21 +33,13 @@ export class RecoveryMove extends Move {
         }
 
         if (this.why === "rest") {
-            user.inflictDamage(-diff, user, battle, false, this.why, true);
+            user.inflictRecovery(diff, user, battle, this.why);
             user.base.status = "slp";
             user.base.sleep_turns = 3;
             // In gen 1, Rest doesn't reset the toxic counter or par/brn stat drops
         } else {
-            user.inflictDamage(
-                -Math.floor(user.base.stats.hp / 2),
-                user,
-                battle,
-                false,
-                this.why,
-                true
-            );
+            user.inflictRecovery(Math.floor(user.base.stats.hp / 2), user, battle, this.why);
         }
-
         return false;
     }
 }

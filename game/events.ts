@@ -7,6 +7,7 @@ import type { Stages } from "./utils";
 export type BattleEvent =
     | SwitchEvent
     | DamageEvent
+    | RecoverEvent
     | FailureEvent
     | UseMoveEvent
     | VictoryEvent
@@ -36,17 +37,15 @@ export type DamageReason =
     | "attacked"
     | "substitute"
     | "recoil"
-    | "drain"
     | "explosion"
     | "crash"
     | "ohko"
-    | "recover"
-    | "rest"
     | "seeded"
-    | "seeder"
     | "psn"
     | "brn"
     | "confusion";
+
+export type RecoveryReason = "drain" | "recover" | "rest" | "seeder";
 
 export type DamageEvent = {
     type: "damage";
@@ -59,11 +58,21 @@ export type DamageEvent = {
     why: DamageReason;
     /**
      * undefined: this is the one and only hit of a normal attack
-     * 0:         this is one, non-final hit of a multi-hit attack 
+     * 0:         this is one, non-final hit of a multi-hit attack
      * *:         this is the count of hits on the final hit of a multi-hit attack
      */
     hitCount?: number;
     eff?: number;
+};
+
+export type RecoverEvent = {
+    type: "recover";
+    src: PlayerId;
+    target: PlayerId;
+    hpBefore: number;
+    hpAfter: number;
+    maxHp: number;
+    why: RecoveryReason;
 };
 
 export type HitSubstituteEvent = {
