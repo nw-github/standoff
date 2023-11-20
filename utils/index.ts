@@ -111,6 +111,11 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
     multi_turn: "Locks the user in for 3-4 turns. Afterwards, the user becomes confused.",
 };
 
+export const formatNames: Record<FormatId, string> = {
+    randoms: "Random Battle",
+    metronome: "Metronome Battle",
+};
+
 export const describeMove = (id: MoveId) => {
     const move = moveList[id];
     if (move instanceof DamagingMove) {

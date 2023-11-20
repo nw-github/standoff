@@ -2,6 +2,12 @@
     <main>
         <h1>Status: {{ status }}</h1>
 
+        <select name="mm" id="mm" v-model="format">
+            <option :value="format" v-for="format in battleFormats">
+                {{ formatNames[format] }}
+            </option>
+        </select>
+
         <button @click="enterMatchmaking" :disabled="!myId.length || cancelling">
             {{ findingMatch ? "Cancel" : "Enter Matchmaking" }}
         </button>
@@ -31,6 +37,7 @@ const findingMatch = ref(false);
 const cancelling = ref(false);
 const rooms = ref<string[]>();
 const battles = ref<string[]>();
+const format = ref<FormatId>("randoms");
 
 onMounted(() => {
     if (process.server) {
@@ -39,7 +46,7 @@ onMounted(() => {
 
     status.value = `Logging in as ${username.value}...`;
 
-    $conn.emit("login", username.value, (resp) => {
+    $conn.emit("login", username.value, resp => {
         if (resp === "bad_username") {
             status.value = `Login error: ${resp}`;
         } else {
@@ -62,7 +69,7 @@ const enterMatchmaking = () => {
     if (!findingMatch.value) {
         findingMatch.value = true;
         status.value = "Finding match...";
-        $conn.emit("enterMatchmaking", [], err => {
+        $conn.emit("enterMatchmaking", [], format.value, err => {
             if (err) {
                 findingMatch.value = false;
                 status.value = `Matchmaking failed: ${err}`;

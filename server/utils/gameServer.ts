@@ -2,11 +2,10 @@ import { v4 as uuid } from "uuid";
 import { Server as SocketIoServer, Socket as SocketIoClient } from "socket.io";
 
 import { Pokemon } from "../../game/pokemon";
-import { MoveId, moveList } from "../../game/moveList";
-import { hpPercent, randChoice, randRangeInclusive } from "../../game/utils";
-import { AlwaysFailMove } from "../../game/moves";
+import { hpPercent } from "../../game/utils";
 import { Battle, Player, SelectionError, Turn } from "../../game/battle";
 import { BattleEvent } from "../../game/events";
+import { FormatId, formatDescs } from "../../utils/formats";
 
 export type LoginResponse = {
     id: string;
@@ -28,7 +27,11 @@ export interface ClientMessage {
     login: (name: string, ack: (resp: LoginResponse | "bad_username") => void) => void;
     logout: (ack: () => void) => void;
 
-    enterMatchmaking: (team: Pokemon[], ack: (err?: "must_login" | "invalid_team") => void) => void;
+    enterMatchmaking: (
+        team: Pokemon[],
+        format: FormatId,
+        ack: (err?: "must_login" | "invalid_team") => void
+    ) => void;
     exitMatchmaking: (ack: () => void) => void;
 
     joinRoom: (room: string, ack: (resp: JoinRoomResponse | "bad_room") => void) => void;
@@ -74,6 +77,7 @@ class Account {
     battles: Set<Room>;
     rooms: Set<Room>;
     sockets: Set<Socket>;
+    matchmaking?: FormatId;
 
     constructor(name: string) {
         this.id = uuid();
@@ -162,7 +166,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
     /** Name -> Account */
     private accounts: Record<string, Account> = {};
     private rooms: Record<string, Room> = {};
-    private mmWaiting: [Player, Account] | null = null;
+    private mmWaiting: Partial<Record<FormatId, [Player, Account]>> = {};
 
     constructor(server: any) {
         super(server);
@@ -200,24 +204,23 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             this.logout(socket);
             ack();
         });
-        socket.on("enterMatchmaking", (_team, ack) => {
+        socket.on("enterMatchmaking", (_team, format, ack) => {
             const account = socket.account;
             if (!account) {
                 return ack("must_login");
             }
 
             ack();
-            if (this.mmWaiting?.[1] === account) {
+            if (this.mmWaiting[format]?.[1] === account) {
                 return;
             }
 
-            this.enterMatchmaking(account, new Player(account.id, this.createRandomTeam()));
+            this.enterMatchmaking(account, format);
         });
         socket.on("exitMatchmaking", ack => {
-            if (socket.account === this.mmWaiting?.[1]) {
-                this.mmWaiting = null;
+            if (socket.account) {
+                this.leaveMatchmaking(socket.account);
             }
-
             ack();
         });
         socket.on("joinRoom", (roomId, ack) => {
@@ -325,26 +328,37 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         const account = socket.account;
         if (account) {
             account.removeSocket(socket, this);
-            if (!account.sockets.size && this.mmWaiting?.[1] === account) {
-                this.mmWaiting = null;
+            if (!account.sockets.size) {
+                this.leaveMatchmaking(account);
             }
         }
     }
 
-    private enterMatchmaking(account: Account, player: Player) {
+    private enterMatchmaking(account: Account, format: FormatId) {
         // highly advanced matchmaking algorithm
-        if (this.mmWaiting) {
+        const player = new Player(account.id, formatDescs[format].generate!())
+        const mm = this.mmWaiting[format];
+        if (mm) {
             const roomId = uuid();
-            const [opponent, opponentAcc] = this.mmWaiting;
+            const [opponent, opponentAcc] = mm;
             const [battle, turn0] = Battle.start(player, opponent);
             this.rooms[roomId] = { id: roomId, battle, turns: [turn0], accounts: new Set() };
 
             account.joinBattle(this.rooms[roomId]);
             opponentAcc.joinBattle(this.rooms[roomId]);
 
-            this.mmWaiting = null;
+            this.leaveMatchmaking(account);
         } else {
-            this.mmWaiting = [player, account];
+            this.mmWaiting[format] = [player, account];
+            account.matchmaking = format;
+        }
+    }
+
+    private leaveMatchmaking(account: Account) {
+        const format = account.matchmaking;
+        if (format) {
+            delete this.mmWaiting[format];
+            delete account.matchmaking;
         }
     }
 
@@ -365,53 +379,6 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         }
 
         return [player, room] as const;
-    }
-
-    private createRandomTeam() {
-        const getMovePool = () => {
-            const movePool = Object.keys(moveList) as MoveId[];
-            const bad: MoveId[] = ["payday", "absorb", "focusenergy"];
-            for (const move of bad) {
-                movePool.splice(movePool.indexOf(move), 1);
-            }
-            return movePool;
-        };
-
-        const pool: MoveId[] = [];
-        const randomMoves = (moves: MoveId[] = [], count: number = 4) => {
-            while (moves.length < count) {
-                if (!pool.length) {
-                    pool.push(...getMovePool());
-                }
-
-                let move;
-                do {
-                    move = randChoice(pool);
-                } while (
-                    moves.includes(move) ||
-                    move === "struggle" ||
-                    moveList[move] instanceof AlwaysFailMove
-                );
-
-                pool.splice(pool.indexOf(move), 1);
-                moves.push(move);
-            }
-            return moves;
-        };
-
-        const team = [
-            new Pokemon("alakazam", {}, {}, 100, randomMoves()),
-            new Pokemon("tauros", {}, {}, 100, randomMoves()),
-            new Pokemon("snorlax", {}, {}, 100, randomMoves()),
-            new Pokemon("zapdos", {}, {}, 100, randomMoves()),
-            new Pokemon("starmie", {}, {}, 100, randomMoves()),
-            new Pokemon("rhydon", {}, {}, 100, randomMoves()),
-        ];
-        const num = randRangeInclusive(1, team.length - 1);
-        const tmp = team[0];
-        team[0] = team[num];
-        team[num] = tmp;
-        return team;
     }
 
     static censorEvents(events: BattleEvent[], player?: Player) {
