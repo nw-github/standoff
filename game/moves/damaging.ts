@@ -150,7 +150,7 @@ export class DamagingMove extends Move {
         const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
         dmg = Math.floor(dmg * (rand / 255));
         const hadSub = target.substitute !== 0;
-        let { dealt, brokeSub, dead } = target.inflictDamage(
+        let { dealt, brokeSub, dead, event } = target.inflictDamage(
             dmg,
             user,
             battle,
@@ -159,6 +159,10 @@ export class DamagingMove extends Move {
             false,
             eff
         );
+
+        if (this.flag === "multi" || this.flag === "double") {
+            event!.hitCount = 1;
+        }
 
         console.log(
             `${this.name} (Pow ${this.power})`,
@@ -197,17 +201,9 @@ export class DamagingMove extends Move {
                     user.inflictDamage(user.base.hp, user, battle, false, "explosion", true).dead ||
                     dead;
             } else if (this.flag === "double") {
-                dead =
-                    dead ||
-                    target.inflictDamage(dmg, user, battle, isCrit, "attacked", false, eff).dead;
-            } else if (this.flag === "multi") {
-                let count = randChance255(96) ? 1 : null;
-                count ??= randChance255(96) ? 2 : null;
-                count ??= randChance255(32) ? 3 : null;
-                count ??= 4;
-
-                while (!dead && !brokeSub && count-- > 0) {
-                    ({ dead, brokeSub } = target.inflictDamage(
+                if (!dead) {
+                    event!.hitCount = 0;
+                    ({ dead, event } = target.inflictDamage(
                         dmg,
                         user,
                         battle,
@@ -216,7 +212,30 @@ export class DamagingMove extends Move {
                         false,
                         eff
                     ));
+                    event!.hitCount = 2;
                 }
+            } else if (this.flag === "multi") {
+                let count = randChance255(96) ? 1 : null;
+                count ??= randChance255(96) ? 2 : null;
+                count ??= randChance255(32) ? 3 : null;
+                count ??= 4;
+
+                let hits = 1;
+                while (!dead && !brokeSub && count-- > 0) {
+                    event!.hitCount = 0;
+                    ({ dead, brokeSub, event } = target.inflictDamage(
+                        dmg,
+                        user,
+                        battle,
+                        isCrit,
+                        "attacked",
+                        false,
+                        eff
+                    ));
+                    hits++;
+                }
+
+                event!.hitCount = hits;
             } else if (this.flag === "payday") {
                 battle.pushEvent({
                     type: "info",

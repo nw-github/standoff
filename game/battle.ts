@@ -1,4 +1,10 @@
-import { type BattleEvent, type DamageReason, type PlayerId } from "./events";
+import type {
+    HitSubstituteEvent,
+    BattleEvent,
+    DamageEvent,
+    DamageReason,
+    PlayerId,
+} from "./events";
 import { moveList, type MoveId } from "./moveList";
 import { Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
@@ -230,8 +236,9 @@ export class Battle {
         };
     }
 
-    pushEvent(event: BattleEvent) {
+    pushEvent<T extends BattleEvent>(event: T) {
         this.events.push(event);
+        return event;
     }
 
     opponentOf(player: Player): Player {
@@ -528,21 +535,22 @@ export class ActivePokemon {
         direct?: boolean,
         eff?: number
     ) {
-        let dealt: number;
-        let brokeSub = false;
         if (this.substitute !== 0 && !direct) {
             const hpBefore = this.substitute;
             this.substitute = Math.max(this.substitute - dmg, 0);
-            battle.pushEvent({
-                type: "hit_sub",
-                src: src.owner.id,
-                target: this.owner.id,
-                broken: this.substitute === 0,
-                confusion: why === "confusion",
-                eff,
-            });
-            dealt = hpBefore - this.substitute;
-            brokeSub = this.substitute === 0;
+            return {
+                event: battle.pushEvent<HitSubstituteEvent>({
+                    type: "hit_sub",
+                    src: src.owner.id,
+                    target: this.owner.id,
+                    broken: this.substitute === 0,
+                    confusion: why === "confusion",
+                    eff,
+                }),
+                dealt: hpBefore - this.substitute,
+                brokeSub: this.substitute === 0,
+                dead: this.base.hp === 0,
+            };
         } else {
             const hpBefore = this.base.hp;
             this.base.hp =
@@ -553,21 +561,23 @@ export class ActivePokemon {
                 return { dealt: 0, brokeSub: false, dead: false };
             }
 
-            battle.pushEvent({
-                type: "damage",
-                src: src.owner.id,
-                target: this.owner.id,
-                maxHp: this.base.stats.hp,
-                hpAfter: this.base.hp,
-                hpBefore,
-                why,
-                eff,
-                isCrit,
-            });
-            dealt = hpBefore - this.base.hp;
+            return {
+                event: battle.pushEvent<DamageEvent>({
+                    type: "damage",
+                    src: src.owner.id,
+                    target: this.owner.id,
+                    maxHp: this.base.stats.hp,
+                    hpAfter: this.base.hp,
+                    hpBefore,
+                    why,
+                    eff,
+                    isCrit,
+                }),
+                dealt: hpBefore - this.base.hp,
+                brokeSub: false,
+                dead: this.base.hp === 0,
+            };
         }
-
-        return { dealt, brokeSub, dead: this.base.hp === 0 };
     }
 
     inflictStatus(status: Status, battle: Battle, override: boolean = false) {

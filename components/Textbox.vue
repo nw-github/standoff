@@ -89,6 +89,7 @@ const htmlForEvent = (e: BattleEvent) => {
             hpAfter = hpPercentExact(hpAfter, e.maxHp);
         }
 
+        const effMsg = ` - It's ${(e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."}`;
         if (e.why === "recoil") {
             res.push(`${src} was hurt by recoil!`);
         } else if (e.why === "drain") {
@@ -109,11 +110,8 @@ const htmlForEvent = (e: BattleEvent) => {
             res.push(`${src} started sleeping!`);
         } else if (e.why === "confusion") {
             res.push("It hurt itself in its confusion!");
-        } else if (e.why === "attacked") {
-            const eff = e.eff ?? 1;
-            if (eff !== 1) {
-                res.push(` - It's ${eff > 1 ? "super effective!" : "not very effective..."}`);
-            }
+        } else if (e.why === "attacked" && e.hitCount === undefined && e.eff !== 1) {
+            res.push(effMsg);
         } else if (e.why === "ohko") {
             res.push(` - It's a one-hit KO!`);
         }
@@ -130,6 +128,13 @@ const htmlForEvent = (e: BattleEvent) => {
 
         if (e.why === "substitute") {
             res.push(`${src} put in a substitute!`);
+        }
+
+        if ((e.hitCount ?? 0) > 0) {
+            if (e.eff !== 1) {
+                res.push(effMsg);
+            }
+            res.push(`Hit ${e.hitCount} time(s)!`);
         }
 
         if (hpAfter === 0) {

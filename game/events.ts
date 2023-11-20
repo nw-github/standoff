@@ -48,7 +48,7 @@ export type DamageReason =
     | "brn"
     | "confusion";
 
-type DamageEvent = {
+export type DamageEvent = {
     type: "damage";
     src: PlayerId;
     target: PlayerId;
@@ -57,15 +57,22 @@ type DamageEvent = {
     maxHp: number;
     isCrit: boolean;
     why: DamageReason;
+    /**
+     * undefined: this is the one and only hit of a normal attack
+     * 0:         this is one, non-final hit of a multi-hit attack 
+     * *:         this is the count of hits on the final hit of a multi-hit attack
+     */
+    hitCount?: number;
     eff?: number;
 };
 
-type HitSubstituteEvent = {
+export type HitSubstituteEvent = {
     type: "hit_sub";
     src: PlayerId;
     target: PlayerId;
     broken: boolean;
     confusion: boolean;
+    hitCount?: number;
     eff?: number;
 };
 
