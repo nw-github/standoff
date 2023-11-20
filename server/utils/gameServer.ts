@@ -211,8 +211,8 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             }
 
             ack();
-            if (this.mmWaiting[format]?.[1] === account) {
-                return;
+            if (account.matchmaking) {
+                this.leaveMatchmaking(account);
             }
 
             this.enterMatchmaking(account, format);

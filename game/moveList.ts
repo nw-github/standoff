@@ -452,12 +452,14 @@ export const moveList = Object.freeze({
         name: "Flash",
         pp: 20,
         type: "normal",
+        acc: 70,
         stages: [["acc", -1]],
     }),
     growl: new StageMove({
         name: "Growl",
         pp: 40,
         type: "normal",
+        acc: 100,
         stages: [["atk", -1]],
     }),
     growth: new StageMove({
@@ -502,8 +504,8 @@ export const moveList = Object.freeze({
         name: "Sand Attack",
         pp: 15,
         type: "normal",
-        stages: [["acc", -1]],
         acc: 100,
+        stages: [["acc", -1]],
     }),
     screech: new StageMove({
         name: "Screech",

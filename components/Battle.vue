@@ -3,7 +3,8 @@
         <ul>
             <li v-for="({ name, isSpectator, connected }, id) in players">
                 <template v-if="id === myId">(Me) </template>
-                {{ name }}: {{ id }} {{ isSpectator ? "(spectator)" : "" }} {{ !connected ? "(disconnected)" : "" }}
+                {{ name }}: {{ id }} {{ isSpectator ? "(spectator)" : "" }}
+                {{ !connected ? "(disconnected)" : "" }}
             </li>
         </ul>
         <div class="game" v-if="hasLoaded">
@@ -31,12 +32,14 @@
         <div class="selections">
             <template v-if="choices && !selectionText.length">
                 <div class="moves">
-                    <MoveButton
-                        class="move-button"
-                        v-for="(choice, i) in choices.moves"
-                        :choice="choice"
-                        @click="() => selectMove(i)"
-                    />
+                    <template v-for="(choice, i) in choices.moves">
+                        <MoveButton
+                            class="move-button"
+                            v-if="choice.display"
+                            :choice="choice"
+                            @click="() => selectMove(i)"
+                        />
+                    </template>
                 </div>
 
                 <div class="team">
@@ -256,7 +259,7 @@ const runTurn = async ({ events, turn }: Turn, live: boolean, newChoices?: Playe
             const target = players[e.target].active!;
             const src = players[e.src].active!;
             src.transformed = target.transformed ?? target.speciesId;
-            src.stages = {...target.stages};
+            src.stages = { ...target.stages };
         } else if (e.type === "info") {
             if (e.why === "haze") {
                 for (const player in players) {
@@ -264,7 +267,7 @@ const runTurn = async ({ events, turn }: Turn, live: boolean, newChoices?: Playe
                     if (!active) {
                         continue;
                     }
-    
+
                     if (player === e.id && active.status === "tox") {
                         active.status = "psn";
                     } else if (player !== e.id) {
@@ -275,7 +278,7 @@ const runTurn = async ({ events, turn }: Turn, live: boolean, newChoices?: Playe
                 }
 
                 if (battlers.value.includes(myId.value)) {
-                    players[myId.value].active!.stats = {...activeInTeam.value!.stats};
+                    players[myId.value].active!.stats = { ...activeInTeam.value!.stats };
                 }
             } else if (e.why === "wake" || e.why === "thaw") {
                 players[e.id].active!.status = null;
@@ -286,7 +289,7 @@ const runTurn = async ({ events, turn }: Turn, live: boolean, newChoices?: Playe
     choices.value = newChoices;
     if (newChoices) {
         for (const { pp, indexInMoves } of newChoices.moves) {
-            if (indexInMoves !== undefined) {
+            if (indexInMoves !== undefined && pp !== undefined) {
                 activeInTeam.value!.pp[indexInMoves] = pp;
             }
         }

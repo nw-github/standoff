@@ -15,7 +15,13 @@ import {
     type Type,
 } from "./utils";
 
-export type MoveChoice = { move: MoveId; pp: number; valid: boolean; indexInMoves?: number };
+export type MoveChoice = {
+    move: MoveId;
+    valid: boolean;
+    display: boolean;
+    pp?: number;
+    indexInMoves?: number;
+};
 
 type ChosenMove = {
     move: Move;
@@ -73,6 +79,7 @@ export class Player {
             pp: this.active.base.pp[i],
             valid: this.isValidMove(move, i),
             indexInMoves: i,
+            display: true,
         }));
 
         if (!this.active.base.hp) {
@@ -85,16 +92,20 @@ export class Player {
                 this.active.thrashing?.move,
                 this.active.recharge,
             ];
-            moves.length = 0;
+
+            let found = false;
             for (const move of metronome) {
                 if (move) {
-                    moves = [{ move: battle.moveIdOf(move)!, pp: -1, valid: true }];
+                    moves.forEach(move => (move.display = false));
+                    moves.push({ move: battle.moveIdOf(move)!, valid: true, display: true });
+                    found = true;
                     break;
                 }
             }
 
-            if (!moves.length) {
-                moves = [{ move: "struggle", pp: -1, valid: true }];
+            if (!found) {
+                moves.forEach(move => (move.display = false));
+                moves.push({ move: "struggle", valid: true, display: true });
             }
         }
 
