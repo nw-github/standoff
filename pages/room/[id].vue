@@ -1,7 +1,6 @@
 <template>
     <div v-if="!battleProps">
         <h1>{{ status }}</h1>
-        <NuxtLink to="/">Go Home</NuxtLink>
     </div>
     <div v-else>
         <Battle v-bind="battleProps" />
