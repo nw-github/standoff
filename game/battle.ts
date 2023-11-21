@@ -148,11 +148,11 @@ export class Player {
             // Gen 1 also doesn't let you pick your move while asleep, but you can't wake up and act
             // on the same turn, nor can you act on the turn haze removes your non-volatile status,
             // so it doesn't matter.
-            if (this.active.lastMove && this.active.lastMove !== moveList[move]) {
+            if (this.active.lastMoveIndex && this.active.lastMoveIndex !== i) {
                 return false;
             }
 
-            return this.active.lastMove ? true : i === 0;
+            return this.active.lastMoveIndex ? true : i === 0;
         } else if (moveList[move] === this.active.disabled?.move) {
             return false;
         } else if (this.active.base.pp[i] === 0) {
@@ -442,6 +442,7 @@ export class ActivePokemon {
     charging?: Move;
     recharge?: Move;
     lastMove?: Move;
+    lastMoveIndex?: number;
     thrashing?: { move: Move; turns: number; acc?: number };
     disabled?: { move: Move; turns: number };
 
@@ -486,6 +487,7 @@ export class ActivePokemon {
         this.handledStatus = false;
         this.hazed = false;
         this.lastMove = undefined;
+        this.lastMoveIndex = undefined;
         this.thrashing = undefined;
         this.disabled = undefined;
         this.charging = undefined;

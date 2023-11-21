@@ -39,6 +39,7 @@ export abstract class Move {
             if (user.base.pp[moveIndex] < 0) {
                 user.base.pp[moveIndex] = 63;
             }
+            user.lastMoveIndex = moveIndex;
         }
 
         battle.pushEvent({

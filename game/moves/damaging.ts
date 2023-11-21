@@ -240,6 +240,7 @@ export class DamagingMove extends Move {
             const [chance, effect] = this.effect;
             if (effect === "brn" && target.base.status === "frz") {
                 target.base.status = null;
+                target.hazed = true;
                 battle.pushEvent({
                     type: "info",
                     id: target.owner.id,
