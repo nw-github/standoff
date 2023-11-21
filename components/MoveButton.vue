@@ -1,9 +1,8 @@
 <template>
     <Tooltip>
         <button @click="$emit('click')" :disabled="!choice.valid">
-            <span class="info type">{{ toTitleCase(move.type) }}</span>
             <span class="name">{{ move.name }}</span>
-            <span class="info pp">
+            <span class="info">
                 {{ choice.pp !== undefined ? choice.pp : "--" }}/{{ move.pp }}
             </span>
         </button>
@@ -25,8 +24,9 @@
                     Priority
                 </li>
                 <li class="padtop">{{ desc }}</li>
-                <li class="padtop category" v-if="move.power">
-                    * {{ spc ? "Special" : "Physical" }}
+                <li class="padtop">
+                    <span class="type">{{ toTitleCase(move.type) }}</span>
+                    <span :class="category">{{ toTitleCase(category) }}</span>
                 </li>
             </ul>
         </template>
@@ -36,13 +36,13 @@
 <script setup lang="ts">
 import type { MoveChoice } from "../game/battle";
 import { moveList } from "../game/moveList";
-import { isSpecial, type Type } from "../game/utils";
+import { isSpecial } from "../game/utils";
 
 defineEmits<{ (e: "click"): void }>();
 
 const { choice } = defineProps<{ choice: MoveChoice }>();
 const move = moveList[choice.move];
-const spc = isSpecial(move.type);
+const category = move.power ? (isSpecial(move.type) ? "special" : "physical") : "status";
 const desc = describeMove(choice.move);
 const bgColor = typeColor[move.type];
 
@@ -57,30 +57,47 @@ const hex2rgba = (rgb: string, a: number) => {
 
 <style scoped>
 button {
-    display: grid;
+    display: flex;
+    justify-content: space-between;
+    align-content: center;
     border-radius: 5px;
     width: 200px;
     border: 1px solid;
     border-bottom: 0px;
     background-image: linear-gradient(#fff, v-bind(bgColor));
     border-color: v-bind("hex2rgba(bgColor, 0.8)");
+    padding: 0.2rem;
 }
 
 .info {
     color: #333;
 }
 
-.type {
-    text-align: left;
-}
-
-.pp {
-    text-align: right;
-}
-
 .name {
-    text-align: center;
     font-size: 1.2em;
+}
+
+li > span {
+    width: min-content;
+    border-radius: 5px;
+    padding: 4px;
+    margin: 2px;
+}
+
+.type {
+    background-color: v-bind("typeColor[move.type]");
+}
+
+.physical {
+    background-color: #c92112;
+}
+
+.special {
+    background-color: #4f5870;
+}
+
+.status {
+    background-color: #8c888c;
 }
 
 .mb-number {
@@ -101,9 +118,5 @@ button {
 
 .padtop {
     padding-top: 10px;
-}
-
-.category {
-    font-style: italic;
 }
 </style>

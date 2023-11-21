@@ -65,10 +65,6 @@
 </template>
 
 <style scoped>
-main {
-    padding: 10px;
-}
-
 .game {
     display: flex;
 }
@@ -95,13 +91,17 @@ main {
 }
 
 .moves {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 5px;
 }
 
-.move-button,
-.switch-button {
-    padding: 5px 5px 5px 0px;
+.team {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    padding: 5px;
+    gap: 0.5rem;
 }
 </style>
 

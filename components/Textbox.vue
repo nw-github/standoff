@@ -44,16 +44,13 @@ const enterTurn = async (events: BattleEvent[], live: boolean, cb: (e: BattleEve
     turns.value.push([]);
 
     for (const e of events) {
-        if (live) {
-            await delay(300);
-        }
-
         turns.value[turns.value.length - 1].push(...htmlForEvent(e));
         cb(e);
 
         if (live) {
             await nextTick();
             textboxScrollDiv.value?.scrollIntoView();
+            await delay(300);
         }
     }
 
@@ -138,7 +135,7 @@ const htmlForEvent = (e: BattleEvent) => {
                 res.push(`${src} started sleeping!`);
             }
 
-            res.push(`- ${target} gained ${-percent}% of its health.`);
+            res.push(`- ${target} gained ${percent}% of its health.`);
         }
     } else if (e.type === "failed") {
         const src = pname(e.src);
