@@ -345,6 +345,9 @@ export class Battle {
 
                         if (randChance255(floatTo255(50))) {
                             if (user.handleConfusionDamage(this, target)) {
+                                if (user.owner.isAllDead()) {
+                                    this._victor = target.owner;
+                                }
                                 skipEnd = true;
                                 break;
                             } else {
@@ -543,7 +546,7 @@ export class ActivePokemon {
                 }),
                 dealt: hpBefore - this.substitute,
                 brokeSub: this.substitute === 0,
-                dead: this.base.hp === 0,
+                dead: false,
             };
         } else {
             const hpBefore = this.base.hp;

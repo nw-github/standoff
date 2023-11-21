@@ -27,11 +27,11 @@ const getRandomPokemon = (
     validSpecies: (s: Species, id: SpeciesId) => boolean,
     customize: (id: SpeciesId) => Pokemon
 ) => {
-    return (Object.keys(speciesList) as (keyof typeof speciesList)[])
-        .filter(name => validSpecies(speciesList[name], name))
+    return (Object.keys(speciesList) as SpeciesId[])
+        .filter(id => validSpecies(speciesList[id], id))
         .sort(() => Math.random() - 0.5)
         .slice(0, count)
-        .map(name => customize(name));
+        .map(id => customize(id));
 };
 
 export const formatDescs: Record<FormatId, FormatDesc> = {
@@ -58,7 +58,7 @@ export const formatDescs: Record<FormatId, FormatDesc> = {
                 }
                 return moves;
             };
-            
+
             return getRandomPokemon(
                 6,
                 () => true,
