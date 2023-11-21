@@ -16,6 +16,10 @@
     overflow-y: auto;
     background-color: #ccc;
 }
+
+ul {
+    list-style: none;
+}
 </style>
 
 <script setup lang="ts">
@@ -83,9 +87,6 @@ const htmlForEvent = (e: BattleEvent) => {
         const src = pname(e.src);
         const target = pname(e.target);
         const percent = roundTo(hpPercentExact(e.hpBefore - e.hpAfter, e.maxHp), 1);
-        const dmgMsg = `- ${target} ${percent < 0 ? "gained" : "lost"} ${Math.abs(
-            percent
-        )}% of its health.`;
         if (e.type === "damage") {
             const effMsg = ` - It's ${
                 (e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."
@@ -111,7 +112,7 @@ const htmlForEvent = (e: BattleEvent) => {
             }
 
             if (e.why !== "explosion") {
-                res.push(dmgMsg);
+                res.push(`- ${target} lost ${percent}% of its health.`);
             }
 
             if (e.why === "substitute") {
@@ -137,7 +138,7 @@ const htmlForEvent = (e: BattleEvent) => {
                 res.push(`${src} started sleeping!`);
             }
 
-            res.push(`- ${target} gained ${percent}% of its health.`);
+            res.push(`- ${target} gained ${-percent}% of its health.`);
         }
     } else if (e.type === "failed") {
         const src = pname(e.src);
