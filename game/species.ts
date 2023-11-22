@@ -2139,7 +2139,7 @@ export const speciesList = createSpeciesList({
             "triattack",
             "substitute",
         ],
-        evolves: false,
+        evolves: true,
     },
     kadabra: {
         dexId: 64,
@@ -2254,7 +2254,7 @@ export const speciesList = createSpeciesList({
             "rockslide",
             "substitute",
         ],
-        evolves: false,
+        evolves: true,
     },
     machoke: {
         dexId: 67,

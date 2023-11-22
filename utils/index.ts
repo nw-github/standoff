@@ -114,6 +114,7 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
 export const formatNames: Record<FormatId, string> = {
     randoms: "Random Battle",
     metronome: "Metronome Battle",
+    truly_randoms: "Truly Random Battle",
 };
 
 export const describeMove = (id: MoveId) => {
