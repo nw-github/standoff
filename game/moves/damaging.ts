@@ -363,3 +363,25 @@ export class OHKOMove extends Move {
         return target.inflictDamage(65535, user, battle, false, "ohko", false, 1).dead;
     }
 }
+
+export class TrappingMove extends Move {
+    constructor({
+        name,
+        pp,
+        type,
+        power,
+        acc,
+    }: {
+        name: string;
+        pp: number;
+        type: Type;
+        power: number;
+        acc?: number;
+    }) {
+        super(name, pp, type, acc, 0, power);
+    }
+
+    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+        return false;
+    }
+}

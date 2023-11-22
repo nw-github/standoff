@@ -11,6 +11,7 @@ import {
     StageMove,
     StatusMove,
     UniqueMove,
+    TrappingMove,
 } from "./moves";
 import { TransformedPokemon } from "./transformed";
 import { checkAccuracy, randChoice, randRangeInclusive, stageKeys } from "./utils";
@@ -18,6 +19,26 @@ import { checkAccuracy, randChoice, randRangeInclusive, stageKeys } from "./util
 export type MoveId = keyof typeof moveList;
 
 export const moveList = Object.freeze({
+    bide: new UniqueMove({
+        name: "Bide",
+        pp: 10,
+        type: "normal",
+        execute(battle, user, target) {
+            // TODO: bide
+            return false;
+        },
+    }),
+    counter: new UniqueMove({
+        name: "Counter",
+        pp: 20,
+        type: "fight",
+        acc: 100,
+        power: 1,
+        execute(battle, user, target) {
+            // TODO: counter
+            return false;
+        },
+    }),
     conversion: new UniqueMove({
         name: "Conversion",
         pp: 30,
@@ -161,6 +182,15 @@ export const moveList = Object.freeze({
             return move.use(battle, user, target);
         },
     }),
+    mimic: new UniqueMove({
+        name: "Mimic",
+        pp: 10,
+        type: "normal",
+        execute(battle, user, target) {
+            // TODO: mimic
+            return false;
+        },
+    }),
     mirrormove: new UniqueMove({
         name: "Mirror Move",
         pp: 20,
@@ -197,6 +227,17 @@ export const moveList = Object.freeze({
                 false,
                 "attacked"
             ).dead;
+        },
+    }),
+    rage: new UniqueMove({
+        name: "Rage",
+        pp: 20,
+        type: "normal",
+        acc: 100,
+        power: 20,
+        execute(battle, user, target) {
+            // TODO: trade
+            return false;
         },
     }),
     substitute: new UniqueMove({
@@ -602,6 +643,35 @@ export const moveList = Object.freeze({
         acc: 30,
     }),
     // --
+    bind: new TrappingMove({
+        name: "Bind",
+        pp: 20,
+        type: "normal",
+        acc: 75,
+        power: 15,
+    }),
+    clamp: new TrappingMove({
+        name: "Bind",
+        pp: 10,
+        type: "water",
+        acc: 75,
+        power: 35,
+    }),
+    firespin: new TrappingMove({
+        name: "Fire Spin",
+        pp: 15,
+        type: "fire",
+        acc: 70,
+        power: 15,
+    }),
+    wrap: new TrappingMove({
+        name: "Wrap",
+        pp: 20,
+        type: "normal",
+        acc: 85,
+        power: 15,
+    }),
+    // --
     absorb: new DamagingMove({
         name: "Absorb",
         pp: 20,
@@ -942,6 +1012,14 @@ export const moveList = Object.freeze({
         power: 50,
         acc: 100,
         flag: "high_crit",
+    }),
+    leechlife: new DamagingMove({
+        name: "Leech Life",
+        pp: 15,
+        type: "bug",
+        power: 20,
+        acc: 100,
+        flag: "drain",
     }),
     lick: new DamagingMove({
         name: "Lick",
