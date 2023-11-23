@@ -14,7 +14,7 @@ import {
     TrappingMove,
 } from "./moves";
 import { TransformedPokemon } from "./transformed";
-import { checkAccuracy, randChoice, randRangeInclusive, stageKeys } from "./utils";
+import { randChoice, randRangeInclusive, stageKeys } from "./utils";
 
 export type MoveId = keyof typeof moveList;
 
@@ -70,7 +70,7 @@ export const moveList = Object.freeze({
                 return false;
             }
 
-            if (!checkAccuracy(this.acc!, battle, user, target)) {
+            if (!this.checkAccuracy(battle, user, target)) {
                 return false;
             }
 
@@ -154,7 +154,7 @@ export const moveList = Object.freeze({
                 return false;
             }
 
-            if (!checkAccuracy(this.acc!, battle, user, target)) {
+            if (!this.checkAccuracy(battle, user, target)) {
                 return false;
             }
 
@@ -188,7 +188,7 @@ export const moveList = Object.freeze({
         type: "normal",
         acc: 100,
         execute(battle, user, target, indexInMoves) {
-            if (!checkAccuracy(this.acc!, battle, user, target)) {
+            if (!this.checkAccuracy(battle, user, target)) {
                 return false;
             }
 
@@ -229,7 +229,7 @@ export const moveList = Object.freeze({
         acc: 80,
         power: 1,
         execute(battle, user, target) {
-            if (!checkAccuracy(this.acc!, battle, user, target)) {
+            if (!this.checkAccuracy(battle, user, target)) {
                 return false;
             }
 
@@ -291,7 +291,7 @@ export const moveList = Object.freeze({
         acc: 90,
         power: 1,
         execute(battle, user, target) {
-            if (!checkAccuracy(this.acc!, battle, user, target)) {
+            if (!this.checkAccuracy(battle, user, target)) {
                 return false;
             }
 

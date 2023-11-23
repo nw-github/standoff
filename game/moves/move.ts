@@ -1,5 +1,5 @@
 import type { ActivePokemon, Battle } from "../battle";
-import type { Type } from "../utils";
+import { floatTo255, randChance255, scaleAccuracy255, type Type } from "../utils";
 
 export abstract class Move {
     readonly pp: number;
@@ -10,12 +10,36 @@ export abstract class Move {
         readonly type: Type,
         readonly acc?: number,
         readonly priority?: number,
-        readonly power?: number,
+        readonly power?: number
     ) {
-        this.pp = Math.min(Math.floor(pp * 8 / 5), 61);
+        this.pp = Math.min(Math.floor((pp * 8) / 5), 61);
     }
 
-    use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number): boolean {
+    checkAccuracy(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
+        if (!this.acc) {
+            return true;
+        }
+
+        const chance = scaleAccuracy255(user.thrashing?.acc ?? floatTo255(this.acc), user, target);
+        // https://www.smogon.com/dex/rb/moves/petal-dance/
+        // https://www.youtube.com/watch?v=NC5gbJeExbs
+        if (user.thrashing) {
+            user.thrashing.acc = chance;
+        }
+
+        console.log(`Accuracy: ${this.acc} (${chance}/256)`);
+        if (target.invuln || !randChance255(chance)) {
+            battle.pushEvent({
+                type: "failed",
+                src: user.owner.id,
+                why: "miss",
+            });
+            return false;
+        }
+        return true;
+    }
+
+    use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number) {
         if (user.disabled) {
             if (--user.disabled.turns === 0) {
                 user.disabled = undefined;
@@ -54,4 +78,3 @@ export abstract class Move {
 
     protected abstract execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean;
 }
-

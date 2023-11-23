@@ -1,6 +1,6 @@
 import type { ActivePokemon, Battle } from "../battle";
 import { Move } from "./move";
-import { checkAccuracy, type Type } from "../utils";
+import { type Type } from "../utils";
 
 export class ConfusionMove extends Move {
     constructor({ name, pp, type, acc }: { name: string; pp: number; type: Type; acc?: number }) {
@@ -17,7 +17,7 @@ export class ConfusionMove extends Move {
             return false;
         }
 
-        if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
+        if (!this.checkAccuracy(battle, user, target)) {
             return false;
         }
 

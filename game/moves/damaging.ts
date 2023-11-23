@@ -2,7 +2,6 @@ import type { ActivePokemon, Battle } from "../battle";
 import { Move } from "./move";
 import type { Status } from "../pokemon";
 import {
-    checkAccuracy,
     floatTo255,
     getEffectiveness,
     randChance255,
@@ -115,7 +114,7 @@ export class DamagingMove extends Move {
             return false;
         }
 
-        if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
+        if (!this.checkAccuracy(battle, user, target)) {
             return this.damageOnMiss(battle, user, target);
         }
 
@@ -323,7 +322,7 @@ export class FixedDamageMove extends Move {
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
         // Fixed damage moves are not affected by type immunity in Gen 1
-        if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
+        if (!this.checkAccuracy(battle, user, target)) {
             return false;
         }
 
@@ -356,7 +355,7 @@ export class OHKOMove extends Move {
             return false;
         }
 
-        if (!checkAccuracy(this.acc!, battle, user, target)) {
+        if (!this.checkAccuracy(battle, user, target)) {
             return false;
         }
 

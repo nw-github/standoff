@@ -1,6 +1,6 @@
 import type { ActivePokemon, Battle } from "../battle";
 import { Move } from "./move";
-import { checkAccuracy, type Stages, type Type } from "../utils";
+import { type Stages, type Type } from "../utils";
 
 export class StageMove extends Move {
     readonly stages: [Stages, number][];
@@ -33,7 +33,7 @@ export class StageMove extends Move {
                 return false;
             }
 
-            if (!checkAccuracy(this.acc, battle, user, target)) {
+            if (!this.checkAccuracy(battle, user, target)) {
                 return false;
             }
         } else {

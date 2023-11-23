@@ -1,7 +1,7 @@
 import type { ActivePokemon, Battle } from "../battle";
 import { Move } from "./move";
 import type { Status } from "../pokemon";
-import { checkAccuracy, getEffectiveness, type Type } from "../utils";
+import { getEffectiveness, type Type } from "../utils";
 
 export class StatusMove extends Move {
     readonly status: Status;
@@ -49,7 +49,7 @@ export class StatusMove extends Move {
             return false;
         }
 
-        if (this.acc && !checkAccuracy(this.acc, battle, user, target)) {
+        if (!this.checkAccuracy(battle, user, target)) {
             return false;
         }
 

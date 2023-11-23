@@ -61,31 +61,6 @@ export const scaleAccuracy255 = (acc: number, user: ActivePokemon, target: Activ
     return clamp(Math.floor(acc), 1, 255);
 };
 
-export const checkAccuracy = (
-    acc: number,
-    battle: Battle,
-    user: ActivePokemon,
-    target: ActivePokemon
-) => {
-    const chance = scaleAccuracy255(user.thrashing?.acc ?? floatTo255(acc), user, target);
-    // https://www.smogon.com/dex/rb/moves/petal-dance/
-    // https://www.youtube.com/watch?v=NC5gbJeExbs
-    if (user.thrashing) {
-        user.thrashing.acc = chance;
-    }
-
-    console.log(`Accuracy: ${acc} (${chance}/256)`);
-    if (target.invuln || !randChance255(chance)) {
-        battle.pushEvent({
-            type: "failed",
-            src: user.owner.id,
-            why: "miss",
-        });
-        return false;
-    }
-    return true;
-};
-
 export const calcDamage = ({
     lvl,
     crit,
