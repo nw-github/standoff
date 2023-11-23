@@ -186,8 +186,22 @@ export const moveList = Object.freeze({
         name: "Mimic",
         pp: 10,
         type: "normal",
-        execute(battle, user, target) {
-            // TODO: mimic
+        acc: 100,
+        execute(battle, user, target, indexInMoves) {
+            if (!checkAccuracy(this.acc!, battle, user, target)) {
+                return false;
+            }
+
+            user.mimic = {
+                indexInMoves: indexInMoves ?? user.lastMoveIndex ?? -1,
+                move: randChoice(target.base.moves),
+            };
+
+            battle.pushEvent({
+                type: "mimic",
+                id: user.owner.id,
+                move: user.mimic.move,
+            });
             return false;
         },
     }),

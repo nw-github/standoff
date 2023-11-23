@@ -178,7 +178,7 @@ export class DamagingMove extends Move {
             }
 
             if (this.flag === "drain" || this.flag === "dream_eater") {
-                user.inflictRecovery(-Math.max(Math.floor(dealt / 2), 1), target, battle, "drain");
+                user.inflictRecovery(Math.max(Math.floor(dealt / 2), 1), target, battle, "drain");
             } else if (this.flag === "explosion") {
                 dead =
                     user.inflictDamage(user.base.hp, user, battle, false, "explosion", true).dead ||

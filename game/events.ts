@@ -17,7 +17,8 @@ export type BattleEvent =
     | InfoEvent
     | TransformEvent
     | DisableEvent
-    | ChargeEvent;
+    | ChargeEvent
+    | MimicEvent;
 
 export type PlayerId = string;
 
@@ -166,6 +167,12 @@ type DisableEvent = {
 
 type ChargeEvent = {
     type: "charge";
+    id: PlayerId;
+    move: MoveId;
+};
+
+type MimicEvent = {
+    type: "mimic";
     id: PlayerId;
     move: MoveId;
 };

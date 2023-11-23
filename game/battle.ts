@@ -81,13 +81,16 @@ export class Player {
             return;
         }
 
-        let moves: MoveChoice[] = this.active.base.moves.map((move, i) => ({
-            move,
-            pp: this.active.base.pp[i],
-            valid: this.isValidMove(move, i),
-            indexInMoves: i,
-            display: true,
-        }));
+        const moves: MoveChoice[] = this.active.base.moves.map((m, i) => {
+            const move = this.active.mimic?.indexInMoves === i ? this.active.mimic?.move : m;
+            return {
+                move,
+                pp: this.active.base.pp[i],
+                valid: this.isValidMove(move, i),
+                indexInMoves: i,
+                display: true,
+            };
+        });
 
         if (!this.active.base.hp) {
             for (const move of moves) {
@@ -448,6 +451,7 @@ export class ActivePokemon {
     lastMoveIndex?: number;
     thrashing?: { move: Move; turns: number; acc?: number };
     disabled?: { move: Move; turns: number };
+    mimic?: { move: MoveId; indexInMoves: number };
 
     constructor(base: Pokemon, owner: Player) {
         this.base = base;
@@ -495,6 +499,7 @@ export class ActivePokemon {
         this.disabled = undefined;
         this.charging = undefined;
         this.recharge = undefined;
+        this.mimic = undefined;
         this.applyStatusDebuff();
     }
 

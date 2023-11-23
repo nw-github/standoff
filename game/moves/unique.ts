@@ -7,7 +7,8 @@ export class UniqueMove extends Move {
         this: UniqueMove,
         battle: Battle,
         user: ActivePokemon,
-        target: ActivePokemon
+        target: ActivePokemon,
+        indexInMoves?: number,
     ) => boolean;
 
     constructor({
@@ -31,7 +32,12 @@ export class UniqueMove extends Move {
         this.executeFn = execute;
     }
 
-    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
-        return this.executeFn.call(this, battle, user, target);
+    override execute(
+        battle: Battle,
+        user: ActivePokemon,
+        target: ActivePokemon,
+        indexInMoves?: number
+    ): boolean {
+        return this.executeFn.call(this, battle, user, target, indexInMoves);
     }
 }

@@ -83,7 +83,7 @@ const htmlForEvent = (e: BattleEvent) => {
     } else if (e.type === "damage" || e.type === "recover") {
         const src = pname(e.src);
         const target = pname(e.target);
-        const percent = roundTo(hpPercentExact(e.hpBefore - e.hpAfter, e.maxHp), 1);
+        const percent = roundTo(Math.abs(hpPercentExact(e.hpBefore - e.hpAfter, e.maxHp)), 1);
         if (e.type === "damage") {
             const effMsg = ` - It's ${
                 (e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."
@@ -255,6 +255,8 @@ const htmlForEvent = (e: BattleEvent) => {
         } else if (e.move === "fly") {
             res.push(`${pname(e.id)} flew up high!`);
         }
+    } else if (e.type === "mimic") {
+        res.push(`${pname(e.id)} learned ${moveList[e.move].name}!`);
     } else {
         res.push(JSON.stringify(e));
     }
