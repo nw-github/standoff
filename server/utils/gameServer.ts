@@ -72,19 +72,15 @@ type Room = {
 };
 
 class Account {
-    id: string;
     name: string;
-    battles: Set<Room>;
-    rooms: Set<Room>;
-    sockets: Set<Socket>;
+    id = uuid();
+    battles = new Set<Room>();
+    rooms = new Set<Room>();
+    sockets = new Set<Socket>();
     matchmaking?: FormatId;
 
     constructor(name: string) {
-        this.id = uuid();
         this.name = name;
-        this.battles = new Set();
-        this.sockets = new Set();
-        this.rooms = new Set();
     }
 
     joinBattle(room: Room) {
@@ -162,24 +158,45 @@ class Account {
     }
 }
 
+const ROOM_CLEANUP_DELAY_MS = 15 * 60 * 1000;
+const ANON_SPECTATE = "spectate/";
+
 class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
     /** Name -> Account */
     private accounts: Record<string, Account> = {};
     private rooms: Record<string, Room> = {};
     private mmWaiting: Partial<Record<FormatId, [Player, Account]>> = {};
+    private finishedRooms: [string, number][] = [];
 
     constructor(server: any) {
         super(server);
         this.on("connection", socket => this.newConnection(socket));
         this.on("error", console.error);
         this.on("close", () => console.log("game server has closed..."));
+
+        setInterval(() => {
+            let index = -1;
+            for (const [, finishedAt] of this.finishedRooms) {
+                if (Date.now() - finishedAt < ROOM_CLEANUP_DELAY_MS) {
+                    break;
+                }
+
+                index++;
+            }
+
+            for (const [roomId] of this.finishedRooms.splice(0, index + 1)) {
+                const room = this.rooms[roomId];
+                for (const account of room.accounts) {
+                    account.leaveRoom(room, true, this);
+                }
+                delete this.rooms[roomId];
+            }
+        }, 1000 * 60);
     }
 
     private newConnection(socket: Socket) {
         console.log(`new connection: ${socket.id}`);
 
-        const ANON_SPECTATE = "spectate/";
-        const { accounts, rooms } = this;
         socket.on("login", (name, ack) => {
             if (name.length < 3) {
                 return ack("bad_username");
@@ -189,11 +206,11 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
                 this.logout(socket);
             }
 
-            const account = (accounts[name] ??= new Account(name));
+            const account = (this.accounts[name] ??= new Account(name));
             for (const roomId of [...socket.rooms]) {
                 if (roomId.startsWith(ANON_SPECTATE)) {
                     socket.leave(roomId);
-                    account.joinRoom(rooms[roomId.slice(ANON_SPECTATE.length)], this);
+                    account.joinRoom(this.rooms[roomId.slice(ANON_SPECTATE.length)], this);
                 }
             }
 
@@ -224,15 +241,13 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             ack();
         });
         socket.on("joinRoom", (roomId, ack) => {
-            const room = rooms[roomId];
+            const room = this.rooms[roomId];
             if (!room) {
                 return ack("bad_room");
             }
 
             const account = socket.account;
-            const player = account
-                ? room.battle.players.find(pl => pl.id === account.id)
-                : undefined;
+            const player = account && room.battle.players.find(pl => pl.id === account.id);
             if (account) {
                 account.joinRoom(room, this);
             } else {
@@ -255,7 +270,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             });
         });
         socket.on("leaveRoom", (roomId, ack) => {
-            const room = rooms[roomId];
+            const room = this.rooms[roomId];
             if (!room) {
                 return ack("bad_room");
             }
@@ -296,6 +311,10 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
                 return;
             }
 
+            if (room.battle.victor) {
+                this.finishedRooms.push([roomId, Date.now()]);
+            }
+
             room.turns.push(turn);
             for (const account of room.accounts) {
                 account.nextTurn(room, turn);
@@ -320,7 +339,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             room.battle.cancel(player);
             ack();
         });
-        socket.on("getRooms", ack => ack(Object.keys(rooms)));
+        socket.on("getRooms", ack => ack(Object.keys(this.rooms)));
         socket.on("disconnect", () => this.logout(socket));
     }
 
