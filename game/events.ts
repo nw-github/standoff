@@ -144,7 +144,8 @@ export type InfoReason =
     | "wake"
     | "haze"
     | "thaw"
-    | "paralyze";
+    | "paralyze"
+    | "rage";
 
 type InfoEvent = {
     type: "info";

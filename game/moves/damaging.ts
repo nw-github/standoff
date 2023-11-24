@@ -25,7 +25,8 @@ type Flag =
     | "payday"
     | "charge"
     | "charge_invuln"
-    | "multi_turn";
+    | "multi_turn"
+    | "rage";
 
 export class DamagingMove extends Move {
     readonly flag?: Flag;
@@ -83,11 +84,8 @@ export class DamagingMove extends Move {
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
         if (this.flag === "multi_turn" && !user.thrashing) {
-            user.thrashing = {
-                move: this,
-                turns: randRangeInclusive(2, 3),
-            };
-        } else if (user.thrashing) {
+            user.thrashing = { move: this, turns: randRangeInclusive(2, 3) };
+        } else if (user.thrashing && user.thrashing.turns !== -1) {
             --user.thrashing.turns;
             if (user.thrashing.turns <= 0) {
                 user.thrashing = undefined;
@@ -102,7 +100,7 @@ export class DamagingMove extends Move {
                 src: target.owner.id,
                 why: "immune",
             });
-            return this.damageOnMiss(battle, user, target);
+            return this.onMiss(battle, user, target);
         }
 
         if (this.flag === "dream_eater" && target.base.status !== "slp") {
@@ -115,7 +113,11 @@ export class DamagingMove extends Move {
         }
 
         if (!this.checkAccuracy(battle, user, target)) {
-            return this.damageOnMiss(battle, user, target);
+            return this.onMiss(battle, user, target);
+        }
+
+        if (this.flag === "rage") {
+            user.thrashing = { move: this, turns: -1 };
         }
 
         const isCrit = randChance255(this.critChance(user));
@@ -285,7 +287,7 @@ export class DamagingMove extends Move {
         }
     }
 
-    private damageOnMiss(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
+    private onMiss(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
         if (this.flag === "crash") {
             // https://www.smogon.com/dex/rb/moves/high-jump-kick/
             if (user.substitute && target.substitute) {
@@ -294,6 +296,8 @@ export class DamagingMove extends Move {
                 return user.inflictDamage(1, user, battle, false, "crash", true).dead;
             }
         } else if (this.flag === "explosion") {
+            // according to showdown, explosion also boosts rage even on miss/failure
+            target.handleRage(battle);
             return user.inflictDamage(user.base.hp, user, battle, false, "explosion", true).dead;
         }
         return false;

@@ -67,10 +67,12 @@ export const moveList = Object.freeze({
                     src: target.owner.id,
                     why: "generic",
                 });
+                target.handleRage(battle);
                 return false;
             }
 
             if (!this.checkAccuracy(battle, user, target)) {
+                target.handleRage(battle);
                 return false;
             }
 
@@ -81,7 +83,7 @@ export const moveList = Object.freeze({
                 id: target.owner.id,
                 move,
             });
-
+            target.handleRage(battle);
             return false;
         },
     }),
@@ -241,17 +243,6 @@ export const moveList = Object.freeze({
                 false,
                 "attacked"
             ).dead;
-        },
-    }),
-    rage: new UniqueMove({
-        name: "Rage",
-        pp: 20,
-        type: "normal",
-        acc: 100,
-        power: 20,
-        execute(battle, user, target) {
-            // TODO: trade
-            return false;
         },
     }),
     substitute: new UniqueMove({
@@ -1142,6 +1133,14 @@ export const moveList = Object.freeze({
         power: 40,
         acc: 100,
         priority: +1,
+    }),
+    rage: new DamagingMove({
+        name: "Rage",
+        pp: 20,
+        type: "normal",
+        acc: 100,
+        power: 20,
+        flag: "rage",
     }),
     razorleaf: new DamagingMove({
         name: "Razor Leaf",

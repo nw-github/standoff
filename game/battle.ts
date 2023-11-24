@@ -540,15 +540,17 @@ export class ActivePokemon {
         if (this.substitute !== 0 && !direct) {
             const hpBefore = this.substitute;
             this.substitute = Math.max(this.substitute - dmg, 0);
+            const event = battle.pushEvent<HitSubstituteEvent>({
+                type: "hit_sub",
+                src: src.owner.id,
+                target: this.owner.id,
+                broken: this.substitute === 0,
+                confusion: why === "confusion",
+                eff,
+            });
+            this.handleRage(battle);
             return {
-                event: battle.pushEvent<HitSubstituteEvent>({
-                    type: "hit_sub",
-                    src: src.owner.id,
-                    target: this.owner.id,
-                    broken: this.substitute === 0,
-                    confusion: why === "confusion",
-                    eff,
-                }),
+                event,
                 dealt: hpBefore - this.substitute,
                 brokeSub: this.substitute === 0,
                 dead: false,
@@ -556,18 +558,20 @@ export class ActivePokemon {
         } else {
             const hpBefore = this.base.hp;
             this.base.hp = Math.max(this.base.hp - dmg, 0);
+            const event = battle.pushEvent<DamageEvent>({
+                type: "damage",
+                src: src.owner.id,
+                target: this.owner.id,
+                maxHp: this.base.stats.hp,
+                hpAfter: this.base.hp,
+                hpBefore,
+                why,
+                eff,
+                isCrit,
+            });
+            this.handleRage(battle);
             return {
-                event: battle.pushEvent<DamageEvent>({
-                    type: "damage",
-                    src: src.owner.id,
-                    target: this.owner.id,
-                    maxHp: this.base.stats.hp,
-                    hpAfter: this.base.hp,
-                    hpBefore,
-                    why,
-                    eff,
-                    isCrit,
-                }),
+                event,
                 dealt: hpBefore - this.base.hp,
                 brokeSub: false,
                 dead: this.base.hp === 0,
@@ -698,6 +702,17 @@ export class ActivePokemon {
         }
 
         return false;
+    }
+
+    handleRage(battle: Battle) {
+        if (this.base.hp && this.thrashing?.move === moveList.rage && this.stages.atk < 6) {
+            battle.pushEvent({
+                type: "info",
+                id: this.owner.id,
+                why: "rage",
+            });
+            this.inflictStages(this.owner, [["atk", +1]], battle);
+        }
     }
 
     applyStatusDebuff() {

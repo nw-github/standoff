@@ -167,7 +167,7 @@ const htmlForEvent = (e: BattleEvent) => {
                 break;
         }
     } else if (e.type === "move") {
-        if (e.thrashing) {
+        if (e.thrashing && e.move !== "rage") {
             res.push(`${pname(e.src)}'s thrashing about!`);
         } else if (e.disabled) {
             res.push(`${pname(e.src)}'s ${moveList[e.move].name} is disabled!`);
@@ -222,7 +222,7 @@ const htmlForEvent = (e: BattleEvent) => {
             payday: "Coins scattered everywhere!",
             became_confused: "{} became confused!",
             confused: "{} is confused!",
-            confused_end: "{} snapped out of its confusion!",
+            confused_end: "{}'s confused no more!",
             recharge: "{} must recharge!",
             frozen: "{} is frozen solid!",
             sleep: "{} is fast asleep!",
@@ -230,6 +230,7 @@ const htmlForEvent = (e: BattleEvent) => {
             haze: "All status changes were removed!",
             thaw: "{} thawed out!",
             paralyze: "{}'s fully paralyzed!",
+            rage: "{}'s rage is building!",
         };
 
         res.push(messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)));
@@ -239,7 +240,7 @@ const htmlForEvent = (e: BattleEvent) => {
         if (e.move) {
             res.push(`${pname(e.id)}'s ${moveList[e.move].name} was disabled!`);
         } else {
-            res.push(`${pname(e.id)}'s disabled no longer!`);
+            res.push(`${pname(e.id)}'s disabled no more!`);
         }
     } else if (e.type === "charge") {
         if (e.move === "skullbash") {
