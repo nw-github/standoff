@@ -3,7 +3,7 @@ import { Server as SocketIoServer, Socket as SocketIoClient } from "socket.io";
 
 import { Pokemon } from "../../game/pokemon";
 import { hpPercent } from "../../game/utils";
-import { Battle, Player, SelectionError, Turn } from "../../game/battle";
+import { Battle, Player, Turn } from "../../game/battle";
 import { BattleEvent } from "../../game/events";
 import { FormatId, formatDescs } from "../../utils/formats";
 
@@ -19,7 +19,7 @@ export type JoinRoomResponse = {
     turns: Turn[];
 };
 
-export type ChoiceError = SelectionError["type"] | "bad_room" | "not_in_battle" | "too_late";
+export type ChoiceError = "invalid_choice" | "bad_room" | "not_in_battle" | "too_late";
 
 export interface ClientMessage {
     getRooms: (ack: (rooms: string[]) => void) => void;
@@ -149,11 +149,16 @@ class Account {
         }
     }
 
-    nextTurn(room: Room, turn: Turn) {
+    nextTurn(room: Room, { events, sequenceNo, switchTurn }: Turn) {
         const player = room.battle.players.find(pl => pl.id === this.id);
-        const events = GameServer.censorEvents(turn.events, player);
+        events = GameServer.censorEvents(events, player);
         for (const socket of this.sockets) {
-            socket.emit("nextTurn", room.id, { turn: turn.turn, events }, player?.choices);
+            socket.emit(
+                "nextTurn",
+                room.id,
+                { sequenceNo, events, switchTurn },
+                player?.choices
+            );
         }
     }
 }
@@ -263,9 +268,10 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
                     id: account.id,
                     isSpectator: !account.battles.has(room),
                 })),
-                turns: room.turns.map(({ turn, events }) => ({
-                    turn,
+                turns: room.turns.map(({ sequenceNo, events, switchTurn }) => ({
                     events: GameServer.censorEvents(events, player),
+                    sequenceNo,
+                    switchTurn,
                 })),
             });
         });
@@ -290,19 +296,14 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             const [player, room] = info;
             if (turnId !== room.battle.turn) {
                 return ack("too_late");
-            }
-
-            try {
-                if (type === "move") {
-                    room.battle.chooseMove(player, index);
-                } else if (type === "switch") {
-                    room.battle.chooseSwitch(player, index);
+            } else if (type === "move") {
+                if (!player.chooseMove(index)) {
+                    return ack("invalid_choice");
                 }
-            } catch (err) {
-                if (err instanceof SelectionError) {
-                    return ack(err.type);
+            } else if (type === "switch") {
+                if (!player.chooseSwitch(index)) {
+                    return ack("invalid_choice");
                 }
-                throw err;
             }
 
             ack();
@@ -321,7 +322,8 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             }
 
             this.to(`${ANON_SPECTATE}${roomId}`).emit("nextTurn", roomId, {
-                turn: turn.turn,
+                sequenceNo: turn.sequenceNo,
+                switchTurn: turn.switchTurn,
                 events: GameServer.censorEvents(turn.events),
             });
         });
@@ -336,7 +338,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
                 return ack("too_late");
             }
 
-            room.battle.cancel(player);
+            player.cancel();
             ack();
         });
         socket.on("getRooms", ack => ack(Object.keys(this.rooms)));

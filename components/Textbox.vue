@@ -1,8 +1,8 @@
 <template>
     <div class="textbox">
         <template v-for="(turn, i) in turns">
-            <div class="turn">
-                <h2>Turn {{ i + 1 }}</h2>
+            <div class="turn" v-if="i">
+                <h2>Turn {{ i }}</h2>
             </div>
             <div v-html="turn"></div>
         </template>
@@ -48,6 +48,7 @@ import type { Status } from "../game/pokemon";
 import type { BattleEvent, InfoReason } from "../game/events";
 import { moveList } from "../game/moveList";
 import { hpPercentExact } from "../game/utils";
+import type { Turn } from "../game/battle";
 import { stageTable } from "#imports";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
@@ -64,8 +65,14 @@ const props = defineProps<{
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-const enterTurn = async (events: BattleEvent[], live: boolean, cb: (e: BattleEvent) => void) => {
-    turns.value.push("");
+const enterTurn = async (
+    { events, switchTurn }: Turn,
+    live: boolean,
+    cb: (e: BattleEvent) => void
+) => {
+    if (!switchTurn) {
+        turns.value.push("");
+    }
     for (const e of events) {
         turns.value[turns.value.length - 1] += htmlForEvent(e);
         cb(e);
@@ -133,15 +140,17 @@ const htmlForEvent = (e: BattleEvent) => {
                 res.push("A critical hit!");
             } else if (e.why === "confusion") {
                 res.push("It hurt itself in its confusion!");
-            } else if (e.why === "attacked" && e.hitCount === undefined && (e.eff ?? 1) !== 1) {
-                res.push(effMsg);
             } else if (e.why === "ohko") {
                 res.push("It's a one-hit KO!");
             }
 
+            if (e.why === "attacked" && e.hitCount === undefined && (e.eff ?? 1) !== 1) {
+                res.push(effMsg);
+            }
+
             if (e.why !== "explosion") {
                 res.push(
-                    `##### <span class="red">${target} lost ${percent}% of its health!</span>`
+                    `##### <span class="red">${target} lost **${percent}%** of its health!</span>`
                 );
             }
 
@@ -169,7 +178,7 @@ const htmlForEvent = (e: BattleEvent) => {
             }
 
             res.push(
-                `##### <span class="green">${target} gained ${percent}% of its health.</span>`
+                `##### <span class="green">${target} gained **${percent}%** of its health.</span>`
             );
         }
     } else if (e.type === "failed") {
@@ -216,15 +225,15 @@ const htmlForEvent = (e: BattleEvent) => {
             res.push("It hurt itself in its confusion!");
         }
 
+        const eff = e.eff ?? 1;
+        if (eff !== 1) {
+            res.push(`*It's ${(e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."}*`);
+        }
+
         const target = pname(e.target);
         res.push(`${target}'s substitute took the hit!`);
         if (e.broken) {
             res.push(`${target}'s substitute broke!`);
-        }
-
-        const eff = e.eff ?? 1;
-        if (eff !== 1) {
-            res.push(` - It's ${eff > 1 ? "super effective!" : "not very effective..."}`);
         }
     } else if (e.type === "status") {
         const table: Record<Status, string> = {

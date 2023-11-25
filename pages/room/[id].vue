@@ -19,14 +19,12 @@ onMounted(() => {
     }
 
     const room = `${route.params.id}`;
-    $conn.emit("joinRoom", room, (resp) => {
+    $conn.emit("joinRoom", room, resp => {
         if (resp === "bad_room") {
             status.value = "Room not found...";
         } else {
-            battleProps.value = { init: resp, room, };
+            battleProps.value = { init: resp, room };
         }
     });
 });
-
 </script>
-

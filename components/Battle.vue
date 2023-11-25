@@ -225,13 +225,13 @@ const switchSide = () => {
     setPerspective(battlers.value.find(pl => pl !== perspective.value)!);
 };
 
-const runTurn = async ({ events, turn }: Turn, live: boolean, newChoices?: Player["choices"]) => {
+const runTurn = async (turn: Turn, live: boolean, newChoices?: Player["choices"]) => {
     choices.value = undefined;
     selectionText.value = "";
-    currentTurn = turn + 1;
+    currentTurn = turn.sequenceNo + 1;
 
     await nextTick();
-    await textbox.value!.enterTurn(events, live, e => {
+    await textbox.value!.enterTurn(turn, live, e => {
         if (e.type === "switch") {
             const player = players[e.src];
             player.active = { ...e, stages: {} };
