@@ -24,11 +24,11 @@ export class StageMove extends Move {
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
         if (this.acc) {
-            if (target.flags.mist) {
+            if (target.flags.mist || target.substitute) {
                 battle.pushEvent({
                     type: "info",
                     id: target.owner.id,
-                    why: "mist_protect",
+                    why: target.flags.mist ? "mist_protect" : "fail_generic",
                 });
                 return false;
             }

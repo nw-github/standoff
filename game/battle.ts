@@ -307,8 +307,7 @@ export class Battle {
                 });
                 return false;
             } else if (user.base.status === "slp") {
-                --user.base.sleep_turns;
-                const done = user.base.sleep_turns === 0;
+                const done = --user.base.sleep_turns === 0;
                 if (done) {
                     user.base.status = null;
                 }
@@ -319,19 +318,11 @@ export class Battle {
                     why: done ? "wake" : "sleep",
                 });
                 return false;
-            } else if (user.flinch === this._turn) {
+            } else if (user.flinch === this._turn || user.recharge) {
                 this.pushEvent({
                     type: "info",
                     id: user.owner.id,
-                    why: "flinch",
-                });
-                user.recharge = undefined;
-                return false;
-            } else if (user.recharge) {
-                this.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "recharge",
+                    why: user.flinch === this._turn ? "flinch" : "recharge",
                 });
                 user.recharge = undefined;
                 return false;
@@ -343,19 +334,11 @@ export class Battle {
             }
 
             if (user.confusion) {
-                if (--user.confusion === 0) {
-                    this.pushEvent({
-                        type: "info",
-                        id: user.owner.id,
-                        why: "confused_end",
-                    });
-                } else {
-                    this.pushEvent({
-                        type: "info",
-                        id: user.owner.id,
-                        why: "confused",
-                    });
-                }
+                this.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: --user.confusion === 0 ? "confused_end" : "confused",
+                });
             }
 
             if (user.base.status === "par" && randChance255(floatTo255(25))) {
@@ -412,10 +395,7 @@ export class Battle {
 
     private endTurn(): Turn {
         if (this._victor) {
-            this.pushEvent({
-                type: "victory",
-                id: this._victor.id,
-            });
+            this.pushEvent({ type: "victory", id: this._victor.id });
         }
 
         for (const player of this.players) {
