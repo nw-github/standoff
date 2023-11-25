@@ -11,6 +11,14 @@
                 <div class="hp-text">{{ hp }}%</div>
             </div>
             <div class="effects">
+                <Tooltip class="transformed" v-if="poke.transformed">
+                    Transformed
+
+                    <template #tooltip>
+                        Was: {{ speciesList[poke.speciesId].name }}
+                    </template>
+                </Tooltip>
+
                 <div class="status" v-if="poke.status">
                     {{ poke.status.toUpperCase() }}
                 </div>
@@ -28,7 +36,7 @@
             </div>
 
             <template #tooltip>
-                <template v-if="base">
+                <template v-if="base && !poke.transformed">
                     <PokemonTTContent :poke="base" :active="poke" />
                 </template>
                 <template v-else>
@@ -112,6 +120,10 @@
     background-color: v-bind("poke.status ? statusColor[poke.status] : 'transparent'");
 }
 
+.transformed {
+    background-color: #333;
+}
+
 .down {
     background-color: var(--stat-down);
 }
@@ -151,7 +163,7 @@ import { speciesList } from "../game/species";
 import "assets/colors.css";
 
 const props = defineProps<{ poke: ClientActivePokemon; base?: Pokemon; back: boolean }>();
-const species = computed(() => speciesList[props.poke.speciesId]);
+const species = computed(() => speciesList[props.poke.transformed ?? props.poke.speciesId]);
 const minSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 0, 0));
 const maxSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 15, 65535));
 const hp = computed(() =>

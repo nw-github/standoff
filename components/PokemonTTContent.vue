@@ -16,7 +16,7 @@
             </template>
         </li>
         <li>
-            <ul>
+            <ul class="moves">
                 <li v-for="(move, i) in poke.moves">
                     {{ moveList[move].name }} ({{ poke.pp[i] }}/{{ moveList[move].pp }})
                 </li>
@@ -47,9 +47,11 @@ const statClass = (stat: "atk" | "def" | "spe" | "spc") => {
 <style scoped>
 .tt-list {
     list-style: none;
-    padding: 0;
-    margin: 0;
     width: max-content;
+}
+
+.moves {
+    padding-left: 2rem;
 }
 
 .down {
