@@ -40,22 +40,14 @@ export abstract class Move {
     }
 
     use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number) {
-        if (user.disabled) {
-            if (--user.disabled.turns === 0) {
-                user.disabled = undefined;
-                battle.pushEvent({
-                    type: "disable",
-                    id: user.owner.id,
-                });
-            } else if (this === user.disabled?.move) {
-                battle.pushEvent({
-                    type: "move",
-                    src: user.owner.id,
-                    move: battle.moveIdOf(this)!,
-                    disabled: true,
-                });
-                return false;
-            }
+        if (this === user.disabled?.move) {
+            battle.pushEvent({
+                type: "move",
+                src: user.owner.id,
+                move: battle.moveIdOf(this)!,
+                disabled: true,
+            });
+            return false;
         }
 
         if (moveIndex !== undefined && !user.thrashing) {

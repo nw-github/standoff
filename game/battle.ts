@@ -32,7 +32,7 @@ export type MoveChoice = {
 
 type ChosenMove = {
     move: Move;
-    choice?: MoveChoice;
+    indexInMoves?: number;
     user: ActivePokemon;
 };
 
@@ -81,7 +81,7 @@ export class Player {
         }
 
         this.choice = {
-            choice: validChoice,
+            indexInMoves: validChoice.indexInMoves,
             move: moveList[validChoice.move],
             user: this.active,
         };
@@ -273,115 +273,8 @@ export class Battle {
             });
 
         let skipEnd = false;
-        for (const { move, user, choice } of choices) {
-            const target = this.opponentOf(user.owner).active;
-            if (!(move instanceof SwitchMove)) {
-                if (user.hazed) {
-                    continue;
-                } else if (user.base.status === "frz") {
-                    this.pushEvent({
-                        type: "info",
-                        id: user.owner.id,
-                        why: "frozen",
-                    });
-                    continue;
-                } else if (user.base.status === "slp") {
-                    --user.base.sleep_turns;
-                    const done = user.base.sleep_turns === 0;
-                    if (done) {
-                        user.base.status = null;
-                    }
-
-                    this.pushEvent({
-                        type: "info",
-                        id: user.owner.id,
-                        why: done ? "wake" : "sleep",
-                    });
-                    continue;
-                } else if (user.flinch === this._turn) {
-                    this.pushEvent({
-                        type: "failed",
-                        src: user.owner.id,
-                        why: "flinch",
-                    });
-                    user.recharge = undefined;
-                    continue;
-                } else if (user.recharge) {
-                    this.pushEvent({
-                        type: "info",
-                        id: user.owner.id,
-                        why: "recharge",
-                    });
-                    user.recharge = undefined;
-                    continue;
-                } else if (user.base.status === "par" && randChance255(floatTo255(25))) {
-                    this.pushEvent({
-                        type: "info",
-                        id: user.owner.id,
-                        why: "paralyze",
-                    });
-
-                    user.charging = undefined;
-                    if (user.thrashing?.turns !== -1) {
-                        user.thrashing = undefined;
-                    }
-                    continue;
-                }
-
-                if (user.confusion) {
-                    --user.confusion;
-                    if (user.confusion === 0) {
-                        this.pushEvent({
-                            type: "info",
-                            id: user.owner.id,
-                            why: "confused_end",
-                        });
-                    } else {
-                        this.pushEvent({
-                            type: "info",
-                            id: user.owner.id,
-                            why: "confused",
-                        });
-
-                        if (randChance255(floatTo255(50))) {
-                            if (user.handleConfusionDamage(this, target)) {
-                                if (user.owner.isAllDead()) {
-                                    this._victor = target.owner;
-                                }
-                                skipEnd = true;
-                                break;
-                            } else {
-                                continue;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (move.use(this, user, target, choice?.indexInMoves)) {
-                if (!this._victor) {
-                    if (target.owner.isAllDead()) {
-                        this._victor = user.owner;
-                    } else if (user.owner.isAllDead()) {
-                        this._victor = target.owner;
-                    }
-                }
-                skipEnd = true;
-                break;
-            }
-
-            if (user.handleStatusDamage(this)) {
-                if (user.owner.isAllDead()) {
-                    this._victor = target.owner;
-                }
-                skipEnd = true;
-                break;
-            }
-
-            if (user.seeded && user.tickCounter(this, "seeded")) {
-                if (user.owner.isAllDead()) {
-                    this._victor = target.owner;
-                }
+        for (const choice of choices) {
+            if (this.userMove(choice)) {
                 skipEnd = true;
                 break;
             }
@@ -399,6 +292,122 @@ export class Battle {
         }
 
         return this.endTurn();
+    }
+
+    private userMove({ move, user, indexInMoves }: ChosenMove) {
+        const target = this.opponentOf(user.owner).active;
+        if (!(move instanceof SwitchMove)) {
+            if (user.hazed) {
+                return false;
+            } else if (user.base.status === "frz") {
+                this.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: "frozen",
+                });
+                return false;
+            } else if (user.base.status === "slp") {
+                --user.base.sleep_turns;
+                const done = user.base.sleep_turns === 0;
+                if (done) {
+                    user.base.status = null;
+                }
+
+                this.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: done ? "wake" : "sleep",
+                });
+                return false;
+            } else if (user.flinch === this._turn) {
+                this.pushEvent({
+                    type: "failed",
+                    src: user.owner.id,
+                    why: "flinch",
+                });
+                user.recharge = undefined;
+                return false;
+            } else if (user.recharge) {
+                this.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: "recharge",
+                });
+                user.recharge = undefined;
+                return false;
+            }
+
+            if (user.disabled && --user.disabled.turns === 0) {
+                user.disabled = undefined;
+                this.pushEvent({ type: "disable", id: user.owner.id });
+            }
+
+            if (user.confusion) {
+                if (--user.confusion === 0) {
+                    this.pushEvent({
+                        type: "info",
+                        id: user.owner.id,
+                        why: "confused_end",
+                    });
+                } else {
+                    this.pushEvent({
+                        type: "info",
+                        id: user.owner.id,
+                        why: "confused",
+                    });
+                }
+            }
+
+            if (user.base.status === "par" && randChance255(floatTo255(25))) {
+                this.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: "paralyze",
+                });
+
+                user.charging = undefined;
+                if (user.thrashing?.turns !== -1) {
+                    user.thrashing = undefined;
+                }
+                return false;
+            } else if (user.confusion && randChance255(floatTo255(50))) {
+                if (user.handleConfusionDamage(this, target)) {
+                    if (user.owner.isAllDead()) {
+                        this._victor = target.owner;
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        if (move.use(this, user, target, indexInMoves)) {
+            if (!this._victor) {
+                if (target.owner.isAllDead()) {
+                    this._victor = user.owner;
+                } else if (user.owner.isAllDead()) {
+                    this._victor = target.owner;
+                }
+            }
+            return true;
+        }
+
+        if (user.handleStatusDamage(this)) {
+            if (user.owner.isAllDead()) {
+                this._victor = target.owner;
+            }
+            return true;
+        }
+
+        if (user.seeded && user.tickCounter(this, "seeded")) {
+            if (user.owner.isAllDead()) {
+                this._victor = target.owner;
+            }
+            return true;
+        }
+
+        return false;
     }
 
     private endTurn(): Turn {
