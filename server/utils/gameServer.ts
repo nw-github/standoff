@@ -9,7 +9,6 @@ import { FormatId, formatDescs } from "../../utils/formats";
 
 export type LoginResponse = {
     id: string;
-    rooms: string[];
 };
 
 export type JoinRoomResponse = {
@@ -21,8 +20,15 @@ export type JoinRoomResponse = {
 
 export type ChoiceError = "invalid_choice" | "bad_room" | "not_in_battle" | "too_late";
 
+export type RoomDescriptor = {
+    id: string;
+    /** Name[], not Id[] */
+    players: string[];
+    format: FormatId;
+};
+
 export interface ClientMessage {
-    getRooms: (ack: (rooms: string[]) => void) => void;
+    getRooms: (ack: (rooms: RoomDescriptor[]) => void) => void;
 
     login: (name: string, ack: (resp: LoginResponse | "bad_username") => void) => void;
     logout: (ack: () => void) => void;
@@ -69,6 +75,7 @@ type Room = {
     battle: Battle;
     turns: Turn[];
     accounts: Set<Account>;
+    format: FormatId;
 };
 
 class Account {
@@ -153,12 +160,7 @@ class Account {
         const player = room.battle.players.find(pl => pl.id === this.id);
         events = GameServer.censorEvents(events, player);
         for (const socket of this.sockets) {
-            socket.emit(
-                "nextTurn",
-                room.id,
-                { sequenceNo, events, switchTurn },
-                player?.choices
-            );
+            socket.emit("nextTurn", room.id, { sequenceNo, events, switchTurn }, player?.choices);
         }
     }
 }
@@ -220,7 +222,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             }
 
             account.addSocket(socket);
-            return ack({ id: account.id, rooms: [...account.battles].map(room => room.id) });
+            return ack({ id: account.id });
         });
         socket.on("logout", ack => {
             this.logout(socket);
@@ -341,7 +343,19 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             player.cancel();
             ack();
         });
-        socket.on("getRooms", ack => ack(Object.keys(this.rooms)));
+        socket.on("getRooms", ack =>
+            ack(
+                Object.entries(this.rooms)
+                    .filter(([, room]) => !room.battle.victor)
+                    .map(([id, room]) => ({
+                        id,
+                        players: [...room.accounts]
+                            .filter(acc => acc.battles.has(room))
+                            .map(acc => acc.name),
+                        format: room.format,
+                    }))
+            )
+        );
         socket.on("disconnect", () => this.logout(socket));
     }
 
@@ -363,7 +377,13 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             const roomId = uuid();
             const [opponent, opponentAcc] = mm;
             const [battle, turn0] = Battle.start(player, opponent);
-            this.rooms[roomId] = { id: roomId, battle, turns: [turn0], accounts: new Set() };
+            this.rooms[roomId] = {
+                id: roomId,
+                battle,
+                turns: [turn0],
+                accounts: new Set(),
+                format,
+            };
 
             account.joinBattle(this.rooms[roomId]);
             opponentAcc.joinBattle(this.rooms[roomId]);

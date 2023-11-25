@@ -14,10 +14,6 @@
     margin: 0;
     padding: 0;
 }
-
-ul {
-    padding-left: 2rem;
-}
 </style>
 
 <style scoped>

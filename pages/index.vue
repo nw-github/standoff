@@ -1,8 +1,13 @@
 <template>
     <main>
-        <h1>Status: {{ status }}</h1>
+        <h1>{{ status }}</h1>
 
-        <select name="mm" id="mm" v-model="format">
+        <select
+            name="mm"
+            id="mm"
+            v-model="format"
+            :disabled="findingMatch || !myId.length || cancelling"
+        >
             <option :value="format" v-for="format in battleFormats">
                 {{ formatNames[format] }}
             </option>
@@ -12,31 +17,78 @@
             {{ findingMatch ? "Cancel" : "Enter Matchmaking" }}
         </button>
 
-        <h2>Rooms</h2>
-        <ul>
-            <li v-for="room in rooms">
-                <NuxtLink :to="`room/${room}`">{{ room }}</NuxtLink>
-            </li>
-        </ul>
-
-        <h2>My Battles</h2>
-        <ul>
-            <li v-for="room in battles">
-                <NuxtLink :to="`room/${room}`">{{ room }}</NuxtLink>
-            </li>
-        </ul>
+        <div class="rooms">
+            <h2>Rooms</h2>
+            <table>
+                <tr v-for="{ id, players, format } in rooms">
+                    <td class="format">{{ formatNames[format] }}</td>
+                    <td class="room-td">
+                        <NuxtLink class="room" :to="`room/${id}`">
+                            {{ players.join(" vs. ") }}
+                        </NuxtLink>
+                    </td>
+                </tr>
+            </table>
+        </div>
     </main>
 </template>
 
+<style scoped>
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.rooms {
+    border: 1px #ccc solid;
+    border-radius: 5px;
+    text-align: center;
+    width: 50%;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.rooms table {
+    width: 100%;
+    border-spacing: 0;
+}
+
+h2,
+.format {
+    background-color: #f1f1f1;
+    padding: 5px;
+}
+
+a {
+    padding: 5px;
+}
+
+.room-td {
+    display: flex;
+}
+
+.room {
+    text-decoration: none;
+    color: black;
+    flex: 1;
+}
+
+.room:hover {
+    background-color: #ddd;
+}
+</style>
+
 <script setup lang="ts">
+import type { RoomDescriptor } from "~/server/utils/gameServer";
+
 const { $conn } = useNuxtApp();
 const status = ref("Logging in...");
 const username = useState<string>("username", () => `Guest ${Math.round(Math.random() * 10000)}`);
 const myId = useMyId();
 const findingMatch = ref(false);
 const cancelling = ref(false);
-const rooms = ref<string[]>();
-const battles = ref<string[]>();
+const rooms = ref<RoomDescriptor[]>([]);
 const format = ref<FormatId>("randoms");
 
 onMounted(() => {
@@ -52,7 +104,6 @@ onMounted(() => {
         } else {
             status.value = `Logged in as ${username.value}`;
             myId.value = resp.id;
-            battles.value = resp.rooms;
         }
     });
 
