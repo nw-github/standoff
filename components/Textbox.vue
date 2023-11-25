@@ -1,10 +1,10 @@
 <template>
     <div class="textbox">
         <template v-for="(turn, i) in turns">
-            <h2>Turn {{ i + 1 }}</h2>
-            <ul>
-                <li v-for="desc in turn">{{ desc }}</li>
-            </ul>
+            <div class="turn">
+                <h2>Turn {{ i + 1 }}</h2>
+            </div>
+            <div v-html="turn"></div>
         </template>
 
         <div ref="textboxScrollDiv"></div>
@@ -17,8 +17,29 @@
     background-color: #ccc;
 }
 
-ul {
-    list-style: none;
+.textbox > div {
+    padding: 0px 5px;
+}
+
+.turn {
+    background-color: #aaa;
+}
+</style>
+
+<style>
+.textbox h3,
+h4,
+h5,
+h6 {
+    font-weight: normal;
+}
+
+.textbox .red {
+    color: var(--stat-down);
+}
+
+.textbox .green {
+    color: green;
 }
 </style>
 
@@ -28,9 +49,12 @@ import type { BattleEvent, InfoReason } from "../game/events";
 import { moveList } from "../game/moveList";
 import { hpPercentExact } from "../game/utils";
 import { stageTable } from "#imports";
+import DOMPurify from "dompurify";
+import { marked } from "marked";
+import "assets/colors.css";
 
 const textboxScrollDiv = ref<HTMLDivElement | null>(null);
-const turns = ref<string[][]>([]);
+const turns = ref<string[]>([]);
 
 const props = defineProps<{
     players: Record<string, ClientPlayer>;
@@ -41,10 +65,9 @@ const props = defineProps<{
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const enterTurn = async (events: BattleEvent[], live: boolean, cb: (e: BattleEvent) => void) => {
-    turns.value.push([]);
-
+    turns.value.push("");
     for (const e of events) {
-        turns.value[turns.value.length - 1].push(...htmlForEvent(e));
+        turns.value[turns.value.length - 1] += htmlForEvent(e);
         cb(e);
 
         if (live) {
@@ -76,18 +99,26 @@ const htmlForEvent = (e: BattleEvent) => {
     if (e.type === "switch") {
         const player = players[e.src];
         if (player.active && player.active.hp) {
-            res.push(`${player.name} withdrew ${player.active.name}!`);
+            if (e.src === props.perspective) {
+                res.push(`Come back! ${player.active.name}!`);
+            } else {
+                res.push(`${player.name} withdrew ${player.active.name}!`);
+            }
         }
 
-        res.push(`${player.name} sent in ${e.name}!`);
+        if (e.src === props.perspective) {
+            res.push(`Go! **${e.name}**!`);
+        } else {
+            res.push(`${player.name} sent in **${e.name}**!`);
+        }
     } else if (e.type === "damage" || e.type === "recover") {
         const src = pname(e.src);
         const target = pname(e.target);
         const percent = roundTo(Math.abs(hpPercentExact(e.hpBefore - e.hpAfter, e.maxHp)), 1);
         if (e.type === "damage") {
-            const effMsg = ` - It's ${
+            const effMsg = `*It's ${
                 (e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."
-            }`;
+            }*`;
             if (e.why === "recoil") {
                 res.push(`${src} was hurt by recoil!`);
             } else if (e.why === "crash") {
@@ -99,17 +130,19 @@ const htmlForEvent = (e: BattleEvent) => {
             } else if (e.why === "brn") {
                 res.push(`${src} is hurt by its burn!`);
             } else if (e.why === "attacked" && e.isCrit) {
-                res.push(`A critical hit!`);
+                res.push("A critical hit!");
             } else if (e.why === "confusion") {
                 res.push("It hurt itself in its confusion!");
             } else if (e.why === "attacked" && e.hitCount === undefined && (e.eff ?? 1) !== 1) {
                 res.push(effMsg);
             } else if (e.why === "ohko") {
-                res.push(` - It's a one-hit KO!`);
+                res.push("It's a one-hit KO!");
             }
 
             if (e.why !== "explosion") {
-                res.push(`- ${target} lost ${percent}% of its health.`);
+                res.push(
+                    `##### <span class="red">${target} lost ${percent}% of its health!</span>`
+                );
             }
 
             if (e.why === "substitute") {
@@ -135,7 +168,9 @@ const htmlForEvent = (e: BattleEvent) => {
                 res.push(`${src} started sleeping!`);
             }
 
-            res.push(`- ${target} gained ${percent}% of its health.`);
+            res.push(
+                `##### <span class="green">${target} gained ${percent}% of its health.</span>`
+            );
         }
     } else if (e.type === "failed") {
         const src = pname(e.src);
@@ -172,7 +207,7 @@ const htmlForEvent = (e: BattleEvent) => {
         } else if (e.disabled) {
             res.push(`${pname(e.src)}'s ${moveList[e.move].name} is disabled!`);
         } else {
-            res.push(`${pname(e.src)} used ${moveList[e.move].name}!`);
+            res.push(`${pname(e.src)} used **${moveList[e.move].name}**!`);
         }
     } else if (e.type === "victory") {
         res.push(`${players[e.id].name} wins!`);
@@ -261,7 +296,8 @@ const htmlForEvent = (e: BattleEvent) => {
     } else {
         res.push(JSON.stringify(e));
     }
-    return res;
+
+    return DOMPurify.sanitize(res.reduce((acc, x) => acc + `<div>${marked(x)}</div>`, ""));
 };
 
 const clear = () => {

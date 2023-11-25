@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="self">
         <div class="tabs">
             <NuxtLink class="home" to="/">Home</NuxtLink>
         </div>
@@ -11,14 +11,16 @@
 <style>
 * {
     box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-.tabs {
-    display: flex;
-    border: 1px solid #ccc;
-    background-color: #f1f1f1;
+ul {
+    padding-left: 2rem;
 }
+</style>
 
+<style scoped>
 .tabs > * {
     background-color: inherit;
     border: none;
@@ -27,6 +29,7 @@
     padding: 14px 16px;
     transition: 0.3s;
     text-decoration: none;
+    color: black;
 }
 
 .tabs *:hover {
@@ -35,5 +38,15 @@
 
 .tabs *.active {
     background-color: #ccc;
+}
+
+.tabs *:visited {
+    color: black;
+}
+
+.tabs {
+    display: flex;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
 }
 </style>

@@ -1,12 +1,5 @@
 <template>
     <div class="battle">
-        <ul>
-            <li v-for="({ name, isSpectator, connected }, id) in players">
-                <template v-if="id === myId">(Me) </template>
-                {{ name }}: {{ id }} {{ isSpectator ? "(spectator)" : "" }}
-                {{ !connected ? "(disconnected)" : "" }}
-            </li>
-        </ul>
         <div class="game" v-if="hasLoaded">
             <div class="battlefield">
                 <template v-for="id in battlers">
@@ -20,53 +13,74 @@
                 </template>
             </div>
 
-            <Textbox
-                class="textbox"
-                :players="players"
-                :myId="myId"
-                :perspective="perspective"
-                ref="textbox"
-            />
-        </div>
+            <div class="selections">
+                <template v-if="choices && !selectionText.length">
+                    <div class="moves">
+                        <template v-for="(choice, i) in choices.moves">
+                            <MoveButton
+                                class="move-button"
+                                v-if="choice.display"
+                                :choice="choice"
+                                @click="() => selectMove(i)"
+                            />
+                        </template>
+                    </div>
 
-        <div class="selections">
-            <template v-if="choices && !selectionText.length">
-                <div class="moves">
-                    <template v-for="(choice, i) in choices.moves">
-                        <MoveButton
-                            class="move-button"
-                            v-if="choice.display"
-                            :choice="choice"
-                            @click="() => selectMove(i)"
+                    <div class="team">
+                        <SwitchButton
+                            class="switch-button"
+                            v-for="(poke, i) in myTeam"
+                            :poke="poke"
+                            :disabled="i === activeIndex || !choices.canSwitch"
+                            @click="() => selectSwitch(i)"
                         />
-                    </template>
+                    </div>
+                </template>
+                <div class="cancel" v-else-if="choices">
+                    <div class="selection-text">{{ selectionText }}...</div>
+                    <button @click="cancelMove">Cancel</button>
                 </div>
-
-                <div class="team">
-                    <SwitchButton
-                        class="switch-button"
-                        v-for="(poke, i) in myTeam"
-                        :poke="poke"
-                        :disabled="i === activeIndex || !choices.canSwitch"
-                        @click="() => selectSwitch(i)"
-                    />
-                </div>
-            </template>
-            <template v-else-if="choices">
-                <div class="selection-text">{{ selectionText }}...</div>
-                <button @click="cancelMove">Cancel</button>
-            </template>
-            <template v-else-if="!isBattler">
-                <!-- TODO: re-render textbox contents on switch sides -->
-                <button @click="switchSide" :disabled="true">Switch Side</button>
-            </template>
+                <template v-else-if="!isBattler">
+                    <!-- TODO: re-render textbox contents on switch sides -->
+                    <button @click="switchSide" :disabled="true">Switch Side</button>
+                </template>
+            </div>
         </div>
+
+        <Textbox
+            class="textbox"
+            :players="players"
+            :myId="myId"
+            :perspective="perspective"
+            ref="textbox"
+        />
     </div>
+
+    <ul>
+        <li v-for="({ name, isSpectator, connected }, id) in players">
+            <template v-if="id === myId">(Me) </template>
+            {{ name }}: {{ id }} {{ isSpectator ? "(spectator)" : "" }}
+            {{ !connected ? "(disconnected)" : "" }}
+        </li>
+    </ul>
 </template>
 
 <style scoped>
+.battle {
+    display: flex;
+    justify-content: center;
+}
+
 .game {
     display: flex;
+    flex-direction: column;
+    border: 1px #ccc solid;
+    border-top: none;
+}
+
+.textbox {
+    width: min(100%, 600px);
+    height: 60vh;
 }
 
 .battlefield {
@@ -74,12 +88,9 @@
     max-width: 480px;
     display: flex;
     flex-direction: column;
-    gap: 50px;
-}
-
-.textbox {
-    width: 100%;
-    height: 50vh;
+    gap: 20px;
+    border-bottom: 1px solid #ccc;
+    padding: 15px 0px;
 }
 
 .selection-text {
