@@ -109,12 +109,18 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
         "The user charges on the first turn, and attacks on the second. While charging, the user " +
         "can only be hit by moves that do not check accuracy.",
     multi_turn: "Locks the user in for 3-4 turns. Afterwards, the user becomes confused.",
+    rage:
+        "After using this move, the user will not be able to switch or do anything else except " +
+        "continue to use Rage until it faints or the battle ends. Every time it is hit by a move " +
+        "or targeted by Disable, Explosion, or Self-Destruct, it's attack will increase by one " +
+        "stage. ",
 };
 
 export const formatNames: Record<FormatId, string> = {
     randoms: "Random Battle",
     metronome: "Metronome Battle",
     truly_randoms: "Truly Random Battle",
+    randoms_nfe: "Random Battle (NFE)"
 };
 
 export const describeMove = (id: MoveId) => {

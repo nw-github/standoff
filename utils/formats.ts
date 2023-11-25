@@ -4,7 +4,7 @@ import { speciesList, type Species, type SpeciesId } from "../game/species";
 import { randChoice } from "../game/utils";
 import { AlwaysFailMove, TrappingMove } from "../game/moves";
 
-export const battleFormats = ["truly_randoms", "randoms", "metronome"] as const;
+export const battleFormats = ["truly_randoms", "randoms", "randoms_nfe", "metronome"] as const;
 
 export type FormatId = (typeof battleFormats)[number];
 
@@ -34,34 +34,64 @@ const getRandomPokemon = (
         .map(id => customize(speciesList[id], id));
 };
 
-const randomMove = (pool: MoveId[], moves: MoveId[]) => {
-    let move;
-    do {
-        move = randChoice(pool);
-    } while (
+const isBadMove = (move: MoveId, moves: MoveId[]) => {
+    return (
         moves.includes(move) ||
         move === "struggle" ||
-        move === "mimic" || 
-        move === "rage" || 
-        move === "bide" || 
+        move === "bide" ||
         move === "counter" ||
         moveList[move] instanceof AlwaysFailMove ||
         moveList[move] instanceof TrappingMove
     );
-    return move;
+};
+
+const randoms = (validSpecies: (s: Species, id: SpeciesId) => boolean) => {
+    return getRandomPokemon(
+        6,
+        validSpecies,
+        (s, id) => {
+            const moves: MoveId[] = [];
+
+            let pool = s.moves;
+            const stab = pool.filter(m => {
+                const move = moveList[m];
+                return (move.power ?? 0) > 40 && s.types.includes(move.type);
+            });
+            if (stab.length) {
+                moves.push(randChoice(stab));
+            }
+
+            do {
+                pool = pool.filter(move => !isBadMove(move, moves));
+                if (!pool.length) {
+                    break;
+                }
+                moves.push(randChoice(pool));
+            } while (moves.length < 4);
+            return new Pokemon(id, {}, {}, 100, moves);
+        }
+    );
 };
 
 export const formatDescs: Record<FormatId, FormatDesc> = {
     truly_randoms: {
         generate() {
             const pool = getMovePool();
+            const randomMove = (moves: MoveId[]) => {
+                let move;
+                do {
+                    move = randChoice(pool);
+                } while (isBadMove(move, moves));
+                return move;
+            };
+
             const randomMoves = (moves: MoveId[] = [], count: number = 4) => {
                 while (moves.length < count) {
                     if (!pool.length) {
                         pool.push(...getMovePool());
                     }
 
-                    let move = randomMove(pool, moves);
+                    const move = randomMove(moves);
                     pool.splice(pool.indexOf(move), 1);
                     moves.push(move);
                 }
@@ -70,31 +100,26 @@ export const formatDescs: Record<FormatId, FormatDesc> = {
 
             return getRandomPokemon(
                 6,
-                (s) => !s.evolves,
+                s => !s.evolves,
                 (_, id) => new Pokemon(id, {}, {}, 100, randomMoves())
             );
         },
     },
     randoms: {
         generate() {
-            return getRandomPokemon(
-                6,
-                (s) => !s.evolves,
-                (s, id) => {
-                    const moves: MoveId[] = [];
-                    while (moves.length < 4) {
-                        moves.push(randomMove(s.moves, moves));
-                    }
-                    return new Pokemon(id, {}, {}, 100, moves);
-                }
-            );
+            return randoms(s => !s.evolves);
+        },
+    },
+    randoms_nfe: {
+        generate() {
+            return randoms(s => s.evolves);
         },
     },
     metronome: {
         generate() {
             return getRandomPokemon(
                 6,
-                (s) => !s.evolves,
+                s => !s.evolves,
                 (_, id) => new Pokemon(id, {}, {}, 100, ["metronome"])
             );
         },

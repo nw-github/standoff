@@ -14,7 +14,13 @@
         </select>
 
         <button @click="enterMatchmaking" :disabled="!myId.length || cancelling">
-            {{ findingMatch ? "Cancel" : "Enter Matchmaking" }}
+            {{
+                cancelling
+                    ? "Cancelling..."
+                    : findingMatch
+                    ? "Cancel Matchmaking"
+                    : "Enter Matchmaking"
+            }}
         </button>
 
         <div class="rooms">
@@ -89,7 +95,7 @@ const myId = useMyId();
 const findingMatch = ref(false);
 const cancelling = ref(false);
 const rooms = ref<RoomDescriptor[]>([]);
-const format = ref<FormatId>("randoms");
+const format = useState<FormatId>("format", () => "randoms");
 
 onMounted(() => {
     if (process.server) {
@@ -119,7 +125,6 @@ onMounted(() => {
 const enterMatchmaking = () => {
     if (!findingMatch.value) {
         findingMatch.value = true;
-        status.value = "Finding match...";
         $conn.emit("enterMatchmaking", [], format.value, err => {
             if (err) {
                 findingMatch.value = false;
@@ -127,7 +132,6 @@ const enterMatchmaking = () => {
             }
         });
     } else {
-        status.value = "Cancelling...";
         cancelling.value = true;
         findingMatch.value = false;
         $conn.emit("exitMatchmaking", () => {
