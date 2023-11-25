@@ -8,7 +8,6 @@ export type BattleEvent =
     | SwitchEvent
     | DamageEvent
     | RecoverEvent
-    | FailureEvent
     | UseMoveEvent
     | VictoryEvent
     | HitSubstituteEvent
@@ -86,23 +85,6 @@ export type HitSubstituteEvent = {
     eff?: number;
 };
 
-export type FailReason =
-    | "immune"
-    | "miss"
-    | "generic"
-    | "has_substitute"
-    | "cant_substitute"
-    | "flinch"
-    | "mist"
-    | "splash"
-    | "whirlwind";
-
-type FailureEvent = {
-    type: "failed";
-    src: PlayerId;
-    why: FailReason;
-};
-
 type UseMoveEvent = {
     type: "move";
     src: PlayerId;
@@ -130,8 +112,20 @@ type StagesEvent = {
     stats: ActivePokemon["stats"];
 };
 
+export type FailReason =
+    | "immune"
+    | "miss"
+    | "fail_generic"
+    | "has_substitute"
+    | "cant_substitute"
+    | "flinch"
+    | "mist_protect"
+    | "splash"
+    | "whirlwind";
+
 export type InfoReason =
     | BooleanFlag
+    | FailReason
     | "conversion"
     | "payday"
     | "seeded"
@@ -145,7 +139,8 @@ export type InfoReason =
     | "haze"
     | "thaw"
     | "paralyze"
-    | "rage";
+    | "rage"
+    | "disable_end";
 
 type InfoEvent = {
     type: "info";
@@ -162,8 +157,7 @@ type TransformEvent = {
 type DisableEvent = {
     type: "disable";
     id: PlayerId;
-    /** if move is present, the disable has started. otherwise, it has ended */
-    move?: MoveId;
+    move: MoveId;
 };
 
 type ChargeEvent = {

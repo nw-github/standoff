@@ -96,8 +96,8 @@ export class DamagingMove extends Move {
         const eff = getEffectiveness(this.type, target.types);
         if (eff === 0) {
             battle.pushEvent({
-                type: "failed",
-                src: target.owner.id,
+                type: "info",
+                id: target.owner.id,
                 why: "immune",
             });
             return this.onMiss(battle, user, target);
@@ -105,9 +105,9 @@ export class DamagingMove extends Move {
 
         if (this.flag === "dream_eater" && target.base.status !== "slp") {
             battle.pushEvent({
-                type: "failed",
-                src: target.owner.id,
-                why: "generic",
+                type: "info",
+                id: target.owner.id,
+                why: "fail_generic",
             });
             return false;
         }
@@ -141,8 +141,8 @@ export class DamagingMove extends Move {
         });
         if (dmg === 0) {
             battle.pushEvent({
-                type: "failed",
-                src: user.owner.id,
+                type: "info",
+                id: user.owner.id,
                 why: "miss",
             });
             return false;
@@ -343,8 +343,8 @@ export class OHKOMove extends Move {
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
         if (getEffectiveness(this.type, target.base.species.types) === 0) {
             battle.pushEvent({
-                type: "failed",
-                src: target.owner.id,
+                type: "info",
+                id: target.owner.id,
                 why: "immune",
             });
             return false;
@@ -352,9 +352,9 @@ export class OHKOMove extends Move {
 
         if (target.getStat("spe") > user.getStat("spe")) {
             battle.pushEvent({
-                type: "failed",
-                src: target.owner.id,
-                why: "generic",
+                type: "info",
+                id: target.owner.id,
+                why: "fail_generic",
             });
             return false;
         }

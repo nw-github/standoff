@@ -25,9 +25,9 @@ export class BooleanFlagMove extends Move {
     override execute(battle: Battle, user: ActivePokemon): boolean {
         if (user.flags[this.flag]) {
             battle.pushEvent({
-                type: "failed",
-                src: user.owner.id,
-                why: "generic",
+                type: "info",
+                id: user.owner.id,
+                why: "fail_generic",
             });
         } else {
             user.flags[this.flag] = true;

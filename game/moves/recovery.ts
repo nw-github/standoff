@@ -25,9 +25,9 @@ export class RecoveryMove extends Move {
         const diff = user.base.stats.hp - user.base.hp;
         if (diff === 0 || diff % 255 === 0) {
             battle.pushEvent({
-                type: "failed",
-                src: user.owner.id,
-                why: "generic",
+                type: "info",
+                id: user.owner.id,
+                why: "fail_generic",
             });
             return false;
         }

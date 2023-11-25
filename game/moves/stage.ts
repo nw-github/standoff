@@ -26,9 +26,9 @@ export class StageMove extends Move {
         if (this.acc) {
             if (target.flags.mist) {
                 battle.pushEvent({
-                    type: "failed",
-                    src: target.owner.id,
-                    why: "mist",
+                    type: "info",
+                    id: target.owner.id,
+                    why: "mist_protect",
                 });
                 return false;
             }
@@ -42,9 +42,9 @@ export class StageMove extends Move {
 
         if (!target.inflictStages(user.owner, this.stages, battle)) {
             battle.pushEvent({
-                type: "failed",
-                src: target.owner.id,
-                why: "generic",
+                type: "info",
+                id: target.owner.id,
+                why: "fail_generic",
             });
         }
         return false;

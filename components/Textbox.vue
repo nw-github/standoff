@@ -181,35 +181,6 @@ const htmlForEvent = (e: BattleEvent) => {
                 `##### <span class="green">${target} gained **${percent}%** of its health.</span>`
             );
         }
-    } else if (e.type === "failed") {
-        const src = pname(e.src);
-        switch (e.why) {
-            case "immune":
-                res.push(`It doesn't affect ${pname(e.src, false)}...`);
-                break;
-            case "miss":
-                res.push(`${src} missed!`);
-                break;
-            case "cant_substitute":
-                res.push(`${src} doesn't have enough HP to create a substitute!`);
-                break;
-            case "has_substitute":
-                res.push(`${src} already has a substitute!`);
-                break;
-            case "whirlwind":
-            case "generic":
-                res.push(`But it failed!`);
-                break;
-            case "flinch":
-                res.push(`${src} flinched!`);
-                break;
-            case "mist":
-                res.push(`${src} is protected by the mist!`);
-                break;
-            case "splash":
-                res.push(`No effect!`);
-                break;
-        }
     } else if (e.type === "move") {
         if (e.thrashing && e.move !== "rage") {
             res.push(`${pname(e.src)}'s thrashing about!`);
@@ -257,7 +228,16 @@ const htmlForEvent = (e: BattleEvent) => {
         }
     } else if (e.type === "info") {
         const messages: Record<InfoReason, string> = {
+            immune: "It doesn't affect {l}...",
+            miss: "{} missed!",
+            cant_substitute: "{} doesn't have enough HP to create a substitute!",
+            has_substitute: "{} already has a substitute!",
+            fail_generic: "But it failed!",
+            whirlwind: "But it failed!",
+            flinch: "{} flinched!",
+            splash: "No effect!",
             seeded: "{} was seeded!",
+            mist_protect: "{} is protected by the mist!",
             mist: "{}'s' shrouded in mist!",
             light_screen: "{}'s protected against special attacks!",
             reflect: "{} is gained armor!",
@@ -275,17 +255,14 @@ const htmlForEvent = (e: BattleEvent) => {
             thaw: "{} thawed out!",
             paralyze: "{}'s fully paralyzed!",
             rage: "{}'s rage is building!",
+            disable_end: "{}'s disabled no more!",
         };
 
         res.push(messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)));
     } else if (e.type === "transform") {
         res.push(`${pname(e.src)} transformed into ${pname(e.target, false)}!`);
     } else if (e.type === "disable") {
-        if (e.move) {
-            res.push(`${pname(e.id)}'s ${moveList[e.move].name} was disabled!`);
-        } else {
-            res.push(`${pname(e.id)}'s disabled no more!`);
-        }
+        res.push(`${pname(e.id)}'s ${moveList[e.move].name} was disabled!`);
     } else if (e.type === "charge") {
         if (e.move === "skullbash") {
             res.push(`${pname(e.id)} lowered its head!`);

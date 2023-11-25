@@ -63,9 +63,9 @@ export const moveList = Object.freeze({
             const choices = target.base.moves.filter((_, i) => target.base.pp[i] !== 0);
             if (!choices.length || target.disabled) {
                 battle.pushEvent({
-                    type: "failed",
-                    src: target.owner.id,
-                    why: "generic",
+                    type: "info",
+                    id: target.owner.id,
+                    why: "fail_generic",
                 });
                 target.handleRage(battle);
                 return false;
@@ -95,7 +95,7 @@ export const moveList = Object.freeze({
             battle.pushEvent({
                 type: "info",
                 id: user.owner.id,
-                why: "haze"
+                why: "haze",
             });
 
             for (const k of stageKeys) {
@@ -110,8 +110,8 @@ export const moveList = Object.freeze({
             user.confusion = target.confusion = 0;
             user.seeded = target.seeded = false;
             user.disabled = target.disabled = undefined;
-            user.stats = {...user.base.stats};
-            target.stats = {...target.base.stats};
+            user.stats = { ...user.base.stats };
+            target.stats = { ...target.base.stats };
 
             if (user.base.status === "tox") {
                 user.base.status = "psn";
@@ -140,8 +140,8 @@ export const moveList = Object.freeze({
         execute(battle, user, target) {
             if (target.types.includes(this.type)) {
                 battle.pushEvent({
-                    type: "failed",
-                    src: target.owner.id,
+                    type: "info",
+                    id: target.owner.id,
                     why: "immune",
                 });
                 return false;
@@ -149,9 +149,9 @@ export const moveList = Object.freeze({
 
             if (target.seeded) {
                 battle.pushEvent({
-                    type: "failed",
-                    src: target.owner.id,
-                    why: "generic",
+                    type: "info",
+                    id: target.owner.id,
+                    why: "fail_generic",
                 });
                 return false;
             }
@@ -214,9 +214,9 @@ export const moveList = Object.freeze({
         execute(battle, user, target) {
             if (!target.lastMove || target.lastMove === this) {
                 battle.pushEvent({
-                    type: "failed",
-                    src: user.owner.id,
-                    why: "generic",
+                    type: "info",
+                    id: user.owner.id,
+                    why: "fail_generic",
                 });
                 return false;
             }
@@ -252,8 +252,8 @@ export const moveList = Object.freeze({
         execute(battle, user) {
             if (user.substitute > 0) {
                 battle.pushEvent({
-                    type: "failed",
-                    src: user.owner.id,
+                    type: "info",
+                    id: user.owner.id,
                     why: "has_substitute",
                 });
                 return false;
@@ -263,8 +263,8 @@ export const moveList = Object.freeze({
             // Gen 1 bug, if you have exactly 25% hp you can create a substitute and instantly die
             if (hp > user.base.hp) {
                 battle.pushEvent({
-                    type: "failed",
-                    src: user.owner.id,
+                    type: "info",
+                    id: user.owner.id,
                     why: "cant_substitute",
                 });
                 return false;
@@ -1426,7 +1426,7 @@ export const moveList = Object.freeze({
         name: "Teleport",
         pp: 20,
         type: "psychic",
-        why: "generic",
+        why: "fail_generic",
     }),
     whirlwind: new AlwaysFailMove({
         name: "Whirlwind",

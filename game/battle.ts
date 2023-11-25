@@ -321,8 +321,8 @@ export class Battle {
                 return false;
             } else if (user.flinch === this._turn) {
                 this.pushEvent({
-                    type: "failed",
-                    src: user.owner.id,
+                    type: "info",
+                    id: user.owner.id,
                     why: "flinch",
                 });
                 user.recharge = undefined;
@@ -339,7 +339,7 @@ export class Battle {
 
             if (user.disabled && --user.disabled.turns === 0) {
                 user.disabled = undefined;
-                this.pushEvent({ type: "disable", id: user.owner.id });
+                this.pushEvent({ type: "info", id: user.owner.id, why: "disable_end" });
             }
 
             if (user.confusion) {

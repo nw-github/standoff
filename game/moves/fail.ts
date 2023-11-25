@@ -25,8 +25,8 @@ export class AlwaysFailMove extends Move {
 
     override execute(battle: Battle, user: ActivePokemon): boolean {
         battle.pushEvent({
-            type: "failed",
-            src: user.owner.id,
+            type: "info",
+            id: user.owner.id,
             why: this.why,
         });
         return false;

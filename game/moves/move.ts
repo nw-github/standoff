@@ -30,8 +30,8 @@ export abstract class Move {
         console.log(`Accuracy: ${this.acc} (${chance}/256)`);
         if (target.invuln || !randChance255(chance)) {
             battle.pushEvent({
-                type: "failed",
-                src: user.owner.id,
+                type: "info",
+                id: user.owner.id,
                 why: "miss",
             });
             return false;

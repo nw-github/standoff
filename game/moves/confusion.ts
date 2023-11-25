@@ -10,9 +10,9 @@ export class ConfusionMove extends Move {
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
         if (target.substitute) {
             battle.pushEvent({
-                type: "failed",
-                src: target.owner.id,
-                why: "generic",
+                type: "info",
+                id: target.owner.id,
+                why: "fail_generic",
             });
             return false;
         }
@@ -23,9 +23,9 @@ export class ConfusionMove extends Move {
 
         if (!target.inflictConfusion(battle)) {
             battle.pushEvent({
-                type: "failed",
-                src: target.owner.id,
-                why: "generic",
+                type: "info",
+                id: target.owner.id,
+                why: "fail_generic",
             });
         }
         return false;
