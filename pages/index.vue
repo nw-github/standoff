@@ -46,6 +46,10 @@ main {
     align-items: center;
 }
 
+main > * {
+    margin: 5px;
+}
+
 .rooms {
     border: 1px #ccc solid;
     border-radius: 5px;

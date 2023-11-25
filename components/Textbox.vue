@@ -14,7 +14,7 @@
 <style scoped>
 .textbox {
     overflow-y: auto;
-    background-color: #ccc;
+    background-color: #f1f1f1;
 }
 
 .textbox > div {
@@ -22,7 +22,7 @@
 }
 
 .turn {
-    background-color: #aaa;
+    background-color: #ccc;
 }
 </style>
 
