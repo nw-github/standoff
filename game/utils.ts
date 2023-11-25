@@ -128,7 +128,7 @@ export const typeChart: Record<Type, Partial<Record<Type, number>>> = {
     rock: { bug: 2, fire: 2, flying: 2, ice: 2, fight: 0.5, ground: 0.5 },
     ground: { rock: 2, poison: 2, bug: 0.5, flying: 0, grass: 0.5, fire: 2, electric: 2 },
     ghost: { normal: 0, ghost: 2, psychic: 0 },
-    poison: { rock: 0.5, ground: 0.5, ghost: 0.5, grass: 2, bug: 2 },
+    poison: { rock: 0.5, ground: 0.5, ghost: 0.5, grass: 2, bug: 2, poison: 0.5 },
     bug: { ghost: 0.5, flying: 0.5, fight: 0.5, grass: 2, fire: 0.5, psychic: 2, poison: 2 },
     flying: { rock: 0.5, bug: 2, fight: 2, grass: 2, electric: 0.5 },
     fight: {

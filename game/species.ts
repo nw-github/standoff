@@ -2822,7 +2822,7 @@ export const speciesList = createSpeciesList({
             "rest",
             "substitute",
         ],
-        evolves: true,
+        evolves: false,
     },
     farfetchd: {
         dexId: 83,
@@ -3455,7 +3455,7 @@ export const speciesList = createSpeciesList({
             "rest",
             "substitute",
         ],
-        evolves: true,
+        evolves: false,
     },
     exeggcute: {
         dexId: 102,

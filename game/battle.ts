@@ -327,7 +327,9 @@ export class Battle {
                     });
 
                     user.charging = undefined;
-                    user.thrashing = undefined;
+                    if (user.thrashing?.turns !== -1) {
+                        user.thrashing = undefined;
+                    }
                     continue;
                 }
 
