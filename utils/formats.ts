@@ -112,7 +112,7 @@ export const formatDescs: Record<FormatId, FormatDesc> = {
     },
     randoms_nfe: {
         generate() {
-            return randoms(s => s.evolves);
+            return randoms((s, id) => s.evolves && id !== "weedle" && id !== "metapod");
         },
     },
     metronome: {
