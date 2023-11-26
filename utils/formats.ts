@@ -40,38 +40,37 @@ const isBadMove = (move: MoveId, moves: MoveId[]) => {
         move === "struggle" ||
         move === "bide" ||
         move === "counter" ||
+        move === "focusenergy" ||
         moveList[move] instanceof AlwaysFailMove ||
         moveList[move] instanceof TrappingMove
     );
 };
 
 const randoms = (validSpecies: (s: Species, id: SpeciesId) => boolean) => {
-    return getRandomPokemon(
-        6,
-        validSpecies,
-        (s, id) => {
-            const moves: MoveId[] = [];
+    return getRandomPokemon(6, validSpecies, (s, id) => {
+        const moves: MoveId[] = [];
 
-            let pool = s.moves;
-            const stab = pool.filter(m => {
-                const move = moveList[m];
-                return (move.power ?? 0) > 40 && s.types.includes(move.type);
-            });
-            if (stab.length) {
-                moves.push(randChoice(stab));
-            }
-
-            do {
-                pool = pool.filter(move => !isBadMove(move, moves));
-                if (!pool.length) {
-                    break;
-                }
-                moves.push(randChoice(pool));
-            } while (moves.length < 4);
-            return new Pokemon(id, {}, {}, 100, moves);
+        let pool = s.moves;
+        const stab = pool.filter(m => {
+            const move = moveList[m];
+            return (move.power ?? 0) > 40 && s.types.includes(move.type);
+        });
+        if (stab.length) {
+            moves.push(randChoice(stab));
         }
-    );
+
+        do {
+            pool = pool.filter(move => !isBadMove(move, moves));
+            if (!pool.length) {
+                break;
+            }
+            moves.push(randChoice(pool));
+        } while (moves.length < 4);
+        return new Pokemon(id, {}, {}, 100, moves);
+    });
 };
+
+const uselessNfe = new Set<SpeciesId>(["weedle", "metapod", "kakuna", "magikarp", "caterpie"]);
 
 export const formatDescs: Record<FormatId, FormatDesc> = {
     truly_randoms: {
@@ -112,7 +111,7 @@ export const formatDescs: Record<FormatId, FormatDesc> = {
     },
     randoms_nfe: {
         generate() {
-            return randoms((s, id) => s.evolves && id !== "weedle" && id !== "metapod");
+            return randoms((s, id) => s.evolves && !uselessNfe.has(id));
         },
     },
     metronome: {

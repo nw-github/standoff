@@ -158,9 +158,9 @@ class Account {
 
     nextTurn(room: Room, { events, switchTurn }: Turn) {
         const player = room.battle.players.find(pl => pl.id === this.id);
-        events = GameServer.censorEvents(events, player);
+        const turn = { switchTurn, events: GameServer.censorEvents(events, player) };
         for (const socket of this.sockets) {
-            socket.emit("nextTurn", room.id, { events, switchTurn }, player?.choices);
+            socket.emit("nextTurn", room.id, turn, player?.choices);
         }
     }
 }
@@ -209,8 +209,12 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
                 return ack("bad_username");
             }
 
-            if (socket.account?.name !== name) {
-                this.logout(socket);
+            if (socket.account) {
+                if (socket.account.name !== name) {
+                    this.logout(socket);
+                } else {
+                    return ack({ id: socket.account.id });
+                }
             }
 
             const account = (this.accounts[name] ??= new Account(name));

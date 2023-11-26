@@ -274,7 +274,7 @@ export class Battle {
             }
         }
 
-        if (!skipEnd) {
+        if (!skipEnd && !this.switchTurn) {
             for (const { user } of choices) {
                 if (user.handleStatusDamage(this)) {
                     if (user.owner.isAllDead()) {
@@ -290,8 +290,17 @@ export class Battle {
 
     private userMove({ move, user, indexInMoves }: ChosenMove) {
         const target = this.opponentOf(user.owner).active;
-        if (!(move instanceof SwitchMove)) {
-            if (user.hazed) {
+        const isSwitchMove = move instanceof SwitchMove;
+        if (!isSwitchMove) {
+            if (user.flinch) {
+                this.pushEvent({
+                    type: "info",
+                    id: user.owner.id,
+                    why: "flinch",
+                });
+                user.recharge = undefined;
+                return false;
+            } else if (user.hazed) {
                 return false;
             } else if (user.base.status === "frz") {
                 this.pushEvent({
@@ -312,11 +321,11 @@ export class Battle {
                     why: done ? "wake" : "sleep",
                 });
                 return false;
-            } else if (user.flinch === this._turn || user.recharge) {
+            } else if (user.recharge) {
                 this.pushEvent({
                     type: "info",
                     id: user.owner.id,
-                    why: user.flinch === this._turn ? "flinch" : "recharge",
+                    why: "recharge",
                 });
                 user.recharge = undefined;
                 return false;
@@ -370,18 +379,20 @@ export class Battle {
             return true;
         }
 
-        if (user.handleStatusDamage(this)) {
-            if (user.owner.isAllDead()) {
-                this._victor = target.owner;
+        if (!isSwitchMove) {
+            if (user.handleStatusDamage(this)) {
+                if (user.owner.isAllDead()) {
+                    this._victor = target.owner;
+                }
+                return true;
             }
-            return true;
-        }
 
-        if (user.seeded && user.tickCounter(this, "seeded")) {
-            if (user.owner.isAllDead()) {
-                this._victor = target.owner;
+            if (user.seeded && user.tickCounter(this, "seeded")) {
+                if (user.owner.isAllDead()) {
+                    this._victor = target.owner;
+                }
+                return true;
             }
-            return true;
         }
 
         return false;
