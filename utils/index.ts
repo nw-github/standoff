@@ -12,7 +12,7 @@ import {
 import type { ActivePokemon } from "../game/battle";
 import { moveList, type MoveId } from "../game/moveList";
 import type { SpeciesId } from "../game/species";
-import type { Stages } from "../game/utils";
+import type { Stages, Type } from "../game/utils";
 
 export type ClientActivePokemon = {
     speciesId: SpeciesId;
@@ -23,6 +23,7 @@ export type ClientActivePokemon = {
     stages: Partial<Record<Stages, number>>;
     stats?: ActivePokemon["stats"];
     transformed?: SpeciesId;
+    conversion?: Type[];
 };
 
 export type ClientPlayer = {

@@ -294,6 +294,8 @@ const runTurn = async (turn: Turn, live: boolean, newChoices?: Player["choices"]
             } else if (e.why === "wake" || e.why === "thaw") {
                 players[e.id].active!.status = null;
             }
+        } else if (e.type === "conversion") {
+            players[e.user].active!.conversion = e.types;
         }
     });
 

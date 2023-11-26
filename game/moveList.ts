@@ -46,9 +46,10 @@ export const moveList = Object.freeze({
         execute(battle, user, target) {
             user.types = [...target.types];
             battle.pushEvent({
-                type: "info",
-                id: target.owner.id,
-                why: "conversion",
+                type: "conversion",
+                user: user.owner.id,
+                target: target.owner.id,
+                types: [...user.types],
             });
 
             return false;

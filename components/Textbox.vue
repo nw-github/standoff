@@ -242,7 +242,6 @@ const htmlForEvent = (e: BattleEvent) => {
             light_screen: "{}'s protected against special attacks!",
             reflect: "{} is gained armor!",
             focus: "{} is getting pumped!",
-            conversion: "Converted type to match {l}!",
             payday: "Coins scattered everywhere!",
             became_confused: "{} became confused!",
             confused: "{} is confused!",
@@ -279,6 +278,8 @@ const htmlForEvent = (e: BattleEvent) => {
         }
     } else if (e.type === "mimic") {
         res.push(`${pname(e.id)} learned ${moveList[e.move].name}!`);
+    } else if (e.type === "conversion") {
+        res.push(`Converted type to match ${pname(e.target, false)}!`);
     } else {
         res.push(JSON.stringify(e));
     }

@@ -14,10 +14,14 @@
                 <Tooltip class="transformed" v-if="poke.transformed">
                     Transformed
 
-                    <template #tooltip>
-                        Was: {{ speciesList[poke.speciesId].name }}
-                    </template>
+                    <template #tooltip> Was: {{ speciesList[poke.speciesId].name }} </template>
                 </Tooltip>
+
+                <template v-if="!species.types.every((ty, i) => ty === poke.conversion?.[i])">
+                    <div :style="{ backgroundColor: typeColor[ty] }" v-for="ty in poke.conversion">
+                        {{ toTitleCase(ty) }}
+                    </div>
+                </template>
 
                 <div class="status" v-if="poke.status">
                     {{ poke.status.toUpperCase() }}

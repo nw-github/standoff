@@ -2,7 +2,7 @@ import type { ActivePokemon, BooleanFlag } from "./battle";
 import type { MoveId } from "./moveList";
 import { type Status } from "./pokemon";
 import type { SpeciesId } from "./species";
-import type { Stages } from "./utils";
+import type { Stages, Type } from "./utils";
 
 export type BattleEvent =
     | SwitchEvent
@@ -17,7 +17,8 @@ export type BattleEvent =
     | TransformEvent
     | DisableEvent
     | ChargeEvent
-    | MimicEvent;
+    | MimicEvent
+    | ConversionEvent;
 
 export type PlayerId = string;
 
@@ -126,7 +127,6 @@ export type FailReason =
 export type InfoReason =
     | BooleanFlag
     | FailReason
-    | "conversion"
     | "payday"
     | "seeded"
     | "became_confused"
@@ -170,4 +170,11 @@ type MimicEvent = {
     type: "mimic";
     id: PlayerId;
     move: MoveId;
+};
+
+type ConversionEvent = {
+    type: "conversion";
+    user: PlayerId;
+    target: PlayerId;
+    types: Type[];
 };
