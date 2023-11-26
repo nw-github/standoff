@@ -52,7 +52,6 @@ class SwitchMove extends Move {
 }
 
 export type Turn = {
-    sequenceNo: number;
     events: BattleEvent[];
     switchTurn: boolean;
 };
@@ -202,7 +201,6 @@ export class Battle {
     readonly players: [Player, Player];
     private readonly events: BattleEvent[] = [];
     private readonly moveListToId;
-    private _turn = 0;
     private _victor: Player | null = null;
     private switchTurn = false;
 
@@ -225,10 +223,6 @@ export class Battle {
         }
 
         return [self, self.endTurn()] as const;
-    }
-
-    get turn() {
-        return this._turn;
     }
 
     get victor() {
@@ -402,6 +396,7 @@ export class Battle {
             player.choice = null;
             player.active.handledStatus = false;
             player.active.hazed = false;
+            player.active.flinch = false;
             player.updateChoices(this);
         }
 
@@ -409,7 +404,6 @@ export class Battle {
         this.switchTurn = this.players.some(pl => pl.active.base.hp <= 0);
 
         return {
-            sequenceNo: this._victor ? this._turn : this._turn++,
             events: this.events.splice(0),
             switchTurn,
         };
@@ -429,8 +423,8 @@ export class ActivePokemon {
     flags: Partial<Record<BooleanFlag, boolean>> = {};
     substitute = 0;
     confusion = 0;
-    flinch = 0;
     counter = 1;
+    flinch = false;
     seeded = false;
     invuln = false;
     handledStatus = false;
@@ -483,6 +477,7 @@ export class ActivePokemon {
         this.invuln = false;
         this.handledStatus = false;
         this.hazed = false;
+        this.flinch = false;
         this.lastMove = undefined;
         this.lastMoveIndex = undefined;
         this.thrashing = undefined;

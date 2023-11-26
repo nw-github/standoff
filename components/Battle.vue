@@ -139,7 +139,7 @@ const hasLoaded = ref(false);
 const perspective = ref<string>("");
 const isBattler = ref(false);
 
-let currentTurn = 0;
+let sequenceNo = 0;
 onMounted(async () => {
     if (process.server) {
         return;
@@ -195,7 +195,7 @@ const selectMove = (index: number) => {
         moveList[choices.value!.moves[index].move].name
     }`;
 
-    $conn.emit("choose", props.room, index, "move", currentTurn, err => {
+    $conn.emit("choose", props.room, index, "move", sequenceNo, err => {
         // TODO: do something with the error
     });
 };
@@ -204,14 +204,14 @@ const selectSwitch = (index: number) => {
     selectionText.value = `${players[myId.value].active!.name} will be replaced by ${
         myTeam.value[index].name
     }`;
-    $conn.emit("choose", props.room, index, "switch", currentTurn, err => {
+    $conn.emit("choose", props.room, index, "switch", sequenceNo, err => {
         // TODO: do something with the error
     });
 };
 
 const cancelMove = () => {
     selectionText.value = "";
-    $conn.emit("cancel", props.room, currentTurn, err => {
+    $conn.emit("cancel", props.room, sequenceNo, err => {
         // TODO: do something with the error
     });
 };
@@ -228,7 +228,7 @@ const switchSide = () => {
 const runTurn = async (turn: Turn, live: boolean, newChoices?: Player["choices"]) => {
     choices.value = undefined;
     selectionText.value = "";
-    currentTurn = turn.sequenceNo + 1;
+    sequenceNo++;
 
     await nextTick();
     await textbox.value!.enterTurn(turn, live, e => {
@@ -298,7 +298,7 @@ const runTurn = async (turn: Turn, live: boolean, newChoices?: Player["choices"]
     });
 
     choices.value = newChoices;
-    if (newChoices) {
+    if (newChoices && !players[myId.value].active?.transformed) {
         for (const { pp, indexInMoves } of newChoices.moves) {
             if (indexInMoves !== undefined && pp !== undefined) {
                 activeInTeam.value!.pp[indexInMoves] = pp;

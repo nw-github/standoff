@@ -156,11 +156,11 @@ class Account {
         }
     }
 
-    nextTurn(room: Room, { events, sequenceNo, switchTurn }: Turn) {
+    nextTurn(room: Room, { events, switchTurn }: Turn) {
         const player = room.battle.players.find(pl => pl.id === this.id);
         events = GameServer.censorEvents(events, player);
         for (const socket of this.sockets) {
-            socket.emit("nextTurn", room.id, { sequenceNo, events, switchTurn }, player?.choices);
+            socket.emit("nextTurn", room.id, { events, switchTurn }, player?.choices);
         }
     }
 }
@@ -270,9 +270,8 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
                     id: account.id,
                     isSpectator: !account.battles.has(room),
                 })),
-                turns: room.turns.map(({ sequenceNo, events, switchTurn }) => ({
+                turns: room.turns.map(({ events, switchTurn }) => ({
                     events: GameServer.censorEvents(events, player),
-                    sequenceNo,
                     switchTurn,
                 })),
             });
@@ -289,16 +288,14 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
 
             socket.account.leaveRoom(room, true, this);
         });
-        socket.on("choose", (roomId, index, type, turnId, ack) => {
-            const info = this.validatePlayer(socket, roomId);
+        socket.on("choose", (roomId, index, type, sequenceNo, ack) => {
+            const info = this.validatePlayer(socket, roomId, sequenceNo);
             if (typeof info === "string") {
                 return ack(info);
             }
 
             const [player, room] = info;
-            if (turnId !== room.battle.turn) {
-                return ack("too_late");
-            } else if (type === "move") {
+            if (type === "move") {
                 if (!player.chooseMove(index)) {
                     return ack("invalid_choice");
                 }
@@ -324,23 +321,17 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             }
 
             this.to(`${ANON_SPECTATE}${roomId}`).emit("nextTurn", roomId, {
-                sequenceNo: turn.sequenceNo,
                 switchTurn: turn.switchTurn,
                 events: GameServer.censorEvents(turn.events),
             });
         });
-        socket.on("cancel", (roomId, turn, ack) => {
-            const info = this.validatePlayer(socket, roomId);
+        socket.on("cancel", (roomId, sequenceNo, ack) => {
+            const info = this.validatePlayer(socket, roomId, sequenceNo);
             if (typeof info === "string") {
                 return ack(info);
             }
 
-            const [player, room] = info;
-            if (turn !== room.battle.turn) {
-                return ack("too_late");
-            }
-
-            player.cancel();
+            info[0].cancel();
             ack();
         });
         socket.on("getRooms", ack =>
@@ -404,7 +395,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         delete account.matchmaking;
     }
 
-    private validatePlayer(socket: Socket, roomId: string) {
+    private validatePlayer(socket: Socket, roomId: string, sequenceNo: number) {
         const room = this.rooms[roomId];
         if (!room) {
             return "bad_room";
@@ -418,6 +409,10 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         const player = room.battle.players.find(pl => pl.id === account.id);
         if (!player) {
             return "not_in_battle";
+        }
+
+        if (sequenceNo !== room.turns.length) {
+            return "too_late";
         }
 
         return [player, room] as const;
