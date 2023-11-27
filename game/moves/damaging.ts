@@ -6,9 +6,9 @@ import {
     getEffectiveness,
     randChance255,
     randRangeInclusive,
-    type Type,
     isSpecial,
     calcDamage,
+    type Type,
     type Stages,
 } from "../utils";
 
@@ -68,45 +68,45 @@ export class DamagingMove extends Move {
     }
 
     override use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number) {
-        if ((this.flag === "charge" || this.flag === "charge_invuln") && user.charging !== this) {
+        if ((this.flag === "charge" || this.flag === "charge_invuln") && user.v.charging !== this) {
             battle.pushEvent({
                 type: "charge",
                 id: user.owner.id,
                 move: battle.moveIdOf(this)!,
             });
-            user.charging = this;
+            user.v.charging = this;
             if (this.flag === "charge_invuln") {
-                user.invuln = true;
+                user.v.invuln = true;
             }
 
             return false;
         }
 
-        user.charging = undefined;
+        user.v.charging = undefined;
         if (this.flag === "charge_invuln") {
-            user.invuln = false;
+            user.v.invuln = false;
         }
         return super.use(battle, user, target, moveIndex);
     }
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
-        if (this.flag === "multi_turn" && !user.thrashing) {
-            user.thrashing = { move: this, turns: randRangeInclusive(2, 3) };
-        } else if (user.thrashing && user.thrashing.turns !== -1) {
-            --user.thrashing.turns;
-            if (user.thrashing.turns <= 0) {
-                user.thrashing = undefined;
+        if (this.flag === "multi_turn" && !user.v.thrashing) {
+            user.v.thrashing = { move: this, turns: randRangeInclusive(2, 3) };
+        } else if (user.v.thrashing && user.v.thrashing.turns !== -1) {
+            --user.v.thrashing.turns;
+            if (user.v.thrashing.turns <= 0) {
+                user.v.thrashing = undefined;
                 user.inflictConfusion(battle, true);
             }
         }
 
         const { dmg, isCrit, eff } = this.getDamage(user, target);
         if (dmg === 0) {
-            battle.pushEvent({
-                type: "info",
-                id: user.owner.id,
-                why: eff === 0 ? "immune" : "miss",
-            });
+            battle.pushEvent(
+                eff === 0
+                    ? { type: "info", id: target.owner.id, why: "immune" }
+                    : { type: "info", id: user.owner.id, why: "miss" }
+            );
             if (this.flag === "crash" && eff === 0) {
                 return false;
             }
@@ -119,10 +119,10 @@ export class DamagingMove extends Move {
         }
 
         if (this.flag === "rage") {
-            user.thrashing = { move: this, turns: -1 };
+            user.v.thrashing = { move: this, turns: -1 };
         }
 
-        const hadSub = target.substitute !== 0;
+        const hadSub = target.v.substitute !== 0;
         let { dealt, brokeSub, dead, event } = target.inflictDamage(
             dmg,
             user,
@@ -199,14 +199,14 @@ export class DamagingMove extends Move {
         }
 
         if (this.flag === "recharge") {
-            user.recharge = this;
+            user.v.recharge = this;
         }
 
         if (this.effect) {
             const [chance, effect] = this.effect;
             if (effect === "brn" && target.base.status === "frz") {
                 target.base.status = undefined;
-                target.hazed = true;
+                target.v.hazed = true;
                 battle.pushEvent({
                     type: "info",
                     id: target.owner.id,
@@ -221,7 +221,7 @@ export class DamagingMove extends Move {
             }
 
             if (effect === "confusion") {
-                if (target.confusion === 0) {
+                if (target.v.confusion === 0) {
                     target.inflictConfusion(battle);
                 }
                 return dead;
@@ -230,9 +230,9 @@ export class DamagingMove extends Move {
             } else if (Array.isArray(effect)) {
                 target.inflictStages(user.owner, effect, battle);
             } else if (effect === "flinch") {
-                target.flinch = true;
+                target.v.flinch = true;
             } else {
-                if (target.base.status || target.types.includes(this.type)) {
+                if (target.base.status || target.v.types.includes(this.type)) {
                     return dead;
                 }
 
@@ -246,9 +246,9 @@ export class DamagingMove extends Move {
     private onMiss(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
         if (this.flag === "crash") {
             // https://www.smogon.com/dex/rb/moves/high-jump-kick/
-            if (user.substitute && target.substitute) {
+            if (user.v.substitute && target.v.substitute) {
                 target.inflictDamage(1, user, battle, false, "attacked");
-            } else if (!user.substitute) {
+            } else if (!user.v.substitute) {
                 return user.inflictDamage(1, user, battle, false, "crash", true).dead;
             }
         } else if (this.flag === "explosion") {
@@ -261,7 +261,7 @@ export class DamagingMove extends Move {
 
     private getDamage(user: ActivePokemon, target: ActivePokemon) {
         // https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_I
-        const eff = getEffectiveness(this.type, target.types);
+        const eff = getEffectiveness(this.type, target.v.types);
         if (this.flag === "dream_eater" && target.base.status !== "slp") {
             return { dmg: 0, isCrit: false, eff: 1 };
         } else if (this.flag === "level") {
@@ -280,17 +280,17 @@ export class DamagingMove extends Move {
         const baseSpe = user.base.species.stats.spe;
         let chance: number;
         if (this.flag === "high_crit") {
-            chance = user.flags.focus ? 4 * Math.floor(baseSpe / 4) : 8 * Math.floor(baseSpe / 2);
+            chance = user.v.flags.focus ? 4 * Math.floor(baseSpe / 4) : 8 * Math.floor(baseSpe / 2);
         } else {
-            chance = Math.floor(user.flags.focus ? baseSpe / 8 : baseSpe / 2);
+            chance = Math.floor(user.v.flags.focus ? baseSpe / 8 : baseSpe / 2);
         }
 
         const isCrit = randChance255(chance);
         const [atks, defs] = isSpecial(this.type)
             ? (["spc", "spc"] as const)
             : (["atk", "def"] as const);
-        const ls = atks === "spc" && target.flags.light_screen;
-        const reflect = atks === "atk" && target.flags.reflect;
+        const ls = atks === "spc" && target.v.flags.light_screen;
+        const reflect = atks === "atk" && target.v.flags.reflect;
         const explosion = this.flag === "explosion" ? 2 : 1;
         const dmg = calcDamage({
             lvl: user.base.level,
@@ -298,7 +298,7 @@ export class DamagingMove extends Move {
             crit: isCrit ? 2 : 1,
             atk: user.getStat(atks, isCrit),
             def: Math.floor(target.getStat(defs, isCrit, true, ls || reflect) / explosion),
-            stab: user.types.includes(this.type) ? 1.5 : 1,
+            stab: user.v.types.includes(this.type) ? 1.5 : 1,
             eff,
         });
         if (dmg === 0) {

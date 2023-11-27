@@ -7,7 +7,7 @@ import {
     AlwaysFailMove,
     RecoveryMove,
 } from "../game/moves";
-import type { ActivePokemon } from "../game/battle";
+import type { ActivePokemon, VolatileStats } from "../game/battle";
 import { moveList, type MoveId } from "../game/moveList";
 import type { SpeciesId } from "../game/species";
 import type { Stages, Type } from "../game/utils";
@@ -19,7 +19,7 @@ export type ClientActivePokemon = {
     level: number;
     stages: Partial<Record<Stages, number>>;
     status?: Status;
-    stats?: ActivePokemon["stats"];
+    stats?: VolatileStats;
     transformed?: SpeciesId;
     conversion?: Type[];
 };

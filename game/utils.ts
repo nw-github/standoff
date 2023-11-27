@@ -1,4 +1,4 @@
-import type { ActivePokemon, Battle } from "./battle";
+import type { ActivePokemon } from "./battle";
 
 export type Stages = (typeof stageKeys)[number];
 
@@ -56,8 +56,8 @@ export const hpPercent = (current: number, max: number) => {
 export const scaleAccuracy255 = (acc: number, user: ActivePokemon, target: ActivePokemon) => {
     // https://bulbapedia.bulbagarden.net/wiki/Accuracy#Generation_I_and_II
     acc *=
-        (stageMultipliers[user.stages["acc"]] / 100) *
-        (stageMultipliers[-target.stages["eva"]] / 100);
+        (stageMultipliers[user.v.stages["acc"]] / 100) *
+        (stageMultipliers[-target.v.stages["eva"]] / 100);
     return clamp(Math.floor(acc), 1, 255);
 };
 

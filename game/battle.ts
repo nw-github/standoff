@@ -113,7 +113,7 @@ export class Player {
         }
 
         const moves: MoveChoice[] = this.active.base.moves.map((m, i) => {
-            const move = this.active.mimic?.indexInMoves === i ? this.active.mimic?.move : m;
+            const move = this.active.v.mimic?.indexInMoves === i ? this.active.v.mimic?.move : m;
             return {
                 move,
                 pp: this.active.base.pp[i],
@@ -129,9 +129,9 @@ export class Player {
             }
         } else if (moves.every(move => !move.valid)) {
             const metronome = [
-                this.active.charging,
-                this.active.thrashing?.move,
-                this.active.recharge,
+                this.active.v.charging,
+                this.active.v.thrashing?.move,
+                this.active.v.recharge,
             ];
 
             let found = false;
@@ -150,7 +150,8 @@ export class Player {
             }
         }
 
-        const canSwitch = !this.active.charging && !this.active.thrashing && !this.active.recharge;
+        const canSwitch =
+            !this.active.v.charging && !this.active.v.thrashing && !this.active.v.recharge;
         this.choices = {
             canSwitch: canSwitch || this.active.base.hp === 0,
             moves,
@@ -167,11 +168,11 @@ export class Player {
         //          is the user forced to recharge hyper beam ? struggle? does it recharge and fail?
         //       user clicks skull bash, opponent disables:
 
-        if (this.active.recharge && this.active.recharge !== moveList[move]) {
+        if (this.active.v.recharge && this.active.v.recharge !== moveList[move]) {
             return false;
-        } else if (this.active.charging && this.active.charging !== moveList[move]) {
+        } else if (this.active.v.charging && this.active.v.charging !== moveList[move]) {
             return false;
-        } else if (this.active.thrashing && this.active.thrashing.move !== moveList[move]) {
+        } else if (this.active.v.thrashing && this.active.v.thrashing.move !== moveList[move]) {
             return false;
         } else if (this.active.base.status === "frz") {
             // https://bulbapedia.bulbagarden.net/wiki/List_of_battle_glitches_(Generation_I)#Defrost_move_forcing
@@ -182,12 +183,12 @@ export class Player {
             // Gen 1 also doesn't let you pick your move while asleep, but you can't wake up and act
             // on the same turn, nor can you act on the turn haze removes your non-volatile status,
             // so it doesn't matter.
-            if (this.active.lastMoveIndex && this.active.lastMoveIndex !== i) {
+            if (this.active.v.lastMoveIndex && this.active.v.lastMoveIndex !== i) {
                 return false;
             }
 
-            return this.active.lastMoveIndex ? true : i === 0;
-        } else if (moveList[move] === this.active.disabled?.move) {
+            return this.active.v.lastMoveIndex ? true : i === 0;
+        } else if (moveList[move] === this.active.v.disabled?.move) {
             return false;
         } else if (this.active.base.pp[i] === 0) {
             return false;
@@ -206,12 +207,11 @@ export class Battle {
 
     private constructor(player1: Player, player2: Player) {
         this.players = [player1, player2];
-        const rev = new Map<Move, MoveId>();
+        this.moveListToId = new Map<Move, MoveId>();
         for (const k in moveList) {
             // @ts-ignore
-            rev.set(moveList[k], k);
+            this.moveListToId.set(moveList[k], k);
         }
-        this.moveListToId = rev;
     }
 
     static start(player1: Player, player2: Player) {
@@ -292,15 +292,15 @@ export class Battle {
         const target = this.opponentOf(user.owner).active;
         const isSwitchMove = move instanceof SwitchMove;
         if (!isSwitchMove) {
-            if (user.flinch) {
+            if (user.v.flinch) {
                 this.pushEvent({
                     type: "info",
                     id: user.owner.id,
                     why: "flinch",
                 });
-                user.recharge = undefined;
+                user.v.recharge = undefined;
                 return false;
-            } else if (user.hazed) {
+            } else if (user.v.hazed) {
                 return false;
             } else if (user.base.status === "frz") {
                 this.pushEvent({
@@ -321,26 +321,26 @@ export class Battle {
                     why: done ? "wake" : "sleep",
                 });
                 return false;
-            } else if (user.recharge) {
+            } else if (user.v.recharge) {
                 this.pushEvent({
                     type: "info",
                     id: user.owner.id,
                     why: "recharge",
                 });
-                user.recharge = undefined;
+                user.v.recharge = undefined;
                 return false;
             }
 
-            if (user.disabled && --user.disabled.turns === 0) {
-                user.disabled = undefined;
+            if (user.v.disabled && --user.v.disabled.turns === 0) {
+                user.v.disabled = undefined;
                 this.pushEvent({ type: "info", id: user.owner.id, why: "disable_end" });
             }
 
-            if (user.confusion) {
+            if (user.v.confusion) {
                 this.pushEvent({
                     type: "info",
                     id: user.owner.id,
-                    why: --user.confusion === 0 ? "confused_end" : "confused",
+                    why: --user.v.confusion === 0 ? "confused_end" : "confused",
                 });
             }
 
@@ -351,12 +351,12 @@ export class Battle {
                     why: "paralyze",
                 });
 
-                user.charging = undefined;
-                if (user.thrashing?.turns !== -1) {
-                    user.thrashing = undefined;
+                user.v.charging = undefined;
+                if (user.v.thrashing?.turns !== -1) {
+                    user.v.thrashing = undefined;
                 }
                 return false;
-            } else if (user.confusion && randChance255(floatTo255(50))) {
+            } else if (user.v.confusion && randChance255(floatTo255(50))) {
                 if (user.handleConfusionDamage(this, target)) {
                     if (user.owner.isAllDead()) {
                         this._victor = target.owner;
@@ -385,9 +385,7 @@ export class Battle {
                     this._victor = target.owner;
                 }
                 return true;
-            }
-
-            if (user.seeded && user.tickCounter(this, "seeded")) {
+            } else if (user.v.flags.seeded && user.tickCounter(this, "seeded")) {
                 if (user.owner.isAllDead()) {
                     this._victor = target.owner;
                 }
@@ -405,52 +403,25 @@ export class Battle {
 
         for (const player of this.players) {
             player.choice = undefined;
-            player.active.handledStatus = false;
-            player.active.hazed = false;
-            player.active.flinch = false;
+            player.active.v.handledStatus = false;
+            player.active.v.hazed = false;
+            player.active.v.flinch = false;
             player.updateChoices(this);
         }
 
         const switchTurn = this.switchTurn;
         this.switchTurn = this.players.some(pl => pl.active.base.hp <= 0);
-
-        return {
-            events: this.events.splice(0),
-            switchTurn,
-        };
+        return { events: this.events.splice(0), switchTurn };
     }
 }
 
-export type BooleanFlag = (typeof booleanFlags)[number];
-
-export const booleanFlags = ["light_screen", "reflect", "mist", "focus"] as const;
-
 export class ActivePokemon {
-    readonly owner: Player;
-    readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };
-    stats = { atk: 0, def: 0, spc: 0, spe: 0 };
-    types: Type[] = [];
-    base: Pokemon;
-    flags: Partial<Record<BooleanFlag, boolean>> = {};
-    substitute = 0;
-    confusion = 0;
-    counter = 1;
-    flinch = false;
-    seeded = false;
-    invuln = false;
-    handledStatus = false;
-    hazed = false;
-    charging?: Move;
-    recharge?: Move;
-    lastMove?: Move;
-    lastMoveIndex?: number;
-    thrashing?: { move: Move; turns: number; acc?: number };
-    disabled?: { move: Move; turns: number };
-    mimic?: { move: MoveId; indexInMoves: number };
+    v: Volatiles;
 
-    constructor(base: Pokemon, owner: Player) {
+    constructor(public base: Pokemon, public readonly owner: Player) {
         this.base = base;
         this.owner = owner;
+        this.v = new Volatiles(base);
     }
 
     switchTo(base: Pokemon, battle: Battle) {
@@ -471,40 +442,11 @@ export class ActivePokemon {
         });
 
         this.base = base;
-        for (const k of stageKeys) {
-            this.stages[k] = 0;
-        }
-
-        for (const k of booleanFlags) {
-            this.flags[k] = false;
-        }
-
-        this.types = [...base.species.types];
-        this.stats = { ...base.stats };
-        this.substitute = 0;
-        this.confusion = 0;
-        this.counter = 1;
-        this.seeded = false;
-        this.invuln = false;
-        this.handledStatus = false;
-        this.hazed = false;
-        this.flinch = false;
-        this.lastMove = undefined;
-        this.lastMoveIndex = undefined;
-        this.thrashing = undefined;
-        this.disabled = undefined;
-        this.charging = undefined;
-        this.recharge = undefined;
-        this.mimic = undefined;
+        this.v = new Volatiles(base);
         this.applyStatusDebuff();
     }
 
-    getStat(
-        stat: keyof ActivePokemon["stats"],
-        isCrit?: boolean,
-        def?: boolean,
-        screen?: boolean
-    ): number {
+    getStat(stat: keyof VolatileStats, isCrit?: boolean, def?: boolean, screen?: boolean): number {
         if (!def && isCrit && this.base instanceof TransformedPokemon) {
             return this.base.base.stats[stat];
         }
@@ -513,7 +455,7 @@ export class ActivePokemon {
             return this.base.stats[stat];
         }
 
-        let res = this.stats[stat];
+        let res = this.v.stats[stat];
         if (screen) {
             res *= 2;
             if (res > 1024) {
@@ -533,22 +475,22 @@ export class ActivePokemon {
         direct?: boolean,
         eff?: number
     ) {
-        if (this.substitute !== 0 && !direct) {
-            const hpBefore = this.substitute;
-            this.substitute = Math.max(this.substitute - dmg, 0);
+        if (this.v.substitute !== 0 && !direct) {
+            const hpBefore = this.v.substitute;
+            this.v.substitute = Math.max(this.v.substitute - dmg, 0);
             const event = battle.pushEvent<HitSubstituteEvent>({
                 type: "hit_sub",
                 src: src.owner.id,
                 target: this.owner.id,
-                broken: this.substitute === 0,
+                broken: this.v.substitute === 0,
                 confusion: why === "confusion",
                 eff,
             });
             this.handleRage(battle);
             return {
                 event,
-                dealt: hpBefore - this.substitute,
-                brokeSub: this.substitute === 0,
+                dealt: hpBefore - this.v.substitute,
+                brokeSub: this.v.substitute === 0,
                 dead: false,
             };
         } else {
@@ -591,42 +533,39 @@ export class ActivePokemon {
             hpBefore,
             why,
         });
-        return;
     }
 
-    inflictStatus(status: Status, battle: Battle, override: boolean = false) {
+    inflictStatus(status: Status, battle: Battle, override = false) {
         if (!override && this.base.status) {
             return false;
         }
 
         if (status === "slp") {
-            this.recharge = undefined;
+            this.v.recharge = undefined;
             this.base.sleep_turns = randRangeInclusive(1, 7);
-        }
-
-        if (status === "tox") {
-            this.counter = 1;
+        } else if (status === "tox") {
+            this.v.counter = 1;
         }
 
         this.base.status = status;
-        this.handledStatus = false;
+        this.v.handledStatus = false;
         this.applyStatusDebuff();
         battle.pushEvent({
             type: "status",
             id: this.owner.id,
             status,
-            stats: { ...this.stats },
+            stats: { ...this.v.stats },
         });
 
         return true;
     }
 
     inflictStages(user: Player, mods: [Stages, number][], battle: Battle) {
-        mods = mods.filter(([stat]) => Math.abs(this.stages[stat]) !== 6);
+        mods = mods.filter(([stat]) => Math.abs(this.v.stages[stat]) !== 6);
 
         const opponent = battle.opponentOf(user).active;
         for (const [stat, count] of mods) {
-            this.stages[stat] = clamp(this.stages[stat] + count, -6, 6);
+            this.v.stages[stat] = clamp(this.v.stages[stat] + count, -6, 6);
 
             if (stat === "atk" || stat === "def" || stat == "spc" || stat === "spe") {
                 this.applyStages(stat, count < 0);
@@ -641,7 +580,7 @@ export class ActivePokemon {
                 type: "stages",
                 id: this.owner.id,
                 stages: mods,
-                stats: { ...this.stats },
+                stats: { ...this.v.stats },
             });
         }
 
@@ -649,11 +588,11 @@ export class ActivePokemon {
     }
 
     inflictConfusion(battle: Battle, thrashing?: true) {
-        if (!thrashing && this.confusion) {
+        if (!thrashing && this.v.confusion) {
             return false;
         }
 
-        this.confusion = randRangeInclusive(2, 5);
+        this.v.confusion = randRangeInclusive(2, 5);
         if (!thrashing) {
             battle.pushEvent({
                 type: "info",
@@ -665,7 +604,7 @@ export class ActivePokemon {
     }
 
     tickCounter(battle: Battle, why: DamageReason) {
-        const multiplier = this.base.status === "psn" && why === "psn" ? 1 : this.counter;
+        const multiplier = this.base.status === "psn" && why === "psn" ? 1 : this.v.counter;
         const dmg = Math.max(Math.floor((multiplier * this.base.stats.hp) / 16), 1);
         const { dead } = this.inflictDamage(dmg, this, battle, false, why, true);
         const opponent = battle.opponentOf(this.owner).active;
@@ -674,26 +613,22 @@ export class ActivePokemon {
         }
 
         if (this.base.status === "tox") {
-            this.counter++;
+            this.v.counter++;
         }
         return dead;
     }
 
     handleStatusDamage(battle: Battle) {
-        if (this.handledStatus) {
+        if (this.v.handledStatus) {
             return false;
         }
 
-        this.handledStatus = true;
+        this.v.handledStatus = true;
         if (this.base.status === "tox" && this.tickCounter(battle, "psn")) {
             return true;
-        }
-
-        if (this.base.status === "brn" && this.tickCounter(battle, "brn")) {
+        } else if (this.base.status === "brn" && this.tickCounter(battle, "brn")) {
             return true;
-        }
-
-        if (this.base.status === "psn" && this.tickCounter(battle, "psn")) {
+        } else if (this.base.status === "psn" && this.tickCounter(battle, "psn")) {
             return true;
         }
 
@@ -701,7 +636,7 @@ export class ActivePokemon {
     }
 
     handleRage(battle: Battle) {
-        if (this.base.hp && this.thrashing?.move === moveList.rage && this.stages.atk < 6) {
+        if (this.base.hp && this.v.thrashing?.move === moveList.rage && this.v.stages.atk < 6) {
             battle.pushEvent({
                 type: "info",
                 id: this.owner.id,
@@ -713,11 +648,9 @@ export class ActivePokemon {
 
     applyStatusDebuff() {
         if (this.base.status === "brn") {
-            this.stats.atk = Math.floor(Math.max(this.stats.atk / 2, 1));
-        }
-
-        if (this.base.status === "par") {
-            this.stats.spe = Math.floor(Math.max(this.stats.spe / 4, 1));
+            this.v.stats.atk = Math.floor(Math.max(this.v.stats.atk / 2, 1));
+        } else if (this.base.status === "par") {
+            this.v.stats.spe = Math.floor(Math.max(this.v.stats.spe / 4, 1));
         }
     }
 
@@ -726,30 +659,67 @@ export class ActivePokemon {
             lvl: this.base.level,
             crit: 1,
             pow: 40,
-            def: this.getStat("def", false, true, target.flags.reflect),
-            atk: this.stats.atk,
+            def: this.getStat("def", false, true, target.v.flags.reflect),
+            atk: this.v.stats.atk,
             stab: 1,
             eff: 1,
         });
 
-        if (this.substitute && target.substitute) {
+        if (this.v.substitute && target.v.substitute) {
             target.inflictDamage(dmg, this, battle, false, "confusion");
-        } else if (!this.substitute) {
+        } else if (!this.v.substitute) {
             return this.inflictDamage(dmg, this, battle, false, "confusion").dead;
         }
 
         return false;
     }
 
-    applyStages(stat: keyof ActivePokemon["stats"], negative: boolean) {
-        this.stats[stat] = Math.floor(
-            this.base.stats[stat] * (stageMultipliers[this.stages[stat]] / 100)
+    applyStages(stat: keyof VolatileStats, negative: boolean) {
+        this.v.stats[stat] = Math.floor(
+            this.base.stats[stat] * (stageMultipliers[this.v.stages[stat]] / 100)
         );
         // https://www.smogon.com/rb/articles/rby_mechanics_guide#stat-mechanics
         if (negative) {
-            this.stats[stat] %= 1024;
+            this.v.stats[stat] %= 1024;
         } else {
-            this.stats[stat] = clamp(this.stats[stat], 1, 999);
+            this.v.stats[stat] = clamp(this.v.stats[stat], 1, 999);
         }
+    }
+}
+
+export type VolatileFlag = (typeof volatileFlags)[number];
+
+export const volatileFlags = ["light_screen", "reflect", "mist", "focus", "seeded"] as const;
+
+export type VolatileStats = Volatiles["stats"];
+
+class Volatiles {
+    readonly stages = { atk: 0, def: 0, spc: 0, spe: 0, acc: 0, eva: 0 };
+    stats;
+    types: Type[];
+    flags: Partial<Record<VolatileFlag, boolean>> = {};
+    substitute = 0;
+    confusion = 0;
+    counter = 1;
+    flinch = false;
+    invuln = false;
+    handledStatus = false;
+    hazed = false;
+    charging?: Move;
+    recharge?: Move;
+    lastMove?: Move;
+    lastMoveIndex?: number;
+    thrashing?: { move: Move; turns: number; acc?: number };
+    disabled?: { move: Move; turns: number };
+    mimic?: { move: MoveId; indexInMoves: number };
+
+    constructor(base: Pokemon) {
+        this.types = [...base.species.types];
+        this.stats = {
+            atk: base.stats.atk,
+            def: base.stats.def,
+            spc: base.stats.spc,
+            spe: base.stats.spe,
+        };
     }
 }

@@ -24,7 +24,7 @@ export class StatusMove extends Move {
     }
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
-        if (target.substitute && this.status !== "par" && this.status !== "slp") {
+        if (target.v.substitute && this.status !== "par" && this.status !== "slp") {
             battle.pushEvent({
                 type: "info",
                 id: target.owner.id,
@@ -34,8 +34,8 @@ export class StatusMove extends Move {
         }
 
         if (
-            (this.type === "electric" && getEffectiveness(this.type, target.types) === 0) ||
-            (this.type === "poison" && target.types.includes("poison"))
+            (this.type === "electric" && getEffectiveness(this.type, target.v.types) === 0) ||
+            (this.type === "poison" && target.v.types.includes("poison"))
         ) {
             battle.pushEvent({
                 type: "info",
@@ -45,7 +45,7 @@ export class StatusMove extends Move {
             return false;
         }
 
-        if (this.status === "slp" && target.recharge) {
+        if (this.status === "slp" && target.v.recharge) {
             // https://www.youtube.com/watch?v=x2AgAdQwyGI
             target.inflictStatus(this.status, battle, true);
             return false;

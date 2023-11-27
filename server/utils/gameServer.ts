@@ -444,7 +444,9 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
                 // FIXME: this might not be accurate if two status moves were used in the same turn.
                 result[i] = {
                     ...e,
-                    stats: player ? { ...player.active.stats } : { atk: 0, def: 0, spc: 0, spe: 0 },
+                    stats: player
+                        ? { ...player.active.v.stats }
+                        : { atk: 0, def: 0, spc: 0, spe: 0 },
                 };
             }
         }

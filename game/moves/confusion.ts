@@ -8,7 +8,7 @@ export class ConfusionMove extends Move {
     }
 
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
-        if (target.substitute) {
+        if (target.v.substitute) {
             battle.pushEvent({
                 type: "info",
                 id: target.owner.id,

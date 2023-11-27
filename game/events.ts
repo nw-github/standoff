@@ -1,4 +1,4 @@
-import type { ActivePokemon, BooleanFlag } from "./battle";
+import type { ActivePokemon, VolatileFlag, VolatileStats } from "./battle";
 import type { MoveId } from "./moveList";
 import { type Status } from "./pokemon";
 import type { SpeciesId } from "./species";
@@ -103,14 +103,14 @@ type StatusEvent = {
     type: "status";
     id: PlayerId;
     status: Status;
-    stats: ActivePokemon["stats"];
+    stats: VolatileStats;
 };
 
 type StagesEvent = {
     type: "stages";
     id: PlayerId;
     stages: [Stages, number][];
-    stats: ActivePokemon["stats"];
+    stats: VolatileStats;
 };
 
 export type FailReason =
@@ -125,10 +125,9 @@ export type FailReason =
     | "whirlwind";
 
 export type InfoReason =
-    | BooleanFlag
+    | VolatileFlag
     | FailReason
     | "payday"
-    | "seeded"
     | "became_confused"
     | "confused"
     | "confused_end"

@@ -1,9 +1,9 @@
-import type { ActivePokemon, Battle, BooleanFlag } from "../battle";
+import type { ActivePokemon, Battle, VolatileFlag } from "../battle";
 import { Move } from "./move";
 import type { Type } from "../utils";
 
-export class BooleanFlagMove extends Move {
-    readonly flag: BooleanFlag;
+export class VolatileFlagMove extends Move {
+    readonly flag: VolatileFlag;
 
     constructor({
         name,
@@ -15,7 +15,7 @@ export class BooleanFlagMove extends Move {
         name: string;
         pp: number;
         type: Type;
-        flag: BooleanFlag;
+        flag: VolatileFlag;
         acc?: number;
     }) {
         super(name, pp, type, acc);
@@ -23,14 +23,14 @@ export class BooleanFlagMove extends Move {
     }
 
     override execute(battle: Battle, user: ActivePokemon): boolean {
-        if (user.flags[this.flag]) {
+        if (user.v.flags[this.flag]) {
             battle.pushEvent({
                 type: "info",
                 id: user.owner.id,
                 why: "fail_generic",
             });
         } else {
-            user.flags[this.flag] = true;
+            user.v.flags[this.flag] = true;
             battle.pushEvent({
                 type: "info",
                 id: user.owner.id,

@@ -20,15 +20,19 @@ export abstract class Move {
             return true;
         }
 
-        const chance = scaleAccuracy255(user.thrashing?.acc ?? floatTo255(this.acc), user, target);
+        const chance = scaleAccuracy255(
+            user.v.thrashing?.acc ?? floatTo255(this.acc),
+            user,
+            target
+        );
         // https://www.smogon.com/dex/rb/moves/petal-dance/
         // https://www.youtube.com/watch?v=NC5gbJeExbs
-        if (user.thrashing) {
-            user.thrashing.acc = chance;
+        if (user.v.thrashing) {
+            user.v.thrashing.acc = chance;
         }
 
         console.log(`Accuracy: ${this.acc} (${chance}/256)`);
-        if (target.invuln || !randChance255(chance)) {
+        if (target.v.invuln || !randChance255(chance)) {
             battle.pushEvent({
                 type: "info",
                 id: user.owner.id,
@@ -40,7 +44,7 @@ export abstract class Move {
     }
 
     use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number) {
-        if (this === user.disabled?.move) {
+        if (this === user.v.disabled?.move) {
             battle.pushEvent({
                 type: "move",
                 src: user.owner.id,
@@ -50,21 +54,21 @@ export abstract class Move {
             return false;
         }
 
-        if (moveIndex !== undefined && !user.thrashing) {
+        if (moveIndex !== undefined && !user.v.thrashing) {
             user.base.pp[moveIndex]--;
             if (user.base.pp[moveIndex] < 0) {
                 user.base.pp[moveIndex] = 63;
             }
-            user.lastMoveIndex = moveIndex;
+            user.v.lastMoveIndex = moveIndex;
         }
 
         battle.pushEvent({
             type: "move",
             src: user.owner.id,
             move: battle.moveIdOf(this)!,
-            thrashing: user.thrashing ? true : undefined,
+            thrashing: user.v.thrashing ? true : undefined,
         });
-        user.lastMove = this;
+        user.v.lastMove = this;
         return this.execute(battle, user, target);
     }
 

@@ -1,7 +1,7 @@
-import { booleanFlags } from "./battle";
+import { volatileFlags } from "./battle";
 import {
     Move,
-    BooleanFlagMove,
+    VolatileFlagMove,
     ConfusionMove,
     DamagingMove,
     AlwaysFailMove,
@@ -41,12 +41,12 @@ export const moveList = Object.freeze({
         pp: 30,
         type: "normal",
         execute(battle, user, target) {
-            user.types = [...target.types];
+            user.v.types = [...target.v.types];
             battle.pushEvent({
                 type: "conversion",
                 user: user.owner.id,
                 target: target.owner.id,
-                types: [...user.types],
+                types: [...user.v.types],
             });
 
             return false;
@@ -59,7 +59,7 @@ export const moveList = Object.freeze({
         acc: 55,
         execute(battle, user, target) {
             const choices = target.base.moves.filter((_, i) => target.base.pp[i] !== 0);
-            if (!choices.length || target.disabled) {
+            if (!choices.length || target.v.disabled) {
                 battle.pushEvent({
                     type: "info",
                     id: target.owner.id,
@@ -75,7 +75,7 @@ export const moveList = Object.freeze({
             }
 
             const move = randChoice(choices);
-            target.disabled = { move: moveList[move], turns: randRangeInclusive(1, 8) };
+            target.v.disabled = { move: moveList[move], turns: randRangeInclusive(1, 8) };
             battle.pushEvent({
                 type: "disable",
                 id: target.owner.id,
@@ -97,19 +97,18 @@ export const moveList = Object.freeze({
             });
 
             for (const k of stageKeys) {
-                user.stages[k] = target.stages[k] = 0;
+                user.v.stages[k] = target.v.stages[k] = 0;
             }
 
-            for (const k of booleanFlags) {
-                user.flags[k] = target.flags[k] = false;
+            for (const k of volatileFlags) {
+                user.v.flags[k] = target.v.flags[k] = false;
             }
 
-            user.counter = target.counter = 0;
-            user.confusion = target.confusion = 0;
-            user.seeded = target.seeded = false;
-            user.disabled = target.disabled = undefined;
-            user.stats = { ...user.base.stats };
-            target.stats = { ...target.base.stats };
+            user.v.counter = target.v.counter = 0;
+            user.v.confusion = target.v.confusion = 0;
+            user.v.disabled = target.v.disabled = undefined;
+            user.v.stats = { ...user.base.stats };
+            target.v.stats = { ...target.base.stats };
 
             if (user.base.status === "tox") {
                 user.base.status = "psn";
@@ -123,7 +122,7 @@ export const moveList = Object.freeze({
                 });
 
                 target.base.sleep_turns = 0;
-                target.hazed = true;
+                target.v.hazed = true;
             }
 
             target.base.status = undefined;
@@ -136,7 +135,7 @@ export const moveList = Object.freeze({
         type: "grass",
         acc: 80,
         execute(battle, user, target) {
-            if (target.types.includes(this.type)) {
+            if (target.v.types.includes(this.type)) {
                 battle.pushEvent({
                     type: "info",
                     id: target.owner.id,
@@ -145,7 +144,7 @@ export const moveList = Object.freeze({
                 return false;
             }
 
-            if (target.seeded) {
+            if (target.v.flags.seeded) {
                 battle.pushEvent({
                     type: "info",
                     id: target.owner.id,
@@ -158,7 +157,7 @@ export const moveList = Object.freeze({
                 return false;
             }
 
-            target.seeded = true;
+            target.v.flags.seeded = true;
             battle.pushEvent({
                 type: "info",
                 id: target.owner.id,
@@ -192,15 +191,15 @@ export const moveList = Object.freeze({
                 return false;
             }
 
-            user.mimic = {
-                indexInMoves: indexInMoves ?? user.lastMoveIndex ?? -1,
+            user.v.mimic = {
+                indexInMoves: indexInMoves ?? user.v.lastMoveIndex ?? -1,
                 move: randChoice(target.base.moves),
             };
 
             battle.pushEvent({
                 type: "mimic",
                 id: user.owner.id,
-                move: user.mimic.move,
+                move: user.v.mimic.move,
             });
             return false;
         },
@@ -210,7 +209,7 @@ export const moveList = Object.freeze({
         pp: 20,
         type: "flying",
         execute(battle, user, target) {
-            if (!target.lastMove || target.lastMove === this) {
+            if (!target.v.lastMove || target.v.lastMove === this) {
                 battle.pushEvent({
                     type: "info",
                     id: user.owner.id,
@@ -219,7 +218,7 @@ export const moveList = Object.freeze({
                 return false;
             }
 
-            return target.lastMove.use(battle, user, target);
+            return target.v.lastMove.use(battle, user, target);
         },
     }),
     psywave: new UniqueMove({
@@ -248,7 +247,7 @@ export const moveList = Object.freeze({
         pp: 10,
         type: "normal",
         execute(battle, user) {
-            if (user.substitute > 0) {
+            if (user.v.substitute > 0) {
                 battle.pushEvent({
                     type: "info",
                     id: user.owner.id,
@@ -269,7 +268,7 @@ export const moveList = Object.freeze({
             }
 
             const { dead } = user.inflictDamage(hp, user, battle, false, "substitute");
-            user.substitute = hp + 1;
+            user.v.substitute = hp + 1;
             return dead;
         },
     }),
@@ -305,13 +304,13 @@ export const moveList = Object.freeze({
             }
 
             for (const k of stageKeys) {
-                user.stages[k] = target.stages[k];
+                user.v.stages[k] = target.v.stages[k];
                 if (k === "atk" || k === "def" || k == "spc" || k === "spe") {
                     user.applyStages(k, false);
                 }
             }
 
-            user.types = [...target.types];
+            user.v.types = [...target.v.types];
             battle.pushEvent({
                 type: "transform",
                 src: user.owner.id,
@@ -321,25 +320,25 @@ export const moveList = Object.freeze({
         },
     }),
     // --
-    focusenergy: new BooleanFlagMove({
+    focusenergy: new VolatileFlagMove({
         name: "Focus Energy",
         pp: 30,
         type: "normal",
         flag: "focus",
     }),
-    lightscreen: new BooleanFlagMove({
+    lightscreen: new VolatileFlagMove({
         name: "Light Screen",
         pp: 30,
         type: "psychic",
         flag: "light_screen",
     }),
-    mist: new BooleanFlagMove({
+    mist: new VolatileFlagMove({
         name: "Mist",
         pp: 30,
         type: "ice",
         flag: "mist",
     }),
-    reflect: new BooleanFlagMove({
+    reflect: new VolatileFlagMove({
         name: "Reflect",
         pp: 20,
         type: "psychic",
