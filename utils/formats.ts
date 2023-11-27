@@ -2,105 +2,90 @@ import { Pokemon } from "../game/pokemon";
 import { moveList, type MoveId } from "../game/moveList";
 import { speciesList, type Species, type SpeciesId } from "../game/species";
 import { randChoice } from "../game/utils";
-import { AlwaysFailMove, TrappingMove } from "../game/moves";
+import { AlwaysFailMove, Move, TrappingMove } from "../game/moves";
 
 export const battleFormats = ["truly_randoms", "randoms", "randoms_nfe", "metronome"] as const;
 
 export type FormatId = (typeof battleFormats)[number];
-
-const getMovePool = () => {
-    const movePool = Object.keys(moveList) as MoveId[];
-    const bad: MoveId[] = ["payday", "absorb", "focusenergy"];
-    for (const move of bad) {
-        movePool.splice(movePool.indexOf(move), 1);
-    }
-    return movePool;
-};
 
 type FormatDesc = {
     generate?(): Pokemon[];
     validate?(team: Pokemon[]): string | undefined;
 };
 
+const speciesIds = Object.keys(speciesList) as SpeciesId[];
+
 const getRandomPokemon = (
     count: number,
     validSpecies: (s: Species, id: SpeciesId) => boolean,
     customize: (s: Species, id: SpeciesId) => Pokemon
 ) => {
-    return (Object.keys(speciesList) as SpeciesId[])
+    return speciesIds
         .filter(id => validSpecies(speciesList[id], id))
         .sort(() => Math.random() - 0.5)
         .slice(0, count)
         .map(id => customize(speciesList[id], id));
 };
 
-const isBadMove = (move: MoveId, moves: MoveId[]) => {
-    return (
-        moves.includes(move) ||
-        move === "struggle" ||
-        move === "bide" ||
-        move === "counter" ||
-        move === "focusenergy" ||
-        moveList[move] instanceof AlwaysFailMove ||
-        moveList[move] instanceof TrappingMove
-    );
+const getRandomMoves = (
+    count: number,
+    moves: MoveId[],
+    validMove: (m: Move, id: MoveId) => boolean
+) => {
+    return moves
+        .filter(id => validMove(moveList[id], id))
+        .sort(() => Math.random() - 0.5)
+        .slice(0, count);
+};
+
+const badMoves = new Set<MoveId>([
+    "struggle",
+    "bide",
+    "counter",
+    "focusenergy",
+    "payday",
+    "absorb",
+    "focusenergy",
+]);
+
+const uselessNfe = new Set<SpeciesId>(["weedle", "metapod", "kakuna", "magikarp", "caterpie"]);
+
+const isBadMove = (move: Move, id: MoveId) => {
+    return badMoves.has(id) || move instanceof AlwaysFailMove || move instanceof TrappingMove;
 };
 
 const randoms = (validSpecies: (s: Species, id: SpeciesId) => boolean) => {
     return getRandomPokemon(6, validSpecies, (s, id) => {
-        const moves: MoveId[] = [];
-
-        let pool = s.moves;
-        const stab = pool.filter(m => {
+        const moves = getRandomMoves(4, s.moves, (move, id) => !isBadMove(move, id));
+        const stab = s.moves.filter(m => {
             const move = moveList[m];
-            return (move.power ?? 0) > 40 && s.types.includes(move.type);
+            return (move.power ?? 0) > 40 && s.types.includes(move.type) && !moves.includes(m);
         });
         if (stab.length) {
-            moves.push(randChoice(stab));
+            moves[0] = randChoice(stab);
         }
-
-        do {
-            pool = pool.filter(move => !isBadMove(move, moves));
-            if (!pool.length) {
-                break;
-            }
-            moves.push(randChoice(pool));
-        } while (moves.length < 4);
         return new Pokemon(id, {}, {}, 100, moves);
     });
 };
 
-const uselessNfe = new Set<SpeciesId>(["weedle", "metapod", "kakuna", "magikarp", "caterpie"]);
-
 export const formatDescs: Record<FormatId, FormatDesc> = {
     truly_randoms: {
         generate() {
-            const pool = getMovePool();
-            const randomMove = (moves: MoveId[]) => {
-                let move;
-                do {
-                    move = randChoice(pool);
-                } while (isBadMove(move, moves));
-                return move;
-            };
-
-            const randomMoves = (moves: MoveId[] = [], count: number = 4) => {
-                while (moves.length < count) {
-                    if (!pool.length) {
-                        pool.push(...getMovePool());
-                    }
-
-                    const move = randomMove(moves);
-                    pool.splice(pool.indexOf(move), 1);
-                    moves.push(move);
-                }
-                return moves;
-            };
-
             return getRandomPokemon(
                 6,
                 s => !s.evolves,
-                (_, id) => new Pokemon(id, {}, {}, 100, randomMoves())
+                (_, id) =>
+                    new Pokemon(
+                        id,
+                        {},
+                        {},
+                        100,
+                        getRandomMoves(
+                            4,
+                            Object.keys(moveList) as MoveId[],
+                            (move, id) => !isBadMove(move, id)
+                        )
+                    )
             );
         },
     },
