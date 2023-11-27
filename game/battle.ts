@@ -16,13 +16,12 @@ import {
     floatTo255,
     randChance255,
     randRangeInclusive,
-    stageKeys,
     stageMultipliers,
     type Stages,
     type Type,
 } from "./utils";
 
-export type MoveChoice = {
+export type MoveOption = {
     move: MoveId;
     valid: boolean;
     display: boolean;
@@ -61,7 +60,7 @@ export class Player {
     readonly team: Pokemon[];
     readonly id: PlayerId;
     choice?: ChosenMove;
-    choices?: { canSwitch: boolean; moves: MoveChoice[] };
+    options?: { canSwitch: boolean; moves: MoveOption[] };
 
     constructor(id: PlayerId, team: Pokemon[]) {
         this.active = new ActivePokemon(team[0], this);
@@ -74,65 +73,60 @@ export class Player {
     }
 
     chooseMove(index: number) {
-        const validChoice = this.choices?.moves[index];
-        if (!validChoice?.valid) {
+        const choice = this.options?.moves[index];
+        if (!choice?.valid) {
             return false;
         }
 
         this.choice = {
-            indexInMoves: validChoice.indexInMoves,
-            move: moveList[validChoice.move],
+            indexInMoves: choice.indexInMoves,
+            move: moveList[choice.move],
             user: this.active,
         };
         return true;
     }
 
     chooseSwitch(index: number) {
-        if (!this.choices?.canSwitch) {
+        if (!this.options?.canSwitch) {
             return false;
         }
 
-        const selected = this.team[index];
+        const poke = this.team[index];
         const current = this.active.base;
-        if (!selected || selected === current || !selected.hp) {
+        if (!poke || poke === current || !poke.hp) {
+            return false;
+        } else if (current instanceof TransformedPokemon && poke === current.base) {
             return false;
         }
 
-        if (current instanceof TransformedPokemon && selected === current.base) {
-            return false;
-        }
-
-        this.choice = { move: new SwitchMove(selected), user: this.active };
+        this.choice = { move: new SwitchMove(poke), user: this.active };
         return true;
     }
 
-    updateChoices(battle: Battle) {
-        if (battle.victor || (!battle.opponentOf(this).active.base.hp && this.active.base.hp)) {
-            this.choices = undefined;
+    updateOptions(battle: Battle) {
+        const { active } = this;
+        if (battle.victor || (!battle.opponentOf(this).active.base.hp && active.base.hp)) {
+            this.options = undefined;
             return;
         }
 
-        const moves: MoveChoice[] = this.active.base.moves.map((m, i) => {
-            const move = this.active.v.mimic?.indexInMoves === i ? this.active.v.mimic?.move : m;
+        const moves: MoveOption[] = active.base.moves.map((m, i) => {
+            const move = active.v.mimic?.indexInMoves === i ? active.v.mimic?.move : m;
             return {
                 move,
-                pp: this.active.base.pp[i],
+                pp: active.base.pp[i],
                 valid: this.isValidMove(move, i),
                 indexInMoves: i,
                 display: true,
             };
         });
 
-        if (!this.active.base.hp) {
+        if (!active.base.hp) {
             for (const move of moves) {
                 move.valid = false;
             }
         } else if (moves.every(move => !move.valid)) {
-            const metronome = [
-                this.active.v.charging,
-                this.active.v.thrashing?.move,
-                this.active.v.recharge,
-            ];
+            const metronome = [active.v.charging, active.v.thrashing?.move, active.v.recharge];
 
             let found = false;
             for (const move of metronome) {
@@ -145,17 +139,13 @@ export class Player {
             }
 
             if (!found) {
-                moves.forEach(move => (move.display = false));
+                moves.forEach(option => (option.display = false));
                 moves.push({ move: "struggle", valid: true, display: true });
             }
         }
 
-        const canSwitch =
-            !this.active.v.charging && !this.active.v.thrashing && !this.active.v.recharge;
-        this.choices = {
-            canSwitch: canSwitch || this.active.base.hp === 0,
-            moves,
-        };
+        const lockedIn = active.v.charging || active.v.thrashing || active.v.recharge;
+        this.options = { canSwitch: !lockedIn || active.base.hp === 0, moves };
     }
 
     isAllDead() {
@@ -243,13 +233,12 @@ export class Battle {
     }
 
     nextTurn() {
-        if (!this.players.every(player => !player.choices || player.choice)) {
+        if (!this.players.every(player => !player.options || player.choice)) {
             return;
         }
 
         const choices = this.players
-            .filter(player => player.choice)
-            .map(player => player.choice!)
+            .flatMap(({ choice }) => (choice ? [choice] : []))
             .sort((a, b) => {
                 const aPri = a.move.priority ?? 0,
                     bPri = b.move.priority ?? 0;
@@ -406,7 +395,7 @@ export class Battle {
             player.active.v.handledStatus = false;
             player.active.v.hazed = false;
             player.active.v.flinch = false;
-            player.updateChoices(this);
+            player.updateOptions(this);
         }
 
         const switchTurn = this.switchTurn;

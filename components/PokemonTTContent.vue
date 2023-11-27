@@ -36,11 +36,11 @@ const props = defineProps<{ active?: ClientActivePokemon; poke: Pokemon }>();
 const species = computed(() => speciesList[props.poke.speciesId]);
 
 const statClass = (stat: "atk" | "def" | "spe" | "spc") => {
-    if (!props.active || props.poke.stats[stat] === props.active.stats![stat]) {
+    if (!props.active?.stats || props.poke.stats[stat] === props.active.stats[stat]) {
         return "";
     }
 
-    return props.poke.stats[stat] > props.active.stats![stat] ? "down" : "up";
+    return props.poke.stats[stat] > props.active.stats[stat] ? "down" : "up";
 };
 </script>
 

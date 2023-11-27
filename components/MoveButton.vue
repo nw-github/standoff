@@ -1,9 +1,9 @@
 <template>
     <Tooltip>
-        <button @click="$emit('click')" :disabled="!choice.valid">
+        <button @click="$emit('click')" :disabled="!option.valid">
             <span class="name">{{ move.name }}</span>
             <span class="info">
-                {{ choice.pp !== undefined ? choice.pp : "--" }}/{{ move.pp }}
+                {{ option.pp !== undefined ? option.pp : "--" }}/{{ move.pp }}
             </span>
         </button>
 
@@ -34,16 +34,16 @@
 </template>
 
 <script setup lang="ts">
-import type { MoveChoice } from "../game/battle";
+import type { MoveOption } from "../game/battle";
 import { moveList } from "../game/moveList";
 import { isSpecial } from "../game/utils";
 
 defineEmits<{ (e: "click"): void }>();
 
-const { choice } = defineProps<{ choice: MoveChoice }>();
-const move = moveList[choice.move];
+const { option } = defineProps<{ option: MoveOption }>();
+const move = moveList[option.move];
 const category = move.power ? (isSpecial(move.type) ? "special" : "physical") : "status";
-const desc = describeMove(choice.move);
+const desc = describeMove(option.move);
 const bgColor = typeColor[move.type];
 
 const hex2rgba = (rgb: string, a: number) => {

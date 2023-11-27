@@ -58,8 +58,8 @@ export const moveList = Object.freeze({
         type: "normal",
         acc: 55,
         execute(battle, user, target) {
-            const choices = target.base.moves.filter((_, i) => target.base.pp[i] !== 0);
-            if (!choices.length || target.v.disabled) {
+            const options = target.base.moves.filter((_, i) => target.base.pp[i] !== 0);
+            if (!options.length || target.v.disabled) {
                 battle.pushEvent({
                     type: "info",
                     id: target.owner.id,
@@ -74,7 +74,7 @@ export const moveList = Object.freeze({
                 return false;
             }
 
-            const move = randChoice(choices);
+            const move = randChoice(options);
             target.v.disabled = { move: moveList[move], turns: randRangeInclusive(1, 8) };
             battle.pushEvent({
                 type: "disable",

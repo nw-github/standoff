@@ -14,13 +14,13 @@
             </div>
 
             <div class="selections">
-                <template v-if="choices && !selectionText.length">
+                <template v-if="options && !selectionText.length">
                     <div class="moves">
-                        <template v-for="(choice, i) in choices.moves">
+                        <template v-for="(option, i) in options.moves">
                             <MoveButton
                                 class="move-button"
-                                v-if="choice.display"
-                                :choice="choice"
+                                v-if="option.display"
+                                :option="option"
                                 @click="() => selectMove(i)"
                             />
                         </template>
@@ -31,12 +31,12 @@
                             class="switch-button"
                             v-for="(poke, i) in myTeam"
                             :poke="poke"
-                            :disabled="i === activeIndex || !choices.canSwitch"
+                            :disabled="i === activeIndex || !options.canSwitch"
                             @click="() => selectSwitch(i)"
                         />
                     </div>
                 </template>
-                <div class="cancel" v-else-if="choices">
+                <div class="cancel" v-else-if="options">
                     <div class="selection-text">{{ selectionText }}...</div>
                     <button @click="cancelMove">Cancel</button>
                 </div>
@@ -129,7 +129,7 @@ const props = defineProps<{ init: JoinRoomResponse; room: string }>();
 const myId = useMyId();
 const battlers = ref<string[]>([]);
 const players = reactive<Record<string, ClientPlayer>>({});
-const choices = ref<Player["choices"] | undefined>();
+const options = ref<Player["options"]>();
 const selectionText = ref("");
 const myTeam = ref<Pokemon[]>(props.init.team ?? []);
 const activeIndex = ref(0);
@@ -158,12 +158,12 @@ onMounted(async () => {
     hasLoaded.value = true;
 
     for (const turn of props.init.turns) {
-        await runTurn(turn, false, props.init.choices);
+        await runTurn(turn, false, props.init.options);
     }
 
-    $conn.on("nextTurn", async (roomId, turn, choices) => {
+    $conn.on("nextTurn", async (roomId, turn, options) => {
         if (roomId === props.room) {
-            await runTurn(turn, true, choices);
+            await runTurn(turn, true, options);
         }
     });
 
@@ -192,7 +192,7 @@ onMounted(async () => {
 
 const selectMove = (index: number) => {
     selectionText.value = `${players[myId.value].active!.name} will use ${
-        moveList[choices.value!.moves[index].move].name
+        moveList[options.value!.moves[index].move].name
     }`;
 
     $conn.emit("choose", props.room, index, "move", sequenceNo, err => {
@@ -225,8 +225,8 @@ const switchSide = () => {
     setPerspective(battlers.value.find(pl => pl !== perspective.value)!);
 };
 
-const runTurn = async (turn: Turn, live: boolean, newChoices?: Player["choices"]) => {
-    choices.value = undefined;
+const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]) => {
+    options.value = undefined;
     selectionText.value = "";
     sequenceNo++;
 
@@ -241,7 +241,7 @@ const runTurn = async (turn: Turn, live: boolean, newChoices?: Player["choices"]
                 }
 
                 activeIndex.value = e.indexInTeam;
-                player.active.stats = { ...activeInTeam.value!.stats };
+                player.active.stats = undefined;
             }
         } else if (e.type === "damage" || e.type === "recover") {
             players[e.target].active!.hp = e.hpAfter;
@@ -289,7 +289,7 @@ const runTurn = async (turn: Turn, live: boolean, newChoices?: Player["choices"]
                 }
 
                 if (battlers.value.includes(myId.value)) {
-                    players[myId.value].active!.stats = { ...activeInTeam.value!.stats };
+                    players[myId.value].active!.stats = undefined;
                 }
             } else if (e.why === "wake" || e.why === "thaw") {
                 players[e.id].active!.status = undefined;
@@ -299,9 +299,9 @@ const runTurn = async (turn: Turn, live: boolean, newChoices?: Player["choices"]
         }
     });
 
-    choices.value = newChoices;
-    if (newChoices && !players[myId.value].active?.transformed) {
-        for (const { pp, indexInMoves } of newChoices.moves) {
+    options.value = newOptions;
+    if (newOptions && !players[myId.value].active?.transformed) {
+        for (const { pp, indexInMoves } of newOptions.moves) {
             if (indexInMoves !== undefined && pp !== undefined) {
                 activeInTeam.value!.pp[indexInMoves] = pp;
             }

@@ -13,7 +13,7 @@ export type LoginResponse = {
 
 export type JoinRoomResponse = {
     team?: Pokemon[];
-    choices?: Player["choices"];
+    options?: Player["options"];
     players: { id: string; name: string; isSpectator: boolean }[];
     turns: Turn[];
 };
@@ -55,7 +55,7 @@ export interface ClientMessage {
 export interface ServerMessage {
     foundMatch: (room: string) => void;
 
-    nextTurn: (room: string, turn: Turn, choices?: Player["choices"]) => void;
+    nextTurn: (room: string, turn: Turn, options?: Player["options"]) => void;
 
     userJoin: (room: string, name: string, id: string, isSpectator: boolean) => void;
     userLeave: (room: string, id: string) => void;
@@ -160,7 +160,7 @@ class Account {
         const player = room.battle.players.find(pl => pl.id === this.id);
         const turn = { switchTurn, events: GameServer.censorEvents(events, player) };
         for (const socket of this.sockets) {
-            socket.emit("nextTurn", room.id, turn, player?.choices);
+            socket.emit("nextTurn", room.id, turn, player?.options);
         }
     }
 }
@@ -268,7 +268,7 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             // FIXME: this team needs to be the one at the start of the battle
             return ack({
                 team: player?.team,
-                choices: player?.choices,
+                options: player?.options,
                 players: [...room.accounts].map(account => ({
                     name: account.name,
                     id: account.id,
