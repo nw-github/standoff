@@ -24,7 +24,7 @@
         </button>
 
         <div class="rooms">
-            <h2>Rooms</h2>
+            <h2>Battles</h2>
             <table>
                 <tr v-for="{ id, players, format } in rooms">
                     <td class="format">{{ formatNames[format] }}</td>
@@ -32,6 +32,11 @@
                         <NuxtLink class="room" :to="`room/${id}`">
                             {{ players.join(" vs. ") }}
                         </NuxtLink>
+                    </td>
+                </tr>
+                <tr v-if="!rooms.length">
+                    <td class="no-rooms">
+                        No ongoing battles at the moment...
                     </td>
                 </tr>
             </table>
@@ -86,6 +91,10 @@ a {
 
 .room:hover {
     background-color: #ddd;
+}
+
+.no-rooms {
+    font-style: italic;
 }
 </style>
 
