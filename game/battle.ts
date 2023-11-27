@@ -164,15 +164,14 @@ export class Player {
             return false;
         } else if (this.active.v.thrashing && this.active.v.thrashing.move !== moveList[move]) {
             return false;
-        } else if (this.active.base.status === "frz") {
+        } else if (this.active.base.status === "frz" || this.active.base.status === "slp") {
             // https://bulbapedia.bulbagarden.net/wiki/List_of_battle_glitches_(Generation_I)#Defrost_move_forcing
             // XXX: Gen 1 doesn't let you pick your move when frozen, so if you are defrosted
             // before your turn, the game can desync. The logic we implement follows with what the
             // opponent player's game would do :shrug:
 
-            // Gen 1 also doesn't let you pick your move while asleep, but you can't wake up and act
-            // on the same turn, nor can you act on the turn haze removes your non-volatile status,
-            // so it doesn't matter.
+            // This also implements the bug in which pokemon who are frozen/put to sleep on the turn
+            // they use a modified priority move retain that priority until they wake up/thaw.
             if (this.active.v.lastMoveIndex && this.active.v.lastMoveIndex !== i) {
                 return false;
             }
@@ -464,6 +463,11 @@ export class ActivePokemon {
         direct?: boolean,
         eff?: number
     ) {
+        if (why === "attacked" || why === "confusion" || why === "recoil" || why === "substitute") {
+            // Counter uses the damage it would've done ignoring substitutes
+            this.v.lastDamage = Math.min(this.base.hp, dmg);
+        }
+
         if (this.v.substitute !== 0 && !direct) {
             const hpBefore = this.v.substitute;
             this.v.substitute = Math.max(this.v.substitute - dmg, 0);
@@ -689,6 +693,7 @@ class Volatiles {
     flags: Partial<Record<VolatileFlag, boolean>> = {};
     substitute = 0;
     confusion = 0;
+    lastDamage = 0;
     counter = 1;
     flinch = false;
     invuln = false;

@@ -21,18 +21,8 @@ export const moveList = Object.freeze({
         pp: 10,
         type: "normal",
         execute(battle, user, target) {
+            target.v.lastDamage = 0;
             // TODO: bide
-            return false;
-        },
-    }),
-    counter: new UniqueMove({
-        name: "Counter",
-        pp: 20,
-        type: "fight",
-        acc: 100,
-        power: 1,
-        execute(battle, user, target) {
-            // TODO: counter
             return false;
         },
     }),
@@ -58,6 +48,8 @@ export const moveList = Object.freeze({
         type: "normal",
         acc: 55,
         execute(battle, user, target) {
+            target.v.lastDamage = 0;
+
             const options = target.base.moves.filter((_, i) => target.base.pp[i] !== 0);
             if (!options.length || target.v.disabled) {
                 battle.pushEvent({
@@ -272,31 +264,12 @@ export const moveList = Object.freeze({
             return dead;
         },
     }),
-    superfang: new UniqueMove({
-        name: "Super Fang",
-        pp: 10,
-        type: "normal",
-        acc: 90,
-        power: 1,
-        execute(battle, user, target) {
-            if (!this.checkAccuracy(battle, user, target)) {
-                return false;
-            }
-
-            return target.inflictDamage(
-                Math.max(Math.floor(target.base.hp / 2), 1),
-                user,
-                battle,
-                false,
-                "attacked"
-            ).dead;
-        },
-    }),
     transform: new UniqueMove({
         name: "Transform",
         pp: 10,
         type: "normal",
         execute(battle, user, target) {
+            target.v.lastDamage = 0;
             if (user.base instanceof TransformedPokemon) {
                 user.base = new TransformedPokemon(user.base.base, target.base);
             } else {
@@ -721,6 +694,15 @@ export const moveList = Object.freeze({
         power: 10,
         acc: 100,
         effect: [10, [["spe", -1]]],
+    }),
+    counter: new DamagingMove({
+        name: "Counter",
+        pp: 20,
+        type: "fight",
+        acc: 100,
+        power: 1,
+        priority: -1,
+        flag: "counter",
     }),
     crabhammer: new DamagingMove({
         name: "Crabhammer",
@@ -1288,6 +1270,14 @@ export const moveList = Object.freeze({
         power: 80,
         acc: 80,
         recoil: 4,
+    }),
+    superfang: new DamagingMove({
+        name: "Super Fang",
+        pp: 10,
+        type: "normal",
+        acc: 90,
+        power: 1,
+        flag: "super_fang",
     }),
     surf: new DamagingMove({
         name: "Surf",

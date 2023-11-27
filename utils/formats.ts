@@ -41,7 +41,6 @@ const getRandomMoves = (
 const badMoves = new Set<MoveId>([
     "struggle",
     "bide",
-    "counter",
     "focusenergy",
     "payday",
     "absorb",

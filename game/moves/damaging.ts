@@ -29,7 +29,9 @@ type Flag =
     | "rage"
     | "trap"
     | "level"
-    | "ohko";
+    | "ohko"
+    | "counter"
+    | "super_fang";
 
 export class DamagingMove extends Move {
     readonly flag?: Flag;
@@ -83,6 +85,7 @@ export class DamagingMove extends Move {
         }
 
         user.v.charging = undefined;
+        target.v.lastDamage = 0;
         if (this.flag === "charge_invuln") {
             user.v.invuln = false;
         }
@@ -273,6 +276,10 @@ export class DamagingMove extends Move {
                 isCrit: false,
                 eff,
             };
+        } else if (this.flag === "counter") {
+            return { dmg: this.counterDamage(user, target), isCrit: false, eff: 1 };
+        } else if (this.flag === "super_fang") {
+            return { dmg: Math.max(Math.floor(target.base.hp / 2), 1), isCrit: false, eff: 1 };
         } else if (this.dmg) {
             return { dmg: this.dmg, isCrit: false, eff: 1 };
         }
@@ -307,6 +314,23 @@ export class DamagingMove extends Move {
 
         const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
         return { dmg: Math.floor((dmg * rand) / 255), isCrit, eff };
+    }
+
+    private counterDamage(user: ActivePokemon, target: ActivePokemon) {
+        const lastMove = target.v.lastMove;
+        if (lastMove) {
+            if (lastMove.type !== "normal" && lastMove.type !== "fight") {
+                return 0;
+            } else if (lastMove === this || !lastMove.power) {
+                return 0;
+            }
+        }
+
+        if (target.owner.choice?.move === this) {
+            return 0;
+        }
+
+        return user.v.lastDamage * 2;
     }
 
     private static multiHitCount() {
