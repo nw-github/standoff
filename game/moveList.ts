@@ -4,14 +4,11 @@ import {
     BooleanFlagMove,
     ConfusionMove,
     DamagingMove,
-    FixedDamageMove,
-    OHKOMove,
     AlwaysFailMove,
     RecoveryMove,
     StageMove,
     StatusMove,
     UniqueMove,
-    TrappingMove,
 } from "./moves";
 import { TransformedPokemon } from "./transformed";
 import { randChoice, randRangeInclusive, stageKeys } from "./utils";
@@ -601,83 +598,6 @@ export const moveList = Object.freeze({
         stages: [["def", 1]],
     }),
     // --
-    dragonrage: new FixedDamageMove({
-        name: "Dragon Rage",
-        pp: 10,
-        type: "dragon",
-        acc: 100,
-        dmg: 40,
-    }),
-    nightshade: new FixedDamageMove({
-        name: "Night Shade",
-        pp: 15,
-        type: "ghost",
-        acc: 100,
-        dmg: "level",
-    }),
-    seismictoss: new FixedDamageMove({
-        name: "Seismic Toss",
-        pp: 20,
-        type: "fight",
-        acc: 100,
-        dmg: "level",
-    }),
-    sonicboom: new FixedDamageMove({
-        name: "Sonic Boom",
-        pp: 20,
-        type: "normal",
-        acc: 90,
-        dmg: 20,
-    }),
-    // --
-    fissure: new OHKOMove({
-        name: "Fissure",
-        pp: 5,
-        type: "ground",
-        acc: 30,
-    }),
-    guillotine: new OHKOMove({
-        name: "Guillotine",
-        pp: 5,
-        type: "normal",
-        acc: 30,
-    }),
-    horndrill: new OHKOMove({
-        name: "Horn Drill",
-        pp: 5,
-        type: "normal",
-        acc: 30,
-    }),
-    // --
-    bind: new TrappingMove({
-        name: "Bind",
-        pp: 20,
-        type: "normal",
-        acc: 75,
-        power: 15,
-    }),
-    clamp: new TrappingMove({
-        name: "Bind",
-        pp: 10,
-        type: "water",
-        acc: 75,
-        power: 35,
-    }),
-    firespin: new TrappingMove({
-        name: "Fire Spin",
-        pp: 15,
-        type: "fire",
-        acc: 70,
-        power: 15,
-    }),
-    wrap: new TrappingMove({
-        name: "Wrap",
-        pp: 20,
-        type: "normal",
-        acc: 85,
-        power: 15,
-    }),
-    // --
     absorb: new DamagingMove({
         name: "Absorb",
         pp: 20,
@@ -708,6 +628,14 @@ export const moveList = Object.freeze({
         power: 15,
         acc: 85,
         flag: "multi",
+    }),
+    bind: new DamagingMove({
+        name: "Bind",
+        pp: 20,
+        type: "normal",
+        acc: 75,
+        power: 15,
+        flag: "trap",
     }),
     bodyslam: new DamagingMove({
         name: "Body Slam",
@@ -762,6 +690,14 @@ export const moveList = Object.freeze({
         power: 65,
         acc: 85,
         effect: [10, "flinch"],
+    }),
+    clamp: new DamagingMove({
+        name: "Bind",
+        pp: 10,
+        type: "water",
+        acc: 75,
+        power: 35,
+        flag: "trap",
     }),
     cometpunch: new DamagingMove({
         name: "Comet Punch",
@@ -841,6 +777,14 @@ export const moveList = Object.freeze({
         acc: 85,
         flag: "multi",
     }),
+    dragonrage: new DamagingMove({
+        name: "Dragon Rage",
+        pp: 10,
+        type: "dragon",
+        acc: 100,
+        power: 1,
+        dmg: 40,
+    }),
     dreameater: new DamagingMove({
         name: "Dream Eater",
         pp: 15,
@@ -902,6 +846,22 @@ export const moveList = Object.freeze({
         acc: 100,
         effect: [10, "brn"],
     }),
+    firespin: new DamagingMove({
+        name: "Fire Spin",
+        pp: 15,
+        type: "fire",
+        acc: 70,
+        power: 15,
+        flag: "trap",
+    }),
+    fissure: new DamagingMove({
+        name: "Fissure",
+        pp: 5,
+        type: "ground",
+        acc: 30,
+        power: 1,
+        flag: "ohko",
+    }),
     flamethrower: new DamagingMove({
         name: "Flamethrower",
         pp: 15,
@@ -934,6 +894,14 @@ export const moveList = Object.freeze({
         acc: 80,
         flag: "multi",
     }),
+    guillotine: new DamagingMove({
+        name: "Guillotine",
+        pp: 5,
+        type: "normal",
+        acc: 30,
+        power: 1,
+        flag: "ohko",
+    }),
     gust: new DamagingMove({
         name: "Gust",
         pp: 35,
@@ -963,6 +931,14 @@ export const moveList = Object.freeze({
         type: "normal",
         power: 65,
         acc: 100,
+    }),
+    horndrill: new DamagingMove({
+        name: "Horn Drill",
+        pp: 5,
+        type: "normal",
+        acc: 30,
+        power: 1,
+        flag: "ohko",
     }),
     hydropump: new DamagingMove({
         name: "Hydro Pump",
@@ -1064,6 +1040,14 @@ export const moveList = Object.freeze({
         type: "normal",
         power: 80,
         acc: 85,
+    }),
+    nightshade: new DamagingMove({
+        name: "Night Shade",
+        pp: 15,
+        type: "ghost",
+        acc: 100,
+        power: 1,
+        flag: "level",
     }),
     payday: new DamagingMove({
         name: "Pay Day",
@@ -1196,6 +1180,14 @@ export const moveList = Object.freeze({
         power: 40,
         acc: 100,
     }),
+    seismictoss: new DamagingMove({
+        name: "Seismic Toss",
+        pp: 20,
+        type: "fight",
+        acc: 100,
+        power: 1,
+        flag: "level",
+    }),
     skullbash: new DamagingMove({
         name: "Skull Bash",
         pp: 15,
@@ -1250,6 +1242,14 @@ export const moveList = Object.freeze({
         power: 120,
         acc: 100,
         flag: "charge",
+    }),
+    sonicboom: new DamagingMove({
+        name: "SonicBoom",
+        pp: 20,
+        type: "normal",
+        acc: 90,
+        power: 1,
+        dmg: 20,
     }),
     spikecannon: new DamagingMove({
         name: "Spike Cannon",
@@ -1408,6 +1408,14 @@ export const moveList = Object.freeze({
         type: "flying",
         power: 35,
         acc: 100,
+    }),
+    wrap: new DamagingMove({
+        name: "Wrap",
+        pp: 20,
+        type: "normal",
+        acc: 85,
+        power: 15,
+        flag: "trap",
     }),
     // --
     roar: new AlwaysFailMove({

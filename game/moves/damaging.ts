@@ -26,12 +26,16 @@ type Flag =
     | "charge"
     | "charge_invuln"
     | "multi_turn"
-    | "rage";
+    | "rage"
+    | "trap"
+    | "level"
+    | "ohko";
 
 export class DamagingMove extends Move {
     readonly flag?: Flag;
     readonly effect?: [number, Effect];
     readonly recoil?: number;
+    readonly dmg?: number;
 
     constructor({
         name,
@@ -43,6 +47,7 @@ export class DamagingMove extends Move {
         effect,
         recoil,
         flag,
+        dmg,
     }: {
         name: string;
         pp: number;
@@ -53,11 +58,13 @@ export class DamagingMove extends Move {
         effect?: [number, Effect];
         recoil?: number;
         flag?: Flag;
+        dmg?: number;
     }) {
         super(name, pp, type, acc, priority, power);
         this.flag = flag;
         this.effect = effect;
         this.recoil = recoil;
+        this.dmg = dmg;
     }
 
     override use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number) {
@@ -92,24 +99,19 @@ export class DamagingMove extends Move {
                 user.inflictConfusion(battle, true);
             }
         }
-        // https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_I
-        const eff = getEffectiveness(this.type, target.types);
-        if (eff === 0) {
-            battle.pushEvent({
-                type: "info",
-                id: target.owner.id,
-                why: "immune",
-            });
-            return this.onMiss(battle, user, target);
-        }
 
-        if (this.flag === "dream_eater" && target.base.status !== "slp") {
+        const { dmg, isCrit, eff } = this.getDamage(user, target);
+        if (dmg === 0) {
             battle.pushEvent({
                 type: "info",
-                id: target.owner.id,
-                why: "fail_generic",
+                id: user.owner.id,
+                why: eff === 0 ? "immune" : "miss",
             });
-            return false;
+            if (this.flag === "crash" && eff === 0) {
+                return false;
+            }
+
+            return this.onMiss(battle, user, target);
         }
 
         if (!this.checkAccuracy(battle, user, target)) {
@@ -120,43 +122,13 @@ export class DamagingMove extends Move {
             user.thrashing = { move: this, turns: -1 };
         }
 
-        const isCrit = randChance255(this.critChance(user));
-        const [atks, defs]: ["spc" | "atk", "spc" | "def"] = isSpecial(this.type)
-            ? ["spc", "spc"]
-            : ["atk", "def"];
-        const atk = user.getStat(atks, isCrit);
-        const ls = atks === "spc" && target.flags.light_screen;
-        const reflect = atks === "atk" && target.flags.reflect;
-        const explosion = this.flag === "explosion" ? 2 : 1;
-        const def = Math.floor(target.getStat(defs, isCrit, true, ls || reflect) / explosion);
-        const stab = user.types.includes(this.type) ? 1.5 : 1;
-        let dmg = calcDamage({
-            lvl: user.base.level,
-            pow: this.power!,
-            crit: isCrit ? 2 : 1,
-            atk,
-            def,
-            stab,
-            eff,
-        });
-        if (dmg === 0) {
-            battle.pushEvent({
-                type: "info",
-                id: user.owner.id,
-                why: "miss",
-            });
-            return false;
-        }
-
-        const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
-        dmg = Math.floor(dmg * (rand / 255));
         const hadSub = target.substitute !== 0;
         let { dealt, brokeSub, dead, event } = target.inflictDamage(
             dmg,
             user,
             battle,
             isCrit,
-            "attacked",
+            this.flag === "ohko" ? "ohko" : "attacked",
             false,
             eff
         );
@@ -199,13 +171,8 @@ export class DamagingMove extends Move {
                     event.hitCount = 2;
                 }
             } else if (this.flag === "multi") {
-                let count = randChance255(96) ? 1 : null;
-                count ??= randChance255(96) ? 2 : null;
-                count ??= randChance255(32) ? 3 : null;
-                count ??= 4;
-
-                let hits = 1;
-                while (!dead && !brokeSub && count-- > 0) {
+                let count = DamagingMove.multiHitCount();
+                for (let hits = 1; !dead && !brokeSub && count-- > 0; hits++) {
                     event.hitCount = 0;
                     ({ dead, brokeSub, event } = target.inflictDamage(
                         dmg,
@@ -216,10 +183,8 @@ export class DamagingMove extends Move {
                         false,
                         eff
                     ));
-                    hits++;
+                    event.hitCount = hits;
                 }
-
-                event.hitCount = hits;
             } else if (this.flag === "payday") {
                 battle.pushEvent({
                     type: "info",
@@ -278,15 +243,6 @@ export class DamagingMove extends Move {
         return dead;
     }
 
-    private critChance(user: ActivePokemon) {
-        const baseSpeed = user.base.species.stats.spe;
-        if (this.flag === "high_crit") {
-            return user.flags.focus ? 4 * (baseSpeed / 4) : 8 * (baseSpeed / 2);
-        } else {
-            return user.flags.focus ? baseSpeed / 8 : baseSpeed / 2;
-        }
-    }
-
     private onMiss(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
         if (this.flag === "crash") {
             // https://www.smogon.com/dex/rb/moves/high-jump-kick/
@@ -302,89 +258,62 @@ export class DamagingMove extends Move {
         }
         return false;
     }
-}
 
-export class FixedDamageMove extends Move {
-    readonly dmg: number | "level";
-
-    constructor({
-        name,
-        pp,
-        dmg,
-        type,
-        acc,
-    }: {
-        name: string;
-        pp: number;
-        type: Type;
-        dmg: number | "level";
-        acc?: number;
-    }) {
-        super(name, pp, type, acc, 0, 1);
-        this.dmg = dmg;
-    }
-
-    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
-        // Fixed damage moves are not affected by type immunity in Gen 1
-        if (!this.checkAccuracy(battle, user, target)) {
-            return false;
+    private getDamage(user: ActivePokemon, target: ActivePokemon) {
+        // https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_I
+        const eff = getEffectiveness(this.type, target.types);
+        if (this.flag === "dream_eater" && target.base.status !== "slp") {
+            return { dmg: 0, isCrit: false, eff: 1 };
+        } else if (this.flag === "level") {
+            return { dmg: user.base.level, isCrit: false, eff: 1 };
+        } else if (this.flag === "ohko") {
+            const targetIsFaster = target.getStat("spe") > user.getStat("spe");
+            return {
+                dmg: targetIsFaster || eff === 0 ? 0 : 65535,
+                isCrit: false,
+                eff,
+            };
+        } else if (this.dmg) {
+            return { dmg: this.dmg, isCrit: false, eff: 1 };
         }
 
-        const dmg = this.dmg === "level" ? user.base.level : this.dmg;
-        return target.inflictDamage(dmg, user, battle, false, "attacked").dead;
-    }
-}
-
-export class OHKOMove extends Move {
-    constructor({ name, pp, type, acc }: { name: string; pp: number; type: Type; acc?: number }) {
-        super(name, pp, type, acc ?? 30, 0, 1);
-    }
-
-    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
-        if (getEffectiveness(this.type, target.base.species.types) === 0) {
-            battle.pushEvent({
-                type: "info",
-                id: target.owner.id,
-                why: "immune",
-            });
-            return false;
+        const baseSpe = user.base.species.stats.spe;
+        let chance: number;
+        if (this.flag === "high_crit") {
+            chance = user.flags.focus ? 4 * Math.floor(baseSpe / 4) : 8 * Math.floor(baseSpe / 2);
+        } else {
+            chance = Math.floor(user.flags.focus ? baseSpe / 8 : baseSpe / 2);
         }
 
-        if (target.getStat("spe") > user.getStat("spe")) {
-            battle.pushEvent({
-                type: "info",
-                id: target.owner.id,
-                why: "fail_generic",
-            });
-            return false;
+        const isCrit = randChance255(chance);
+        const [atks, defs] = isSpecial(this.type)
+            ? (["spc", "spc"] as const)
+            : (["atk", "def"] as const);
+        const ls = atks === "spc" && target.flags.light_screen;
+        const reflect = atks === "atk" && target.flags.reflect;
+        const explosion = this.flag === "explosion" ? 2 : 1;
+        const dmg = calcDamage({
+            lvl: user.base.level,
+            pow: this.power!,
+            crit: isCrit ? 2 : 1,
+            atk: user.getStat(atks, isCrit),
+            def: Math.floor(target.getStat(defs, isCrit, true, ls || reflect) / explosion),
+            stab: user.types.includes(this.type) ? 1.5 : 1,
+            eff,
+        });
+        if (dmg === 0) {
+            return { dmg: 0, isCrit: false, eff };
         }
 
-        if (!this.checkAccuracy(battle, user, target)) {
-            return false;
-        }
-
-        return target.inflictDamage(65535, user, battle, false, "ohko", false, 1).dead;
-    }
-}
-
-export class TrappingMove extends Move {
-    constructor({
-        name,
-        pp,
-        type,
-        power,
-        acc,
-    }: {
-        name: string;
-        pp: number;
-        type: Type;
-        power: number;
-        acc?: number;
-    }) {
-        super(name, pp, type, acc, 0, power);
+        const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
+        return { dmg: Math.floor((dmg * rand) / 255), isCrit, eff };
     }
 
-    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
-        return false;
+    private static multiHitCount() {
+        let count = randChance255(96) ? 1 : null;
+        count ??= randChance255(96) ? 2 : null;
+        count ??= randChance255(32) ? 3 : null;
+        count ??= 4;
+        return count;
     }
 }

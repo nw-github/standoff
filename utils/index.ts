@@ -6,8 +6,6 @@ import {
     ConfusionMove,
     AlwaysFailMove,
     RecoveryMove,
-    OHKOMove,
-    FixedDamageMove,
 } from "../game/moves";
 import type { ActivePokemon } from "../game/battle";
 import { moveList, type MoveId } from "../game/moveList";
@@ -115,13 +113,16 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
         "continue to use Rage until it faints or the battle ends. Every time it is hit by a move " +
         "or targeted by Disable, Explosion, or Self-Destruct, it's attack will increase by one " +
         "stage. ",
+    level: "Deals damage equal to the user's level.",
+    ohko: "Deals 65535 damage to the target. Fails on faster opponents. ",
+    trap: "",
 };
 
 export const formatNames: Record<FormatId, string> = {
     randoms: "Random Battle",
     metronome: "Metronome Battle",
     truly_randoms: "Truly Random Battle",
-    randoms_nfe: "Random Battle (NFE)"
+    randoms_nfe: "Random Battle (NFE)",
 };
 
 export const describeMove = (id: MoveId) => {
@@ -143,17 +144,15 @@ export const describeMove = (id: MoveId) => {
             }
         }
 
+        if (move.dmg) {
+            buf += `Deals ${move.dmg} damage. `;
+        }
+
         if (move.recoil) {
             buf += `The user takes 1/${move.recoil} the damage dealt due to recoil. `;
         }
 
         return buf.length ? buf : "No additional effects.";
-    } else if (move instanceof FixedDamageMove) {
-        if (move.dmg === "level") {
-            return "Deals damage equal to the user's level.";
-        } else {
-            return `Deals ${move.dmg} damage.`;
-        }
     } else if (move instanceof StatusMove) {
         return statusTable[move.status] + ". ";
     } else if (move instanceof StageMove) {
@@ -171,8 +170,6 @@ export const describeMove = (id: MoveId) => {
         } else {
             return "The user recovers 1/2 its max HP. ";
         }
-    } else if (move instanceof OHKOMove) {
-        return "Deals 65535 damage to the target. Fails on faster opponents. ";
     } else if (id in descriptions) {
         return descriptions[id];
     }

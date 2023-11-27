@@ -2,7 +2,7 @@ import { Pokemon } from "../game/pokemon";
 import { moveList, type MoveId } from "../game/moveList";
 import { speciesList, type Species, type SpeciesId } from "../game/species";
 import { randChoice } from "../game/utils";
-import { AlwaysFailMove, Move, TrappingMove } from "../game/moves";
+import { AlwaysFailMove, Move } from "../game/moves";
 
 export const battleFormats = ["truly_randoms", "randoms", "randoms_nfe", "metronome"] as const;
 
@@ -51,7 +51,7 @@ const badMoves = new Set<MoveId>([
 const uselessNfe = new Set<SpeciesId>(["weedle", "metapod", "kakuna", "magikarp", "caterpie"]);
 
 const isBadMove = (move: Move, id: MoveId) => {
-    return badMoves.has(id) || move instanceof AlwaysFailMove || move instanceof TrappingMove;
+    return badMoves.has(id) || move instanceof AlwaysFailMove || (move as any).flag === "trap";
 };
 
 const randoms = (validSpecies: (s: Species, id: SpeciesId) => boolean) => {
