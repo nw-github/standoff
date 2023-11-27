@@ -54,7 +54,7 @@ import DOMPurify from "dompurify";
 import { marked } from "marked";
 import "assets/colors.css";
 
-const textboxScrollDiv = ref<HTMLDivElement | null>(null);
+const textboxScrollDiv = ref<HTMLDivElement>();
 const turns = ref<string[]>([]);
 
 const props = defineProps<{

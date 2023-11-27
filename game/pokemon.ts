@@ -11,7 +11,7 @@ export class Pokemon {
     readonly moves: MoveId[];
     pp: number[];
     hp: number;
-    status: Status | null;
+    status?: Status;
     sleep_turns: number = 0;
 
     constructor(
@@ -34,7 +34,6 @@ export class Pokemon {
 
         this.speciesId = speciesId;
         this.name = name ?? this.species.name;
-        this.status = null;
         this.moves = moves;
         this.pp = moves.map(move => moveList[move].pp);
         this.level = level;

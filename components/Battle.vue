@@ -282,7 +282,7 @@ const runTurn = async (turn: Turn, live: boolean, newChoices?: Player["choices"]
                     if (player === e.id && active.status === "tox") {
                         active.status = "psn";
                     } else if (player !== e.id) {
-                        active.status = null;
+                        active.status = undefined;
                     }
 
                     active.stages = {};
@@ -292,7 +292,7 @@ const runTurn = async (turn: Turn, live: boolean, newChoices?: Player["choices"]
                     players[myId.value].active!.stats = { ...activeInTeam.value!.stats };
                 }
             } else if (e.why === "wake" || e.why === "thaw") {
-                players[e.id].active!.status = null;
+                players[e.id].active!.status = undefined;
             }
         } else if (e.type === "conversion") {
             players[e.user].active!.conversion = e.types;

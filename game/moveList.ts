@@ -129,7 +129,7 @@ export const moveList = Object.freeze({
                 target.hazed = true;
             }
 
-            target.base.status = null;
+            target.base.status = undefined;
             return false;
         },
     }),

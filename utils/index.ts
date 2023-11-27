@@ -19,8 +19,8 @@ export type ClientActivePokemon = {
     name: string;
     hp: number;
     level: number;
-    status: Status | null;
     stages: Partial<Record<Stages, number>>;
+    status?: Status;
     stats?: ActivePokemon["stats"];
     transformed?: SpeciesId;
     conversion?: Type[];

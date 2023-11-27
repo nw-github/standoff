@@ -60,7 +60,7 @@ export class Player {
     readonly active: ActivePokemon;
     readonly team: Pokemon[];
     readonly id: PlayerId;
-    choice: ChosenMove | null = null;
+    choice?: ChosenMove;
     choices?: { canSwitch: boolean; moves: MoveChoice[] };
 
     constructor(id: PlayerId, team: Pokemon[]) {
@@ -70,7 +70,7 @@ export class Player {
     }
 
     cancel() {
-        this.choice = null;
+        this.choice = undefined;
     }
 
     chooseMove(index: number) {
@@ -201,8 +201,8 @@ export class Battle {
     readonly players: [Player, Player];
     private readonly events: BattleEvent[] = [];
     private readonly moveListToId;
-    private _victor: Player | null = null;
     private switchTurn = false;
+    private _victor?: Player;
 
     private constructor(player1: Player, player2: Player) {
         this.players = [player1, player2];
@@ -244,7 +244,7 @@ export class Battle {
 
     nextTurn() {
         if (!this.players.every(player => !player.choices || player.choice)) {
-            return null;
+            return;
         }
 
         const choices = this.players
@@ -312,7 +312,7 @@ export class Battle {
             } else if (user.base.status === "slp") {
                 const done = --user.base.sleep_turns === 0;
                 if (done) {
-                    user.base.status = null;
+                    user.base.status = undefined;
                 }
 
                 this.pushEvent({
@@ -404,7 +404,7 @@ export class Battle {
         }
 
         for (const player of this.players) {
-            player.choice = null;
+            player.choice = undefined;
             player.active.handledStatus = false;
             player.active.hazed = false;
             player.active.flinch = false;
@@ -595,7 +595,7 @@ export class ActivePokemon {
     }
 
     inflictStatus(status: Status, battle: Battle, override: boolean = false) {
-        if (!override && this.base.status !== null) {
+        if (!override && this.base.status) {
             return false;
         }
 
