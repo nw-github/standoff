@@ -255,6 +255,7 @@ const htmlForEvent = (e: BattleEvent) => {
             paralyze: "{}'s fully paralyzed!",
             rage: "{}'s rage is building!",
             disable_end: "{}'s disabled no more!",
+            bide: "{} unleashed energy!",
         };
 
         res.push(messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)));

@@ -139,7 +139,8 @@ export type InfoReason =
     | "thaw"
     | "paralyze"
     | "rage"
-    | "disable_end";
+    | "disable_end"
+    | "bide";
 
 type InfoEvent = {
     type: "info";

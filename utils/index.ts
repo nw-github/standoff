@@ -91,6 +91,9 @@ const descriptions: Partial<Record<MoveId, string>> = {
     lightscreen: "Halves damage dealt by special attacks. Ends on switch out.",
     reflect: "Halves damage dealt by physical attacks. Ends on switch out.",
     mist: "Protects the user from stat dropping moves. Ends on switch out.",
+    bide:
+        "The user sits dormant for 2-3 turns, damaging the opponent for 2x the damage received" +
+        "during the idling period. ",
 };
 
 const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {

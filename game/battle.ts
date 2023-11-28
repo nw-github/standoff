@@ -137,7 +137,10 @@ export class Player {
             });
         }
 
-        this.options = { canSwitch: !lockedIn || active.base.hp === 0, moves };
+        this.options = {
+            canSwitch: !lockedIn || lockedIn === moveList.bide || active.base.hp === 0,
+            moves,
+        };
     }
 
     isAllDead() {
@@ -319,6 +322,7 @@ export class Battle {
                 });
 
                 user.v.charging = undefined;
+                user.v.bide = undefined;
                 if (user.v.thrashing?.turns !== -1) {
                     user.v.thrashing = undefined;
                 }
@@ -442,7 +446,7 @@ export class ActivePokemon {
         direct?: boolean,
         eff?: number
     ) {
-        if (why === "attacked" || why === "confusion" || why === "recoil" || why === "substitute") {
+        if (why === "attacked" || why === "confusion" || why === "recoil" || why === "crash") {
             // Counter uses the damage it would've done ignoring substitutes
             this.v.lastDamage = Math.min(this.base.hp, dmg);
         }
@@ -683,6 +687,7 @@ class Volatiles {
     charging?: Move;
     recharge?: Move;
     thrashing?: { move: Move; turns: number; acc?: number };
+    bide?: { move: Move; turns: number; dmg: number };
     disabled?: { turns: number; indexInMoves: number };
     mimic?: { move: MoveId; indexInMoves: number };
 
@@ -697,6 +702,6 @@ class Volatiles {
     }
 
     lockedIn() {
-        return this.recharge || this.charging || this.thrashing?.move;
+        return this.recharge || this.charging || this.thrashing?.move || this.bide?.move;
     }
 }

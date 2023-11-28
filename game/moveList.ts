@@ -1,4 +1,4 @@
-import { volatileFlags } from "./battle";
+import { ActivePokemon, Battle, volatileFlags } from "./battle";
 import {
     Move,
     VolatileFlagMove,
@@ -16,16 +16,46 @@ import { randChoice, randRangeInclusive, stageKeys } from "./utils";
 export type MoveId = keyof typeof moveList;
 
 export const moveList = Object.freeze({
-    bide: new UniqueMove({
-        name: "Bide",
-        pp: 10,
-        type: "normal",
-        execute(battle, user, target) {
+    bide: new (class extends Move {
+        constructor() {
+            super("Bide", 10, "normal");
+        }
+
+        override use(
+            battle: Battle,
+            user: ActivePokemon,
+            target: ActivePokemon,
+            moveIndex?: number
+        ) {
+            if (!user.v.bide) {
+                return super.use(battle, user, target, moveIndex);
+            }
+
+            // TODO: bulbapedia says lastDamage includes the opponent's self-inflicted confusion
+            // damage
+            user.v.bide.dmg += user.v.lastDamage;
+            if (--user.v.bide.turns !== 0) {
+                return false;
+            }
+
+            battle.pushEvent({ type: "info", id: user.owner.id, why: "bide" });
+
+            const dmg = user.v.bide.dmg;
+            if (dmg === 0) {
+                battle.pushEvent({ type: "info", id: user.owner.id, why: "miss" });
+                return false;
+            }
+
+            user.v.bide = undefined;
+            return target.inflictDamage(dmg * 2, user, battle, false, "attacked").dead;
+        }
+
+        override execute(_: Battle, user: ActivePokemon, target: ActivePokemon) {
             target.v.lastDamage = 0;
-            // TODO: bide
+            user.v.bide = { move: this, turns: randRangeInclusive(2, 3), dmg: 0 };
             return false;
-        },
-    }),
+        }
+    })(),
     conversion: new UniqueMove({
         name: "Conversion",
         pp: 30,
