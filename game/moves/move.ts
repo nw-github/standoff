@@ -44,13 +44,15 @@ export abstract class Move {
     }
 
     use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number) {
-        if (this === user.v.disabled?.move) {
+        const move = battle.moveIdOf(this)!;
+        if (move === user.base.moves[user.v.disabled?.indexInMoves ?? -1]) {
             battle.pushEvent({
+                move,
                 type: "move",
                 src: user.owner.id,
-                move: battle.moveIdOf(this)!,
                 disabled: true,
             });
+            user.v.charging = undefined;
             return false;
         }
 
@@ -63,9 +65,9 @@ export abstract class Move {
         }
 
         battle.pushEvent({
+            move,
             type: "move",
             src: user.owner.id,
-            move: battle.moveIdOf(this)!,
             thrashing: user.v.thrashing ? true : undefined,
         });
         user.v.lastMove = this;

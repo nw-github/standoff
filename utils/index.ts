@@ -116,6 +116,8 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
     level: "Deals damage equal to the user's level.",
     ohko: "Deals 65535 damage to the target. Fails on faster opponents. ",
     trap: "",
+    counter: "Deals 2x the last move's damage if it was normal or fighting type. ",
+    super_fang: "Deals 1/2 the target's current HP as damage. ",
 };
 
 export const formatNames: Record<FormatId, string> = {

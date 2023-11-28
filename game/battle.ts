@@ -110,6 +110,7 @@ export class Player {
             return;
         }
 
+        // send all moves so PP can be updated
         const moves: MoveOption[] = active.base.moves.map((m, i) => {
             const move = active.v.mimic?.indexInMoves === i ? active.v.mimic?.move : m;
             return {
@@ -121,30 +122,21 @@ export class Player {
             };
         });
 
+        const lockedIn = active.v.lockedIn();
         if (!active.base.hp) {
             for (const move of moves) {
                 move.valid = false;
             }
         } else if (moves.every(move => !move.valid)) {
-            const metronome = [active.v.charging, active.v.thrashing?.move, active.v.recharge];
-
-            let found = false;
-            for (const move of metronome) {
-                if (move) {
-                    moves.forEach(move => (move.display = false));
-                    moves.push({ move: battle.moveIdOf(move)!, valid: true, display: true });
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found) {
-                moves.forEach(option => (option.display = false));
-                moves.push({ move: "struggle", valid: true, display: true });
-            }
+            // Two-turn moves, thrashing moves, and recharging skip the normal move selection menu
+            moves.forEach(move => (move.display = false));
+            moves.push({
+                move: lockedIn ? battle.moveIdOf(lockedIn)! : "struggle",
+                valid: true,
+                display: true,
+            });
         }
 
-        const lockedIn = active.v.charging || active.v.thrashing || active.v.recharge;
         this.options = { canSwitch: !lockedIn || active.base.hp === 0, moves };
     }
 
@@ -153,16 +145,7 @@ export class Player {
     }
 
     private isValidMove(move: MoveId, i: number) {
-        // TODO: research these interactions
-        //       user hyper beams, opponent disables:
-        //          is the user forced to recharge hyper beam ? struggle? does it recharge and fail?
-        //       user clicks skull bash, opponent disables:
-
-        if (this.active.v.recharge && this.active.v.recharge !== moveList[move]) {
-            return false;
-        } else if (this.active.v.charging && this.active.v.charging !== moveList[move]) {
-            return false;
-        } else if (this.active.v.thrashing && this.active.v.thrashing.move !== moveList[move]) {
+        if (this.active.v.lockedIn() && this.active.v.lockedIn() !== moveList[move]) {
             return false;
         } else if (this.active.base.status === "frz" || this.active.base.status === "slp") {
             // https://bulbapedia.bulbagarden.net/wiki/List_of_battle_glitches_(Generation_I)#Defrost_move_forcing
@@ -172,12 +155,8 @@ export class Player {
 
             // This also implements the bug in which pokemon who are frozen/put to sleep on the turn
             // they use a modified priority move retain that priority until they wake up/thaw.
-            if (this.active.v.lastMoveIndex && this.active.v.lastMoveIndex !== i) {
-                return false;
-            }
-
-            return this.active.v.lastMoveIndex ? true : i === 0;
-        } else if (moveList[move] === this.active.v.disabled?.move) {
+            return (this.active.v.lastMoveIndex ?? 0) === i;
+        } else if (i === this.active.v.disabled?.indexInMoves) {
             return false;
         } else if (this.active.base.pp[i] === 0) {
             return false;
@@ -699,12 +678,12 @@ class Volatiles {
     invuln = false;
     handledStatus = false;
     hazed = false;
-    charging?: Move;
-    recharge?: Move;
     lastMove?: Move;
     lastMoveIndex?: number;
+    charging?: Move;
+    recharge?: Move;
     thrashing?: { move: Move; turns: number; acc?: number };
-    disabled?: { move: Move; turns: number };
+    disabled?: { turns: number; indexInMoves: number };
     mimic?: { move: MoveId; indexInMoves: number };
 
     constructor(base: Pokemon) {
@@ -715,5 +694,9 @@ class Volatiles {
             spc: base.stats.spc,
             spe: base.stats.spe,
         };
+    }
+
+    lockedIn() {
+        return this.recharge || this.charging || this.thrashing?.move;
     }
 }

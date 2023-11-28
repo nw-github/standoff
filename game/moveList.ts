@@ -50,7 +50,7 @@ export const moveList = Object.freeze({
         execute(battle, user, target) {
             target.v.lastDamage = 0;
 
-            const options = target.base.moves.filter((_, i) => target.base.pp[i] !== 0);
+            const options = [...target.base.moves.keys()].filter(i => target.base.pp[i] !== 0);
             if (!options.length || target.v.disabled) {
                 battle.pushEvent({
                     type: "info",
@@ -66,12 +66,12 @@ export const moveList = Object.freeze({
                 return false;
             }
 
-            const move = randChoice(options);
-            target.v.disabled = { move: moveList[move], turns: randRangeInclusive(1, 8) };
+            const indexInMoves = randChoice(options);
+            target.v.disabled = { indexInMoves, turns: randRangeInclusive(1, 8) };
             battle.pushEvent({
                 type: "disable",
                 id: target.owner.id,
-                move,
+                move: target.base.moves[indexInMoves],
             });
             target.handleRage(battle);
             return false;
