@@ -35,7 +35,7 @@ export class RecoveryMove extends Move {
         if (this.why === "rest") {
             user.inflictRecovery(diff, user, battle, this.why);
             user.base.status = "slp";
-            user.base.sleep_turns = 3;
+            user.base.sleepTurns = 2;
             // In gen 1, Rest doesn't reset the toxic counter or par/brn stat drops
         } else {
             user.inflictRecovery(Math.floor(user.base.stats.hp / 2), user, battle, this.why);

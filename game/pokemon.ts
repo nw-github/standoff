@@ -12,7 +12,7 @@ export class Pokemon {
     pp: number[];
     hp: number;
     status?: Status;
-    sleep_turns: number = 0;
+    sleepTurns: number = 0;
 
     constructor(
         speciesId: SpeciesId,

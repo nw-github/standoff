@@ -298,7 +298,7 @@ export class Battle {
                 });
                 return false;
             } else if (user.base.status === "slp") {
-                const done = --user.base.sleep_turns === 0;
+                const done = --user.base.sleepTurns === 0;
                 if (done) {
                     user.base.status = undefined;
                 }
@@ -535,7 +535,7 @@ export class ActivePokemon {
 
         if (status === "slp") {
             this.v.recharge = undefined;
-            this.base.sleep_turns = randRangeInclusive(1, 7);
+            this.base.sleepTurns = randRangeInclusive(1, 7);
         } else if (status === "tox") {
             this.v.counter = 1;
         }

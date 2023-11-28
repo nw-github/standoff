@@ -113,7 +113,7 @@ export const moveList = Object.freeze({
                     why: target.base.status === "frz" ? "thaw" : "wake",
                 });
 
-                target.base.sleep_turns = 0;
+                target.base.sleepTurns = 0;
                 target.v.hazed = true;
             }
 

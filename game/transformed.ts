@@ -14,7 +14,7 @@ export class TransformedPokemon {
         this.transformed = transformed;
         this.moves = [...transformed.moves];
         this.pp = transformed.pp.map(_ => 5);
-        this.stats = {...this.transformed.stats, hp: base.stats.hp };
+        this.stats = { ...this.transformed.stats, hp: base.stats.hp };
     }
 
     get speciesId() {
@@ -45,12 +45,12 @@ export class TransformedPokemon {
         this.base.status = value;
     }
 
-    get sleep_turns() {
-        return this.base.sleep_turns;
+    get sleepTurns() {
+        return this.base.sleepTurns;
     }
 
-    set sleep_turns(value) {
-        this.base.sleep_turns = value;
+    set sleepTurns(value) {
+        this.base.sleepTurns = value;
     }
 
     get species() {
