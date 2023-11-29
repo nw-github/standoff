@@ -10,6 +10,7 @@ import {
     calcDamage,
     type Type,
     type Stages,
+    randChoiceWeighted,
 } from "../utils";
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
@@ -88,7 +89,7 @@ export class DamagingMove extends Move {
         return super.use(battle, user, target, moveIndex);
     }
 
-    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
         if (this.flag === "multi_turn" && !user.v.thrashing) {
             user.v.thrashing = { move: this, turns: randRangeInclusive(2, 3) };
         } else if (user.v.thrashing && user.v.thrashing.turns !== -1) {
@@ -165,23 +166,9 @@ export class DamagingMove extends Move {
             } else if (this.flag === "explosion") {
                 dead =
                     user.damage(user.base.hp, user, battle, false, "explosion", true).dead || dead;
-            } else if (this.flag === "double") {
-                if (!dead) {
-                    event.hitCount = 0;
-                    ({ dead, event } = target.damage(
-                        dmg,
-                        user,
-                        battle,
-                        isCrit,
-                        "attacked",
-                        false,
-                        eff
-                    ));
-                    event.hitCount = 2;
-                }
-            } else if (this.flag === "multi") {
-                let count = DamagingMove.multiHitCount();
-                for (let hits = 1; !dead && !brokeSub && count-- > 0; hits++) {
+            } else if (this.flag === "double" || this.flag === "multi") {
+                const count = this.flag === "double" ? 2 : DamagingMove.multiHitCount();
+                for (let hits = 1; !dead && !brokeSub && hits < count; hits++) {
                     event.hitCount = 0;
                     ({ dead, brokeSub, event } = target.damage(
                         dmg,
@@ -192,7 +179,7 @@ export class DamagingMove extends Move {
                         false,
                         eff
                     ));
-                    event.hitCount = hits;
+                    event.hitCount = hits + 1;
                 }
             } else if (this.flag === "payday") {
                 battle.info(user, "payday");
@@ -316,10 +303,6 @@ export class DamagingMove extends Move {
     }
 
     private static multiHitCount() {
-        let count = randChance255(96) ? 1 : null;
-        count ??= randChance255(96) ? 2 : null;
-        count ??= randChance255(32) ? 3 : null;
-        count ??= 4;
-        return count;
+        return randChoiceWeighted([2, 3, 4, 5], [37.5, 37.5, 12.5, 12.5]);
     }
 }

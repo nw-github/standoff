@@ -31,6 +31,22 @@ export const randChance255 = (num: number) => randRangeInclusive(0, 255) < Math.
 
 export const randChoice = <T>(arr: T[]) => arr[randRangeInclusive(0, arr.length - 1)];
 
+export const randChoiceWeighted = <T>(arr: T[], weights: number[]) => {
+    let i;
+    for (i = 1; i < weights.length; i++) {
+        weights[i] += weights[i - 1];
+    }
+
+    const random = Math.random() * weights[weights.length - 1];
+    for (i = 0; i < weights.length; i++) {
+        if (weights[i] > random) {
+            break;
+        }
+    }
+
+    return arr[i];
+};
+
 export const floatTo255 = (num: number) => Math.floor((num / 100) * 255);
 
 export const clamp = (num: number, min: number, max: number) => Math.max(Math.min(num, max), min);
