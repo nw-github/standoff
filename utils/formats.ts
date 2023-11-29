@@ -15,6 +15,16 @@ type FormatDesc = {
 
 const speciesIds = Object.keys(speciesList) as SpeciesId[];
 
+const badMoves = new Set<MoveId>([
+    "struggle",
+    "focusenergy",
+    "payday",
+    "absorb",
+    "focusenergy",
+]);
+
+const uselessNfe = new Set<SpeciesId>(["weedle", "metapod", "kakuna", "magikarp", "caterpie"]);
+
 const getRandomPokemon = (
     count: number,
     validSpecies: (s: Species, id: SpeciesId) => boolean,
@@ -38,18 +48,8 @@ const getRandomMoves = (
         .slice(0, count);
 };
 
-const badMoves = new Set<MoveId>([
-    "struggle",
-    "focusenergy",
-    "payday",
-    "absorb",
-    "focusenergy",
-]);
-
-const uselessNfe = new Set<SpeciesId>(["weedle", "metapod", "kakuna", "magikarp", "caterpie"]);
-
 const isBadMove = (move: Move, id: MoveId) => {
-    return badMoves.has(id) || move instanceof AlwaysFailMove || (move as any).flag === "trap";
+    return badMoves.has(id) || move instanceof AlwaysFailMove;
 };
 
 const randoms = (validSpecies: (s: Species, id: SpeciesId) => boolean) => {

@@ -92,7 +92,7 @@ const descriptions: Partial<Record<MoveId, string>> = {
     reflect: "Halves damage dealt by physical attacks. Ends on switch out.",
     mist: "Protects the user from stat dropping moves. Ends on switch out.",
     bide:
-        "The user sits dormant for 2-3 turns, damaging the opponent for 2x the damage received" +
+        "The user sits dormant for 2-3 turns, damaging the opponent for 2x the damage received " +
         "during the idling period. ",
 };
 
@@ -118,9 +118,9 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
         "stage. ",
     level: "Deals damage equal to the user's level.",
     ohko: "Deals 65535 damage to the target. Fails on faster opponents. ",
-    trap: "",
+    trap: "Deals damage and prevents the target from moving for 2-5 turns. ",
     counter: "Deals 2x the last move's damage if it was normal or fighting type. ",
-    super_fang: "Deals 1/2 the target's current HP as damage. ",
+    super_fang: "Deals damage equal to 1/2 the target's current HP. ",
 };
 
 export const formatNames: Record<FormatId, string> = {

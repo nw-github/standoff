@@ -44,7 +44,8 @@ export type DamageReason =
     | "seeded"
     | "psn"
     | "brn"
-    | "confusion";
+    | "confusion"
+    | "trap";
 
 export type RecoveryReason = "drain" | "recover" | "rest" | "seeder";
 
@@ -140,7 +141,8 @@ export type InfoReason =
     | "paralyze"
     | "rage"
     | "disable_end"
-    | "bide";
+    | "bide"
+    | "trapped";
 
 type InfoEvent = {
     type: "info";

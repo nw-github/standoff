@@ -85,9 +85,7 @@ export const moveList = Object.freeze({
                 battle.info(user, "fail_generic");
                 target.handleRage(battle);
                 return false;
-            }
-
-            if (!this.checkAccuracy(battle, user, target)) {
+            } else if (!this.checkAccuracy(battle, user, target)) {
                 target.handleRage(battle);
                 return false;
             }
@@ -643,7 +641,7 @@ export const moveList = Object.freeze({
         effect: [10, "flinch"],
     }),
     clamp: new DamagingMove({
-        name: "Bind",
+        name: "Clamp",
         pp: 10,
         type: "water",
         acc: 75,

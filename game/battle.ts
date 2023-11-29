@@ -138,8 +138,9 @@ export class Player {
             });
         }
 
+        const moveLocked = !!active.v.bide || !!active.v.trapping;
         this.options = {
-            canSwitch: !lockedIn || lockedIn === moveList.bide || active.base.hp === 0,
+            canSwitch: !lockedIn || moveLocked || active.base.hp === 0,
             moves,
         };
     }
@@ -243,7 +244,13 @@ export class Battle {
 
         let skipEnd = false;
         for (const choice of choices) {
-            if (this.userMove(choice)) {
+            if (choice.move instanceof SwitchMove) {
+                choice.move.use(this, choice.user);
+                continue;
+            }
+
+            const target = this.opponentOf(choice.user.owner).active;
+            if (this.userMove(choice, target) || this.recurrentDamage(choice.user, target)) {
                 skipEnd = true;
                 break;
             }
@@ -263,13 +270,18 @@ export class Battle {
         return this.endTurn();
     }
 
-    private userMove({ move, user, indexInMoves }: ChosenMove) {
-        if (move instanceof SwitchMove) {
-            return move.use(this, user);
-        }
+    private userMove({ move, user, indexInMoves }: ChosenMove, target: ActivePokemon) {
+        if (user.v.trapped) {
+            this.info(user, "trapped");
+            return false;
+        } else if (user.v.trapping && target.v.trapped) {
+            const dead = target.damage(user.v.trapping.dmg, user, this, false, "trap").dead;
+            if (dead || --user.v.trapping.turns === 0) {
+                user.v.trapping = undefined;
+            }
 
-        const target = this.opponentOf(user.owner).active;
-        if (user.v.flinch) {
+            return dead;
+        } else if (user.v.flinch) {
             this.info(user, "flinch");
             user.v.recharge = undefined;
             return false;
@@ -330,7 +342,13 @@ export class Battle {
                 }
             }
             return true;
-        } else if (user.handleStatusDamage(this)) {
+        }
+
+        return false;
+    }
+
+    private recurrentDamage(user: ActivePokemon, target: ActivePokemon) {
+        if (user.handleStatusDamage(this)) {
             if (user.owner.isAllDead()) {
                 this._victor = target.owner;
             }
@@ -355,6 +373,9 @@ export class Battle {
             player.active.v.handledStatus = false;
             player.active.v.hazed = false;
             player.active.v.flinch = false;
+            if (player.active.v.trapped && !this.opponentOf(player).active.v.trapping) {
+                player.active.v.trapped = false;
+            }
             player.updateOptions(this);
         }
 
@@ -650,6 +671,7 @@ class Volatiles {
     invuln = false;
     handledStatus = false;
     hazed = false;
+    trapped = false;
     lastMove?: Move;
     lastMoveIndex?: number;
     charging?: Move;
@@ -658,6 +680,7 @@ class Volatiles {
     bide?: { move: Move; turns: number; dmg: number };
     disabled?: { turns: number; indexInMoves: number };
     mimic?: { move: MoveId; indexInMoves: number };
+    trapping?: { move: Move; turns: number; dmg: number; };
 
     constructor(base: Pokemon) {
         this.types = [...base.species.types];
@@ -670,6 +693,12 @@ class Volatiles {
     }
 
     lockedIn() {
-        return this.recharge || this.charging || this.thrashing?.move || this.bide?.move;
+        return (
+            this.recharge ||
+            this.charging ||
+            this.thrashing?.move ||
+            this.bide?.move ||
+            this.trapping?.move
+        );
     }
 }

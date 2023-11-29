@@ -82,6 +82,7 @@ export class DamagingMove extends Move {
         }
 
         user.v.charging = undefined;
+        user.v.trapping = undefined;
         target.v.lastDamage = 0;
         if (this.flag === "charge_invuln") {
             user.v.invuln = false;
@@ -99,15 +100,22 @@ export class DamagingMove extends Move {
             }
         }
 
+        if (this.flag === "trap") {
+            target.v.recharge = undefined;
+        }
+
         const { dmg, isCrit, eff } = this.getDamage(user, target);
         if (dmg === 0 || !this.checkAccuracy(battle, user, target)) {
             if (dmg === 0) {
                 if (eff === 0) {
                     battle.info(target, "immune");
+                    if (this.flag === "trap") {
+                        this.trapTarget(user, target, dmg);
+                    }
                 } else {
                     battle.info(user, "miss");
                 }
-    
+
                 if (this.flag === "crash" && eff === 0) {
                     return false;
                 }
@@ -131,6 +139,8 @@ export class DamagingMove extends Move {
 
         if (this.flag === "rage") {
             user.v.thrashing = { move: this, turns: -1 };
+        } else if (this.flag === "trap") {
+            this.trapTarget(user, target, dmg);
         }
 
         const hadSub = target.v.substitute !== 0;
@@ -304,5 +314,11 @@ export class DamagingMove extends Move {
 
     private static multiHitCount() {
         return randChoiceWeighted([2, 3, 4, 5], [37.5, 37.5, 12.5, 12.5]);
+    }
+
+    private trapTarget(user: ActivePokemon, target: ActivePokemon, dmg: number) {
+        const turns = DamagingMove.multiHitCount() - 1;
+        target.v.trapped = true;
+        user.v.trapping = { move: this, turns, dmg };
     }
 }

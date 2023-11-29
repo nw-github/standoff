@@ -7,7 +7,7 @@
             <div v-html="turn"></div>
         </template>
 
-        <div ref="textboxScrollDiv"></div>
+        <div ref="scrollPoint"></div>
     </div>
 </template>
 
@@ -54,7 +54,7 @@ import DOMPurify from "dompurify";
 import { marked } from "marked";
 import "assets/colors.css";
 
-const textboxScrollDiv = ref<HTMLDivElement>();
+const scrollPoint = ref<HTMLDivElement>();
 const turns = ref<string[]>([]);
 
 const props = defineProps<{
@@ -79,14 +79,14 @@ const enterTurn = async (
 
         if (live) {
             await nextTick();
-            textboxScrollDiv.value?.scrollIntoView();
+            scrollPoint.value?.scrollIntoView();
             await delay(300);
         }
     }
 
     if (!live) {
         await nextTick();
-        textboxScrollDiv.value?.scrollIntoView();
+        scrollPoint.value?.scrollIntoView();
     }
 };
 
@@ -142,6 +142,8 @@ const htmlForEvent = (e: BattleEvent) => {
                 res.push("It hurt itself in its confusion!");
             } else if (e.why === "ohko") {
                 res.push("It's a one-hit KO!");
+            } else if (e.why === "trap") {
+                res.push(`${src}'s attack continues!`);
             }
 
             if (e.why === "attacked" && e.hitCount === undefined && (e.eff ?? 1) !== 1) {
@@ -256,6 +258,7 @@ const htmlForEvent = (e: BattleEvent) => {
             rage: "{}'s rage is building!",
             disable_end: "{}'s disabled no more!",
             bide: "{} unleashed energy!",
+            trapped: "{} can't move!",
         };
 
         res.push(messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)));
