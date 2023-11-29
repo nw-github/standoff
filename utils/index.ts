@@ -59,12 +59,12 @@ const statusTable: Record<Status, string> = {
 };
 
 export const stageTable: Record<Stages, string> = {
-    atk: "attack",
-    def: "defense",
-    spc: "special",
-    spe: "speed",
-    acc: "acccuracy",
-    eva: "evasion",
+    atk: "Attack",
+    def: "Defense",
+    spc: "Special",
+    spe: "Speed",
+    acc: "Acccuracy",
+    eva: "Evasion",
 };
 
 const descriptions: Partial<Record<MoveId, string>> = {
