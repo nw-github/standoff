@@ -459,7 +459,9 @@ export class ActivePokemon {
                 confusion: why === "confusion",
                 eff,
             });
-            this.handleRage(battle);
+            if (why === "attacked") {
+                this.handleRage(battle);
+            }
             return {
                 event,
                 dealt: hpBefore - this.v.substitute,
@@ -480,7 +482,9 @@ export class ActivePokemon {
                 eff,
                 isCrit,
             });
-            this.handleRage(battle);
+            if (why === "attacked") {
+                this.handleRage(battle);
+            }
             return {
                 event,
                 dealt: hpBefore - this.base.hp,
@@ -680,7 +684,7 @@ class Volatiles {
     bide?: { move: Move; turns: number; dmg: number };
     disabled?: { turns: number; indexInMoves: number };
     mimic?: { move: MoveId; indexInMoves: number };
-    trapping?: { move: Move; turns: number; dmg: number; };
+    trapping?: { move: Move; turns: number; dmg: number };
 
     constructor(base: Pokemon) {
         this.types = [...base.species.types];
