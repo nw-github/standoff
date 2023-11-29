@@ -22,15 +22,11 @@ export class StageMove extends Move {
         this.stages = stages;
     }
 
-    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
         if (this.acc) {
             target.v.lastDamage = 0;
             if (target.v.flags.mist || target.v.substitute) {
-                battle.pushEvent({
-                    type: "info",
-                    id: target.owner.id,
-                    why: target.v.flags.mist ? "mist_protect" : "fail_generic",
-                });
+                battle.info(target, target.v.flags.mist ? "mist_protect" : "fail_generic");
                 return false;
             }
 
@@ -41,12 +37,8 @@ export class StageMove extends Move {
             target = user;
         }
 
-        if (!target.inflictStages(user.owner, this.stages, battle)) {
-            battle.pushEvent({
-                type: "info",
-                id: target.owner.id,
-                why: "fail_generic",
-            });
+        if (!target.modStages(user.owner, this.stages, battle)) {
+            battle.info(target, "fail_generic");
         }
         return false;
     }

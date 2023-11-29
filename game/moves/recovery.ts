@@ -21,24 +21,20 @@ export class RecoveryMove extends Move {
         this.why = why;
     }
 
-    override execute(battle: Battle, user: ActivePokemon): boolean {
+    override execute(battle: Battle, user: ActivePokemon) {
         const diff = user.base.stats.hp - user.base.hp;
         if (diff === 0 || diff % 255 === 0) {
-            battle.pushEvent({
-                type: "info",
-                id: user.owner.id,
-                why: "fail_generic",
-            });
+            battle.info(user, "fail_generic");
             return false;
         }
 
         if (this.why === "rest") {
-            user.inflictRecovery(diff, user, battle, this.why);
+            user.recover(diff, user, battle, this.why);
             user.base.status = "slp";
             user.base.sleepTurns = 2;
             // In gen 1, Rest doesn't reset the toxic counter or par/brn stat drops
         } else {
-            user.inflictRecovery(Math.floor(user.base.stats.hp / 2), user, battle, this.why);
+            user.recover(Math.floor(user.base.stats.hp / 2), user, battle, this.why);
         }
         return false;
     }

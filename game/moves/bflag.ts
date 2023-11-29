@@ -22,20 +22,12 @@ export class VolatileFlagMove extends Move {
         this.flag = flag;
     }
 
-    override execute(battle: Battle, user: ActivePokemon): boolean {
+    override execute(battle: Battle, user: ActivePokemon) {
         if (user.v.flags[this.flag]) {
-            battle.pushEvent({
-                type: "info",
-                id: user.owner.id,
-                why: "fail_generic",
-            });
+            battle.info(user, "fail_generic");
         } else {
             user.v.flags[this.flag] = true;
-            battle.pushEvent({
-                type: "info",
-                id: user.owner.id,
-                why: this.flag,
-            });
+            battle.info(user, this.flag);
         }
         return false;
     }

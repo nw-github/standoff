@@ -1,4 +1,4 @@
-import type { ActivePokemon, VolatileFlag, VolatileStats } from "./battle";
+import type { VolatileFlag, VolatileStats } from "./battle";
 import type { MoveId } from "./moveList";
 import { type Status } from "./pokemon";
 import type { SpeciesId } from "./species";

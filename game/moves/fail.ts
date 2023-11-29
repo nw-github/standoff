@@ -23,12 +23,8 @@ export class AlwaysFailMove extends Move {
         this.why = why;
     }
 
-    override execute(battle: Battle, user: ActivePokemon): boolean {
-        battle.pushEvent({
-            type: "info",
-            id: user.owner.id,
-            why: this.why,
-        });
+    override execute(battle: Battle, user: ActivePokemon) {
+        battle.info(user, this.why);
         return false;
     }
 }

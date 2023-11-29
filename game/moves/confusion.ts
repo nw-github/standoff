@@ -7,26 +7,16 @@ export class ConfusionMove extends Move {
         super(name, pp, type, acc);
     }
 
-    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
         if (target.v.substitute) {
-            battle.pushEvent({
-                type: "info",
-                id: target.owner.id,
-                why: "fail_generic",
-            });
+            battle.info(target, "fail_generic");
+            return false;
+        } else if (!this.checkAccuracy(battle, user, target)) {
             return false;
         }
 
-        if (!this.checkAccuracy(battle, user, target)) {
-            return false;
-        }
-
-        if (!target.inflictConfusion(battle)) {
-            battle.pushEvent({
-                type: "info",
-                id: target.owner.id,
-                why: "fail_generic",
-            });
+        if (!target.confuse(battle)) {
+            battle.info(target, "fail_generic");
         }
         return false;
     }

@@ -33,11 +33,7 @@ export abstract class Move {
 
         console.log(`Accuracy: ${this.acc} (${chance}/256)`);
         if (target.v.invuln || !randChance255(chance)) {
-            battle.pushEvent({
-                type: "info",
-                id: user.owner.id,
-                why: "miss",
-            });
+            battle.info(user, "miss");
             return false;
         }
         return true;
@@ -46,12 +42,7 @@ export abstract class Move {
     use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number) {
         const move = battle.moveIdOf(this)!;
         if (move === user.base.moves[user.v.disabled?.indexInMoves ?? -1]) {
-            battle.pushEvent({
-                move,
-                type: "move",
-                src: user.owner.id,
-                disabled: true,
-            });
+            battle.event({ move, type: "move", src: user.owner.id, disabled: true });
             user.v.charging = undefined;
             return false;
         }
@@ -64,7 +55,7 @@ export abstract class Move {
             user.v.lastMoveIndex = moveIndex;
         }
 
-        battle.pushEvent({
+        battle.event({
             move,
             type: "move",
             src: user.owner.id,

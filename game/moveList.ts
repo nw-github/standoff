@@ -38,16 +38,16 @@ export const moveList = Object.freeze({
                 return false;
             }
 
-            battle.pushEvent({ type: "info", id: user.owner.id, why: "bide" });
+            battle.info(user, "bide");
 
             const dmg = user.v.bide.dmg;
             if (dmg === 0) {
-                battle.pushEvent({ type: "info", id: user.owner.id, why: "miss" });
+                battle.info(user, "miss");
                 return false;
             }
 
             user.v.bide = undefined;
-            return target.inflictDamage(dmg * 2, user, battle, false, "attacked").dead;
+            return target.damage(dmg * 2, user, battle, false, "attacked").dead;
         }
 
         override execute(_: Battle, user: ActivePokemon, target: ActivePokemon) {
@@ -62,7 +62,7 @@ export const moveList = Object.freeze({
         type: "normal",
         execute(battle, user, target) {
             user.v.types = [...target.v.types];
-            battle.pushEvent({
+            battle.event({
                 type: "conversion",
                 user: user.owner.id,
                 target: target.owner.id,
@@ -82,11 +82,7 @@ export const moveList = Object.freeze({
 
             const options = [...target.base.moves.keys()].filter(i => target.base.pp[i] !== 0);
             if (!options.length || target.v.disabled) {
-                battle.pushEvent({
-                    type: "info",
-                    id: target.owner.id,
-                    why: "fail_generic",
-                });
+                battle.info(user, "fail_generic");
                 target.handleRage(battle);
                 return false;
             }
@@ -98,7 +94,7 @@ export const moveList = Object.freeze({
 
             const indexInMoves = randChoice(options);
             target.v.disabled = { indexInMoves, turns: randRangeInclusive(1, 8) };
-            battle.pushEvent({
+            battle.event({
                 type: "disable",
                 id: target.owner.id,
                 move: target.base.moves[indexInMoves],
@@ -112,11 +108,7 @@ export const moveList = Object.freeze({
         pp: 30,
         type: "ice",
         execute(battle, user, target) {
-            battle.pushEvent({
-                type: "info",
-                id: user.owner.id,
-                why: "haze",
-            });
+            battle.info(user, "haze");
 
             for (const k of stageKeys) {
                 user.v.stages[k] = target.v.stages[k] = 0;
@@ -137,12 +129,7 @@ export const moveList = Object.freeze({
             }
 
             if (target.base.status === "frz" || target.base.status === "slp") {
-                battle.pushEvent({
-                    type: "info",
-                    id: target.owner.id,
-                    why: target.base.status === "frz" ? "thaw" : "wake",
-                });
-
+                battle.info(target, target.base.status === "frz" ? "thaw" : "wake");
                 target.base.sleepTurns = 0;
                 target.v.hazed = true;
             }
@@ -158,33 +145,17 @@ export const moveList = Object.freeze({
         acc: 80,
         execute(battle, user, target) {
             if (target.v.types.includes(this.type)) {
-                battle.pushEvent({
-                    type: "info",
-                    id: target.owner.id,
-                    why: "immune",
-                });
+                battle.info(target, "immune");
                 return false;
-            }
-
-            if (target.v.flags.seeded) {
-                battle.pushEvent({
-                    type: "info",
-                    id: target.owner.id,
-                    why: "fail_generic",
-                });
+            } else if (target.v.flags.seeded) {
+                battle.info(target, "fail_generic");
                 return false;
-            }
-
-            if (!this.checkAccuracy(battle, user, target)) {
+            } else if (!this.checkAccuracy(battle, user, target)) {
                 return false;
             }
 
             target.v.flags.seeded = true;
-            battle.pushEvent({
-                type: "info",
-                id: target.owner.id,
-                why: "seeded",
-            });
+            battle.info(target, "seeded");
             return false;
         },
     }),
@@ -218,11 +189,7 @@ export const moveList = Object.freeze({
                 move: randChoice(target.base.moves),
             };
 
-            battle.pushEvent({
-                type: "mimic",
-                id: user.owner.id,
-                move: user.v.mimic.move,
-            });
+            battle.event({ type: "mimic", id: user.owner.id, move: user.v.mimic.move });
             return false;
         },
     }),
@@ -232,11 +199,7 @@ export const moveList = Object.freeze({
         type: "flying",
         execute(battle, user, target) {
             if (!target.v.lastMove || target.v.lastMove === this) {
-                battle.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "fail_generic",
-                });
+                battle.info(user, "fail_generic");
                 return false;
             }
 
@@ -255,7 +218,7 @@ export const moveList = Object.freeze({
             }
 
             // psywave has a desync glitch that we don't emulate
-            return target.inflictDamage(
+            return target.damage(
                 randRangeInclusive(1, Math.max(Math.floor(user.base.level * 1.5 - 1), 1)),
                 user,
                 battle,
@@ -269,27 +232,17 @@ export const moveList = Object.freeze({
         pp: 10,
         type: "normal",
         execute(battle, user) {
-            if (user.v.substitute > 0) {
-                battle.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "has_substitute",
-                });
-                return false;
-            }
-
-            const hp = Math.floor(user.base.stats.hp / 4);
             // Gen 1 bug, if you have exactly 25% hp you can create a substitute and instantly die
-            if (hp > user.base.hp) {
-                battle.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "cant_substitute",
-                });
+            const hp = Math.floor(user.base.stats.hp / 4);
+            if (user.v.substitute > 0) {
+                battle.info(user, "has_substitute");
+                return false;
+            } else if (hp > user.base.hp) {
+                battle.info(user, "cant_substitute");
                 return false;
             }
 
-            const { dead } = user.inflictDamage(hp, user, battle, false, "substitute");
+            const { dead } = user.damage(hp, user, battle, false, "substitute");
             user.v.substitute = hp + 1;
             return dead;
         },
@@ -314,11 +267,7 @@ export const moveList = Object.freeze({
             }
 
             user.v.types = [...target.v.types];
-            battle.pushEvent({
-                type: "transform",
-                src: user.owner.id,
-                target: target.owner.id,
-            });
+            battle.event({ type: "transform", src: user.owner.id, target: target.owner.id });
             return false;
         },
     }),

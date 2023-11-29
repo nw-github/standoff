@@ -71,11 +71,7 @@ export class DamagingMove extends Move {
 
     override use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number) {
         if ((this.flag === "charge" || this.flag === "charge_invuln") && user.v.charging !== this) {
-            battle.pushEvent({
-                type: "charge",
-                id: user.owner.id,
-                move: battle.moveIdOf(this)!,
-            });
+            battle.event({ type: "charge", id: user.owner.id, move: battle.moveIdOf(this)! });
             user.v.charging = this;
             if (this.flag === "charge_invuln") {
                 user.v.invuln = true;
@@ -96,29 +92,40 @@ export class DamagingMove extends Move {
         if (this.flag === "multi_turn" && !user.v.thrashing) {
             user.v.thrashing = { move: this, turns: randRangeInclusive(2, 3) };
         } else if (user.v.thrashing && user.v.thrashing.turns !== -1) {
-            --user.v.thrashing.turns;
-            if (user.v.thrashing.turns <= 0) {
+            if (--user.v.thrashing.turns === 0) {
                 user.v.thrashing = undefined;
-                user.inflictConfusion(battle, true);
+                user.confuse(battle, true);
             }
         }
 
         const { dmg, isCrit, eff } = this.getDamage(user, target);
-        if (dmg === 0) {
-            battle.pushEvent(
-                eff === 0
-                    ? { type: "info", id: target.owner.id, why: "immune" }
-                    : { type: "info", id: user.owner.id, why: "miss" }
-            );
-            if (this.flag === "crash" && eff === 0) {
-                return false;
+        if (dmg === 0 || !this.checkAccuracy(battle, user, target)) {
+            if (dmg === 0) {
+                if (eff === 0) {
+                    battle.info(target, "immune");
+                } else {
+                    battle.info(user, "miss");
+                }
+    
+                if (this.flag === "crash" && eff === 0) {
+                    return false;
+                }
             }
 
-            return this.onMiss(battle, user, target);
-        }
+            if (this.flag === "crash") {
+                // https://www.smogon.com/dex/rb/moves/high-jump-kick/
+                if (user.v.substitute && target.v.substitute) {
+                    target.damage(1, user, battle, false, "attacked");
+                } else if (!user.v.substitute) {
+                    return user.damage(1, user, battle, false, "crash", true).dead;
+                }
+            } else if (this.flag === "explosion") {
+                // according to showdown, explosion also boosts rage even on miss/failure
+                target.handleRage(battle);
+                return user.damage(user.base.hp, user, battle, false, "explosion", true).dead;
+            }
 
-        if (!this.checkAccuracy(battle, user, target)) {
-            return this.onMiss(battle, user, target);
+            return false;
         }
 
         if (this.flag === "rage") {
@@ -126,7 +133,7 @@ export class DamagingMove extends Move {
         }
 
         const hadSub = target.v.substitute !== 0;
-        let { dealt, brokeSub, dead, event } = target.inflictDamage(
+        let { dealt, brokeSub, dead, event } = target.damage(
             dmg,
             user,
             battle,
@@ -143,7 +150,7 @@ export class DamagingMove extends Move {
         if (!brokeSub) {
             if (this.recoil) {
                 dead =
-                    user.inflictDamage(
+                    user.damage(
                         Math.max(Math.floor(dealt / this.recoil), 1),
                         user,
                         battle,
@@ -154,15 +161,14 @@ export class DamagingMove extends Move {
             }
 
             if (this.flag === "drain" || this.flag === "dream_eater") {
-                user.inflictRecovery(Math.max(Math.floor(dealt / 2), 1), target, battle, "drain");
+                user.recover(Math.max(Math.floor(dealt / 2), 1), target, battle, "drain");
             } else if (this.flag === "explosion") {
                 dead =
-                    user.inflictDamage(user.base.hp, user, battle, false, "explosion", true).dead ||
-                    dead;
+                    user.damage(user.base.hp, user, battle, false, "explosion", true).dead || dead;
             } else if (this.flag === "double") {
                 if (!dead) {
                     event.hitCount = 0;
-                    ({ dead, event } = target.inflictDamage(
+                    ({ dead, event } = target.damage(
                         dmg,
                         user,
                         battle,
@@ -177,7 +183,7 @@ export class DamagingMove extends Move {
                 let count = DamagingMove.multiHitCount();
                 for (let hits = 1; !dead && !brokeSub && count-- > 0; hits++) {
                     event.hitCount = 0;
-                    ({ dead, brokeSub, event } = target.inflictDamage(
+                    ({ dead, brokeSub, event } = target.damage(
                         dmg,
                         user,
                         battle,
@@ -189,11 +195,7 @@ export class DamagingMove extends Move {
                     event.hitCount = hits;
                 }
             } else if (this.flag === "payday") {
-                battle.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "payday",
-                });
+                battle.info(user, "payday");
             }
         }
 
@@ -210,11 +212,7 @@ export class DamagingMove extends Move {
             if (effect === "brn" && target.base.status === "frz") {
                 target.base.status = undefined;
                 target.v.hazed = true;
-                battle.pushEvent({
-                    type: "info",
-                    id: target.owner.id,
-                    why: "thaw",
-                });
+                battle.info(target, "thaw");
                 // TODO: can you thaw and then burn?
                 return dead;
             }
@@ -225,13 +223,13 @@ export class DamagingMove extends Move {
 
             if (effect === "confusion") {
                 if (target.v.confusion === 0) {
-                    target.inflictConfusion(battle);
+                    target.confuse(battle);
                 }
                 return dead;
             } else if (hadSub) {
                 return dead;
             } else if (Array.isArray(effect)) {
-                target.inflictStages(user.owner, effect, battle);
+                target.modStages(user.owner, effect, battle);
             } else if (effect === "flinch") {
                 target.v.flinch = true;
             } else {
@@ -239,27 +237,11 @@ export class DamagingMove extends Move {
                     return dead;
                 }
 
-                target.inflictStatus(effect, battle);
+                target.status(effect, battle);
             }
         }
 
         return dead;
-    }
-
-    private onMiss(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
-        if (this.flag === "crash") {
-            // https://www.smogon.com/dex/rb/moves/high-jump-kick/
-            if (user.v.substitute && target.v.substitute) {
-                target.inflictDamage(1, user, battle, false, "attacked");
-            } else if (!user.v.substitute) {
-                return user.inflictDamage(1, user, battle, false, "crash", true).dead;
-            }
-        } else if (this.flag === "explosion") {
-            // according to showdown, explosion also boosts rage even on miss/failure
-            target.handleRage(battle);
-            return user.inflictDamage(user.base.hp, user, battle, false, "explosion", true).dead;
-        }
-        return false;
     }
 
     private getDamage(user: ActivePokemon, target: ActivePokemon) {

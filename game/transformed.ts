@@ -1,6 +1,6 @@
 import type { MoveId } from "./moveList";
 import type { Pokemon } from "./pokemon";
-import type { Stats } from "./species";
+import type { Stats } from "./utils";
 
 export class TransformedPokemon {
     readonly stats: Stats;

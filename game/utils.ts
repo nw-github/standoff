@@ -1,10 +1,5 @@
 import type { ActivePokemon } from "./battle";
 
-export type Stages = (typeof stageKeys)[number];
-
-export const statKeys = ["atk", "def", "spc", "spe"] as const;
-export const stageKeys = [...statKeys, "acc", "eva"] as const;
-
 export type Type =
     | "normal"
     | "rock"
@@ -21,28 +16,26 @@ export type Type =
     | "ice"
     | "psychic"
     | "dragon";
+export type Stages = (typeof stageKeys)[number];
+export type Stats = Record<(typeof statKeys)[number], number>;
+
+export const stageStatKeys = ["atk", "def", "spc", "spe"] as const;
+export const statKeys = ["hp", ...stageStatKeys] as const;
+export const stageKeys = [...stageStatKeys, "acc", "eva"] as const;
 
 export const randRangeInclusive = (min: number, max: number) => {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 };
 
-export const randChance255 = (num: number) => {
-    return randRangeInclusive(0, 255) < Math.floor(Math.min(num, 255));
-};
+export const randChance255 = (num: number) => randRangeInclusive(0, 255) < Math.min(num, 255);
 
 export const randChoice = <T>(arr: T[]) => arr[randRangeInclusive(0, arr.length - 1)];
 
-export const floatTo255 = (num: number) => {
-    return Math.floor((num / 100) * 255);
-};
+export const floatTo255 = (num: number) => Math.floor((num / 100) * 255);
 
-export const clamp = (num: number, min: number, max: number) => {
-    return Math.max(Math.min(num, max), min);
-};
+export const clamp = (num: number, min: number, max: number) => Math.max(Math.min(num, max), min);
 
-export const hpPercentExact = (current: number, max: number) => {
-    return (current / max) * 100;
-};
+export const hpPercentExact = (current: number, max: number) => (current / max) * 100;
 
 export const hpPercent = (current: number, max: number) => {
     // TODO: research how the game fills the hp bar

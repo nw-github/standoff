@@ -1,5 +1,6 @@
 import { moveList, type MoveId } from "./moveList";
-import { speciesList, type Stats, type SpeciesId } from "./species";
+import { speciesList, type SpeciesId } from "./species";
+import type { Stats } from "./utils";
 
 export type Status = "psn" | "par" | "slp" | "frz" | "tox" | "brn";
 

@@ -5,6 +5,7 @@ import type {
     DamageReason,
     PlayerId,
     RecoveryReason,
+    InfoReason,
 } from "./events";
 import { moveList, type MoveId } from "./moveList";
 import { Move } from "./moves";
@@ -40,11 +41,11 @@ class SwitchMove extends Move {
         super("", 0, "normal", undefined, +2);
     }
 
-    override use(battle: Battle, user: ActivePokemon): boolean {
+    override use(battle: Battle, user: ActivePokemon) {
         return this.execute(battle, user);
     }
 
-    override execute(battle: Battle, user: ActivePokemon): boolean {
+    override execute(battle: Battle, user: ActivePokemon) {
         user.switchTo(this.poke, battle);
         return false;
     }
@@ -144,7 +145,7 @@ export class Player {
     }
 
     isAllDead() {
-        return this.team.every(poke => poke.hp <= 0);
+        return this.team.every(poke => poke.hp === 0);
     }
 
     private isValidMove(move: MoveId, i: number) {
@@ -200,9 +201,13 @@ export class Battle {
         return this._victor;
     }
 
-    pushEvent<T extends BattleEvent>(event: T) {
+    event<T extends BattleEvent>(event: T) {
         this.events.push(event);
         return event;
+    }
+
+    info(src: ActivePokemon, why: InfoReason) {
+        return this.event({ type: "info", id: src.owner.id, why });
     }
 
     opponentOf(player: Player): Player {
@@ -259,83 +264,60 @@ export class Battle {
     }
 
     private userMove({ move, user, indexInMoves }: ChosenMove) {
+        if (move instanceof SwitchMove) {
+            return move.use(this, user);
+        }
+
         const target = this.opponentOf(user.owner).active;
-        const isSwitchMove = move instanceof SwitchMove;
-        if (!isSwitchMove) {
-            if (user.v.flinch) {
-                this.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "flinch",
-                });
-                user.v.recharge = undefined;
-                return false;
-            } else if (user.v.hazed) {
-                return false;
-            } else if (user.base.status === "frz") {
-                this.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "frozen",
-                });
-                return false;
-            } else if (user.base.status === "slp") {
-                const done = --user.base.sleepTurns === 0;
-                if (done) {
-                    user.base.status = undefined;
-                }
-
-                this.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: done ? "wake" : "sleep",
-                });
-                return false;
-            } else if (user.v.recharge) {
-                this.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "recharge",
-                });
-                user.v.recharge = undefined;
-                return false;
+        if (user.v.flinch) {
+            this.info(user, "flinch");
+            user.v.recharge = undefined;
+            return false;
+        } else if (user.v.hazed) {
+            return false;
+        } else if (user.base.status === "frz") {
+            this.info(user, "frozen");
+            return false;
+        } else if (user.base.status === "slp") {
+            const done = --user.base.sleepTurns === 0;
+            if (done) {
+                user.base.status = undefined;
             }
 
-            if (user.v.disabled && --user.v.disabled.turns === 0) {
-                user.v.disabled = undefined;
-                this.pushEvent({ type: "info", id: user.owner.id, why: "disable_end" });
+            this.info(user, done ? "wake" : "sleep");
+            return false;
+        } else if (user.v.recharge) {
+            this.info(user, "recharge");
+            user.v.recharge = undefined;
+            return false;
+        }
+
+        if (user.v.disabled && --user.v.disabled.turns === 0) {
+            user.v.disabled = undefined;
+            this.info(user, "disable_end");
+        }
+
+        if (user.v.confusion) {
+            this.info(user, --user.v.confusion === 0 ? "confused_end" : "confused");
+        }
+
+        if (user.base.status === "par" && randChance255(floatTo255(25))) {
+            this.info(user, "paralyze");
+
+            user.v.charging = undefined;
+            user.v.bide = undefined;
+            if (user.v.thrashing?.turns !== -1) {
+                user.v.thrashing = undefined;
             }
-
-            if (user.v.confusion) {
-                this.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: --user.v.confusion === 0 ? "confused_end" : "confused",
-                });
-            }
-
-            if (user.base.status === "par" && randChance255(floatTo255(25))) {
-                this.pushEvent({
-                    type: "info",
-                    id: user.owner.id,
-                    why: "paralyze",
-                });
-
-                user.v.charging = undefined;
-                user.v.bide = undefined;
-                if (user.v.thrashing?.turns !== -1) {
-                    user.v.thrashing = undefined;
+            return false;
+        } else if (user.v.confusion && randChance255(floatTo255(50))) {
+            if (user.handleConfusionDamage(this, target)) {
+                if (user.owner.isAllDead()) {
+                    this._victor = target.owner;
                 }
+                return true;
+            } else {
                 return false;
-            } else if (user.v.confusion && randChance255(floatTo255(50))) {
-                if (user.handleConfusionDamage(this, target)) {
-                    if (user.owner.isAllDead()) {
-                        this._victor = target.owner;
-                    }
-                    return true;
-                } else {
-                    return false;
-                }
             }
         }
 
@@ -348,28 +330,24 @@ export class Battle {
                 }
             }
             return true;
-        }
-
-        if (!isSwitchMove) {
-            if (user.handleStatusDamage(this)) {
-                if (user.owner.isAllDead()) {
-                    this._victor = target.owner;
-                }
-                return true;
-            } else if (user.v.flags.seeded && user.tickCounter(this, "seeded")) {
-                if (user.owner.isAllDead()) {
-                    this._victor = target.owner;
-                }
-                return true;
+        } else if (user.handleStatusDamage(this)) {
+            if (user.owner.isAllDead()) {
+                this._victor = target.owner;
             }
+            return true;
+        } else if (user.v.flags.seeded && user.tickCounter(this, "seeded")) {
+            if (user.owner.isAllDead()) {
+                this._victor = target.owner;
+            }
+            return true;
         }
 
         return false;
     }
 
     private endTurn(): Turn {
-        if (this._victor) {
-            this.pushEvent({ type: "victory", id: this._victor.id });
+        if (this.victor) {
+            this.event({ type: "victory", id: this.victor.id });
         }
 
         for (const player of this.players) {
@@ -381,7 +359,7 @@ export class Battle {
         }
 
         const switchTurn = this.switchTurn;
-        this.switchTurn = this.players.some(pl => pl.active.base.hp <= 0);
+        this.switchTurn = this.players.some(pl => pl.active.base.hp === 0);
         return { events: this.events.splice(0), switchTurn };
     }
 }
@@ -395,34 +373,32 @@ export class ActivePokemon {
         this.v = new Volatiles(base);
     }
 
-    switchTo(base: Pokemon, battle: Battle) {
-        if (base.status === "tox") {
-            base.status = "psn";
+    switchTo(next: Pokemon, battle: Battle) {
+        if (this.base.status === "tox") {
+            this.base.status = "psn";
         }
 
-        battle.pushEvent({
+        battle.event({
             type: "switch",
-            speciesId: base.speciesId,
-            status: base.status,
-            hp: base.hp,
-            maxHp: base.stats.hp,
+            speciesId: next.speciesId,
+            status: next.status,
+            hp: next.hp,
+            maxHp: next.stats.hp,
             src: this.owner.id,
-            name: base.name,
-            level: base.level,
-            indexInTeam: this.owner.team.indexOf(base),
+            name: next.name,
+            level: next.level,
+            indexInTeam: this.owner.team.indexOf(next),
         });
 
-        this.base = base;
-        this.v = new Volatiles(base);
+        this.base = next;
+        this.v = new Volatiles(next);
         this.applyStatusDebuff();
     }
 
-    getStat(stat: keyof VolatileStats, isCrit?: boolean, def?: boolean, screen?: boolean): number {
+    getStat(stat: keyof VolatileStats, isCrit?: boolean, def?: boolean, screen?: boolean) {
         if (!def && isCrit && this.base instanceof TransformedPokemon) {
             return this.base.base.stats[stat];
-        }
-
-        if (isCrit) {
+        } else if (isCrit) {
             return this.base.stats[stat];
         }
 
@@ -437,7 +413,7 @@ export class ActivePokemon {
         return res;
     }
 
-    inflictDamage(
+    damage(
         dmg: number,
         src: ActivePokemon,
         battle: Battle,
@@ -454,7 +430,7 @@ export class ActivePokemon {
         if (this.v.substitute !== 0 && !direct) {
             const hpBefore = this.v.substitute;
             this.v.substitute = Math.max(this.v.substitute - dmg, 0);
-            const event = battle.pushEvent<HitSubstituteEvent>({
+            const event = battle.event<HitSubstituteEvent>({
                 type: "hit_sub",
                 src: src.owner.id,
                 target: this.owner.id,
@@ -472,7 +448,7 @@ export class ActivePokemon {
         } else {
             const hpBefore = this.base.hp;
             this.base.hp = Math.max(this.base.hp - dmg, 0);
-            const event = battle.pushEvent<DamageEvent>({
+            const event = battle.event<DamageEvent>({
                 type: "damage",
                 src: src.owner.id,
                 target: this.owner.id,
@@ -493,14 +469,14 @@ export class ActivePokemon {
         }
     }
 
-    inflictRecovery(amount: number, src: ActivePokemon, battle: Battle, why: RecoveryReason) {
+    recover(amount: number, src: ActivePokemon, battle: Battle, why: RecoveryReason) {
         const hpBefore = this.base.hp;
         this.base.hp = Math.min(this.base.hp + amount, this.base.stats.hp);
         if (this.base.hp === hpBefore) {
             return;
         }
 
-        battle.pushEvent({
+        battle.event({
             type: "recover",
             src: src.owner.id,
             target: this.owner.id,
@@ -511,7 +487,7 @@ export class ActivePokemon {
         });
     }
 
-    inflictStatus(status: Status, battle: Battle, override = false) {
+    status(status: Status, battle: Battle, override = false) {
         if (!override && this.base.status) {
             return false;
         }
@@ -526,7 +502,7 @@ export class ActivePokemon {
         this.base.status = status;
         this.v.handledStatus = false;
         this.applyStatusDebuff();
-        battle.pushEvent({
+        battle.event({
             type: "status",
             id: this.owner.id,
             status,
@@ -536,7 +512,7 @@ export class ActivePokemon {
         return true;
     }
 
-    inflictStages(user: Player, mods: [Stages, number][], battle: Battle) {
+    modStages(user: Player, mods: [Stages, number][], battle: Battle) {
         mods = mods.filter(([stat]) => Math.abs(this.v.stages[stat]) !== 6);
 
         const opponent = battle.opponentOf(user).active;
@@ -552,7 +528,7 @@ export class ActivePokemon {
         }
 
         if (mods.length) {
-            battle.pushEvent({
+            battle.event({
                 type: "stages",
                 id: this.owner.id,
                 stages: mods,
@@ -563,18 +539,14 @@ export class ActivePokemon {
         return mods.length !== 0;
     }
 
-    inflictConfusion(battle: Battle, thrashing?: true) {
+    confuse(battle: Battle, thrashing?: true) {
         if (!thrashing && this.v.confusion) {
             return false;
         }
 
         this.v.confusion = randRangeInclusive(2, 5);
         if (!thrashing) {
-            battle.pushEvent({
-                type: "info",
-                id: this.owner.id,
-                why: "became_confused",
-            });
+            battle.info(this, "became_confused");
         }
         return true;
     }
@@ -582,10 +554,10 @@ export class ActivePokemon {
     tickCounter(battle: Battle, why: DamageReason) {
         const multiplier = this.base.status === "psn" && why === "psn" ? 1 : this.v.counter;
         const dmg = Math.max(Math.floor((multiplier * this.base.stats.hp) / 16), 1);
-        const { dead } = this.inflictDamage(dmg, this, battle, false, why, true);
+        const { dead } = this.damage(dmg, this, battle, false, why, true);
         const opponent = battle.opponentOf(this.owner).active;
         if (why === "seeded" && opponent.base.hp < opponent.base.stats.hp) {
-            opponent.inflictRecovery(dmg, this, battle, "seeder");
+            opponent.recover(dmg, this, battle, "seeder");
         }
 
         if (this.base.status === "tox") {
@@ -613,12 +585,8 @@ export class ActivePokemon {
 
     handleRage(battle: Battle) {
         if (this.base.hp && this.v.thrashing?.move === moveList.rage && this.v.stages.atk < 6) {
-            battle.pushEvent({
-                type: "info",
-                id: this.owner.id,
-                why: "rage",
-            });
-            this.inflictStages(this.owner, [["atk", +1]], battle);
+            battle.info(this, "rage");
+            this.modStages(this.owner, [["atk", +1]], battle);
         }
     }
 
@@ -642,9 +610,9 @@ export class ActivePokemon {
         });
 
         if (this.v.substitute && target.v.substitute) {
-            target.inflictDamage(dmg, this, battle, false, "confusion");
+            target.damage(dmg, this, battle, false, "confusion");
         } else if (!this.v.substitute) {
-            return this.inflictDamage(dmg, this, battle, false, "confusion").dead;
+            return this.damage(dmg, this, battle, false, "confusion").dead;
         }
 
         return false;
@@ -652,7 +620,7 @@ export class ActivePokemon {
 
     applyStages(stat: keyof VolatileStats, negative: boolean) {
         this.v.stats[stat] = Math.floor(
-            this.base.stats[stat] * (stageMultipliers[this.v.stages[stat]] / 100)
+            (this.base.stats[stat] * stageMultipliers[this.v.stages[stat]]) / 100
         );
         // https://www.smogon.com/rb/articles/rby_mechanics_guide#stat-mechanics
         if (negative) {

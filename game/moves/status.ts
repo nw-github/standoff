@@ -23,44 +23,26 @@ export class StatusMove extends Move {
         this.status = status;
     }
 
-    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean {
+    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
         if (target.v.substitute && this.status !== "par" && this.status !== "slp") {
-            battle.pushEvent({
-                type: "info",
-                id: target.owner.id,
-                why: "fail_generic",
-            });
+            battle.info(target, "fail_generic");
             return false;
-        }
-
-        if (
+        } else if (
             (this.type === "electric" && getEffectiveness(this.type, target.v.types) === 0) ||
             (this.type === "poison" && target.v.types.includes("poison"))
         ) {
-            battle.pushEvent({
-                type: "info",
-                id: target.owner.id,
-                why: "immune",
-            });
+            battle.info(target, "immune");
             return false;
-        }
-
-        if (this.status === "slp" && target.v.recharge) {
+        } else if (this.status === "slp" && target.v.recharge) {
             // https://www.youtube.com/watch?v=x2AgAdQwyGI
-            target.inflictStatus(this.status, battle, true);
+            target.status(this.status, battle, true);
+            return false;
+        } else if (!this.checkAccuracy(battle, user, target)) {
             return false;
         }
 
-        if (!this.checkAccuracy(battle, user, target)) {
-            return false;
-        }
-
-        if (!target.inflictStatus(this.status, battle)) {
-            battle.pushEvent({
-                type: "info",
-                id: target.owner.id,
-                why: "fail_generic",
-            });
+        if (!target.status(this.status, battle)) {
+            battle.info(target, "fail_generic");
         }
         return false;
     }

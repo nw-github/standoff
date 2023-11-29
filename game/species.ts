@@ -1,13 +1,5 @@
 import type { MoveId } from "./moveList";
-import type { Type } from "./utils";
-
-export type Stats = {
-    hp: number;
-    atk: number;
-    def: number;
-    spc: number;
-    spe: number;
-};
+import type { Stats, Type } from "./utils";
 
 export type Species = {
     readonly dexId: number;
@@ -20,7 +12,7 @@ export type Species = {
 
 export type SpeciesId = keyof typeof speciesList;
 
-const createSpeciesList = <T extends Record<string, Species>>(t: T) => t;
+const createSpeciesList = <T extends Record<string, Species>>(t: T) => Object.freeze(t);
 
 export const speciesList = createSpeciesList({
     bulbasaur: {
