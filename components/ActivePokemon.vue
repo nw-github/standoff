@@ -36,7 +36,7 @@
         </div>
         <Tooltip class="sprite-container">
             <div class="center-item">
-                <img class="sprite" :src="sprite" />
+                <img class="sprite" :srcset="sprite + ' 0.5x'" :alt="species.name" />
             </div>
 
             <template #tooltip>
@@ -61,6 +61,7 @@
     border-radius: 5px;
     position: relative;
     height: 1.2rem;
+    overflow: hidden;
 }
 
 .hp-fill {
@@ -103,7 +104,6 @@
     image-rendering: pixelated;
     image-rendering: -moz-crisp-edges;
     image-rendering: crisp-edges;
-    width: v-bind("back ? '80%' : '65%'");
 }
 
 .effects {
