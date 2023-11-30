@@ -2,6 +2,7 @@
     <div class="self">
         <div class="tabs">
             <NuxtLink class="home" to="/">Home</NuxtLink>
+            <NuxtLink class="home" to="/teambuilder">Teambuilder</NuxtLink>
         </div>
 
         <NuxtPage />
