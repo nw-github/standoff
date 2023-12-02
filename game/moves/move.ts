@@ -31,7 +31,6 @@ export abstract class Move {
             user.v.thrashing.acc = chance;
         }
 
-        console.log(`Accuracy: ${this.acc} (${chance}/256)`);
         if (target.v.invuln || !randChance255(chance)) {
             battle.info(user, "miss");
             return false;

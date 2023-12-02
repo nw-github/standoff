@@ -139,8 +139,6 @@ export class DamagingMove extends Move {
 
         if (this.flag === "rage") {
             user.v.thrashing = { move: this, turns: -1 };
-        } else if (this.flag === "trap") {
-            this.trapTarget(user, target, dmg);
         }
 
         const hadSub = target.v.substitute !== 0;
@@ -202,6 +200,8 @@ export class DamagingMove extends Move {
 
         if (this.flag === "recharge") {
             user.v.recharge = this;
+        } else if (this.flag === "trap") {
+            this.trapTarget(user, target, dmg);
         }
 
         if (this.effect) {

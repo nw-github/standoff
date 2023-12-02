@@ -138,7 +138,7 @@ export class Player {
             });
         }
 
-        const moveLocked = !!active.v.bide || !!active.v.trapping;
+        const moveLocked = !!(active.v.bide || active.v.trapping);
         this.options = {
             canSwitch: !lockedIn || moveLocked || active.base.hp === 0,
             moves,
