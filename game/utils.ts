@@ -18,6 +18,7 @@ export type Type =
     | "dragon";
 export type Stages = (typeof stageKeys)[number];
 export type Stats = Record<(typeof statKeys)[number], number>;
+export type StageStats = Record<(typeof stageStatKeys)[number], number>;
 
 export const stageStatKeys = ["atk", "def", "spc", "spe"] as const;
 export const statKeys = ["hp", ...stageStatKeys] as const;

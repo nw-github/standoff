@@ -1,54 +1,74 @@
 <template>
     <form>
-        <input type="text" name="name" :placeholder="species.name" id="name" />
+        <div class="upper">
+            <Sprite :back="false" :species="species" />
 
-        <label for="level">Level</label>
-        <input type="number" min="1" max="100" name="level" id="level" value="100" />
+            <div>
+                <input type="text" :placeholder="species.name" />
+
+                <label for="level">Level</label>
+                <input type="number" min="1" max="100" value="100" />
+
+                <fieldset>
+                    <template v-for="(_, i) in 4">
+                        <div>
+                            <input :list="`move-${i}`" v-model="moves[i]" />
+                            <datalist :id="`move-${i}`">
+                                <option v-for="id in unusedMoves" :value="id">
+                                    {{ moveList[id].name }}
+                                </option>
+                            </datalist>
+                        </div>
+                    </template>
+                </fieldset>
+            </div>
+        </div>
 
         <fieldset>
-            <template v-for="(_, i) in Array(4)">
+            <template v-for="stat in statKeys">
                 <div>
-                    <select :name="`move-${i}`" :id="`move-${i}`">
-                        <option v-for="id in species.moves" :value="id">
-                            {{ moveList[id].name }}
-                        </option>
-                    </select>
-                </div>
-            </template>
-        </fieldset>
-
-        <fieldset>
-            <template v-for="stat in stageStatKeys">
-                <div>
-                    <label :for="`slider-${stat}`">{{ stageTable[stat] }}</label>
-                    <input
-                        type="range"
-                        min="0"
-                        max="255"
-                        :name="stat"
-                        :id="`slider-${stat}`"
-                        value="255"
-                    />
-                    <input
-                        type="number"
-                        :name="`dv_${stat}`"
-                        :id="`dv-${stat}`"
-                        min="0"
-                        max="15"
-                        value="15"
-                    />
+                    <label :for="`slider-${stat}`">
+                        {{ stat === "hp" ? "HP" : stageTable[stat] }}
+                    </label>
+                    <input type="range" min="0" max="252" step="4" v-model="statexp[stat]" />
+                    <span>{{ statexp[stat] }}</span>
+                    <template v-if="stat === 'hp'">
+                        <input type="number" min="0" max="15" value="15" :disabled="true" />
+                    </template>
+                    <template v-else>
+                        <input type="number" min="0" max="15" v-model="dvs[stat]" />
+                    </template>
                 </div>
             </template>
         </fieldset>
     </form>
 </template>
 
+<style scoped>
+.upper {
+    display: flex;
+}
+</style>
+
 <script setup lang="ts">
 import { moveList } from "~/game/moveList";
 import { speciesList } from "~/game/species";
-import { stageStatKeys } from "~/game/utils";
+import { statKeys, type StageStats, type Stats } from "~/game/utils";
 
 const species = speciesList.mewtwo;
+const dvs = reactive<StageStats>({
+    atk: 15,
+    def: 15,
+    spc: 15,
+    spe: 15,
+});
+const statexp = reactive<Stats>({
+    hp: 252,
+    atk: 252,
+    def: 252,
+    spc: 252,
+    spe: 252,
+});
+const moves = ref<(string | undefined)[]>([]);
+const unusedMoves = computed(() => species.moves.filter(id => !moves.value.includes(id)));
 </script>
-
-<style scoped></style>

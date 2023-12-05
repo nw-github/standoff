@@ -79,7 +79,11 @@ const enterTurn = async (
 
         if (live) {
             await nextTick();
-            scrollPoint.value?.scrollIntoView();
+            scrollPoint.value?.scrollIntoView({
+                behavior: "smooth",
+                block: "center",
+                inline: "center",
+            });
             await delay(300);
         }
     }
@@ -92,7 +96,7 @@ const enterTurn = async (
 
 const htmlForEvent = (e: BattleEvent) => {
     const players = props.players;
-    const pname = (id: string, title: boolean = true) => {
+    const pname = (id: string, title = true) => {
         if (id === props.perspective) {
             return players[id].active!.name;
         } else if (title) {

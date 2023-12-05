@@ -1,6 +1,6 @@
 import { moveList, type MoveId } from "./moveList";
 import { speciesList, type SpeciesId } from "./species";
-import type { Stats } from "./utils";
+import type { StageStats, Stats } from "./utils";
 
 export type Status = "psn" | "par" | "slp" | "frz" | "tox" | "brn";
 
@@ -17,7 +17,7 @@ export class Pokemon {
 
     constructor(
         speciesId: SpeciesId,
-        dvs: Partial<Stats>,
+        dvs: Partial<StageStats>,
         statexp: Partial<Stats>,
         level: number,
         moves: MoveId[],
@@ -27,10 +27,16 @@ export class Pokemon {
         dvs.def ??= 15;
         dvs.spc ??= 15;
         dvs.spe ??= 15;
-        dvs.hp = ((dvs.atk & 1) << 3) | ((dvs.def & 1) << 2) | ((dvs.spc & 1) << 1) | (dvs.spe & 1);
+        const hp =
+            ((dvs.atk & 1) << 3) | ((dvs.def & 1) << 2) | ((dvs.spc & 1) << 1) | (dvs.spe & 1);
 
         const calcStatBase = (stat: keyof Stats) => {
-            return calcStat(this.species.stats[stat], level, dvs[stat], statexp[stat]);
+            return calcStat(
+                this.species.stats[stat],
+                level,
+                stat === "hp" ? hp : dvs[stat],
+                statexp[stat]
+            );
         };
 
         this.speciesId = speciesId;

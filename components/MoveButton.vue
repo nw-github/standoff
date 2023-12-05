@@ -23,7 +23,7 @@
                     </h4>
                     Priority
                 </li>
-                <li class="padtop">{{ desc }}</li>
+                <li class="padtop">{{ describeMove(option.move) }}</li>
                 <li class="padtop">
                     <span class="type">{{ toTitleCase(move.type) }}</span>
                     <span :class="category">{{ toTitleCase(category) }}</span>
@@ -40,11 +40,12 @@ import { isSpecial } from "../game/utils";
 
 defineEmits<{ (e: "click"): void }>();
 
-const { option } = defineProps<{ option: MoveOption }>();
-const move = moveList[option.move];
-const category = move.power ? (isSpecial(move.type) ? "special" : "physical") : "status";
-const desc = describeMove(option.move);
-const bgColor = typeColor[move.type];
+const props = defineProps<{ option: MoveOption }>();
+const move = computed(() => moveList[props.option.move]);
+const category = computed(() => {
+    return move.value.power ? (isSpecial(move.value.type) ? "special" : "physical") : "status";
+});
+const bgColor = computed(() => typeColor[move.value.type]);
 
 const hex2rgba = (rgb: string, a: number) => {
     return `rgba(${rgb

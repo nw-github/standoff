@@ -36,7 +36,7 @@
         </div>
         <Tooltip class="sprite-container">
             <div class="center-item">
-                <img class="sprite" :srcset="sprite + ' 0.5x'" :alt="species.name" />
+                <Sprite :back="back" :species="species" />
             </div>
 
             <template #tooltip>
@@ -98,12 +98,6 @@
 .info-text {
     display: flex;
     justify-content: space-between;
-}
-
-.sprite {
-    image-rendering: pixelated;
-    image-rendering: -moz-crisp-edges;
-    image-rendering: crisp-edges;
 }
 
 .effects {
@@ -173,14 +167,6 @@ const maxSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level
 const hp = computed(() =>
     props.base ? hpPercent(props.base.hp, props.base.stats.hp) : props.poke.hp
 );
-const sprite = computed(() => {
-    const dexId = speciesList[props.poke.transformed ?? props.poke.speciesId].dexId;
-    if (props.back) {
-        return `/sprites/pokemon/back/${dexId}.gif`;
-    } else {
-        return `/sprites/pokemon/${dexId}.gif`;
-    }
-});
 
 // https://stackoverflow.com/questions/8022885/rgb-to-hsv-color-in-javascript/54070620#54070620
 const rgb2hsv = (r: number, g: number, b: number) => {
