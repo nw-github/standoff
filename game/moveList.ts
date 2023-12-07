@@ -41,12 +41,13 @@ export const moveList = Object.freeze({
             battle.info(user, "bide");
 
             const dmg = user.v.bide.dmg;
+            user.v.bide = undefined;
+
             if (dmg === 0) {
                 battle.info(user, "miss");
                 return false;
             }
 
-            user.v.bide = undefined;
             return target.damage(dmg * 2, user, battle, false, "attacked").dead;
         }
 
