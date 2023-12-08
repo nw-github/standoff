@@ -176,7 +176,7 @@ export class Battle {
     private readonly events: BattleEvent[] = [];
     private readonly moveListToId;
     private switchTurn = false;
-    private _victor?: Player;
+    _victor?: Player;
 
     private constructor(player1: Player, player2: Player) {
         this.players = [player1, player2];
@@ -250,7 +250,15 @@ export class Battle {
             }
 
             const target = this.opponentOf(choice.user.owner).active;
-            if (this.userMove(choice, target) || this.recurrentDamage(choice.user, target)) {
+            if (this.userMove(choice, target) || choice.user.handleRecurrentDamage(this)) {
+                if (!this._victor) {
+                    if (target.owner.isAllDead()) {
+                        this._victor = choice.user.owner;
+                    } else if (choice.user.owner.isAllDead()) {
+                        this._victor = target.owner;
+                    }
+                }
+
                 skipEnd = true;
                 break;
             }
@@ -324,43 +332,13 @@ export class Battle {
             return false;
         } else if (user.v.confusion && randChance255(floatTo255(50))) {
             if (user.handleConfusionDamage(this, target)) {
-                if (user.owner.isAllDead()) {
-                    this._victor = target.owner;
-                }
                 return true;
             } else {
                 return false;
             }
         }
 
-        if (move.use(this, user, target, indexInMoves)) {
-            if (!this._victor) {
-                if (target.owner.isAllDead()) {
-                    this._victor = user.owner;
-                } else if (user.owner.isAllDead()) {
-                    this._victor = target.owner;
-                }
-            }
-            return true;
-        }
-
-        return false;
-    }
-
-    private recurrentDamage(user: ActivePokemon, target: ActivePokemon) {
-        if (user.handleStatusDamage(this)) {
-            if (user.owner.isAllDead()) {
-                this._victor = target.owner;
-            }
-            return true;
-        } else if (user.v.flags.seeded && user.tickCounter(this, "seeded")) {
-            if (user.owner.isAllDead()) {
-                this._victor = target.owner;
-            }
-            return true;
-        }
-
-        return false;
+        return move.use(this, user, target, indexInMoves);
     }
 
     private endTurn(): Turn {
@@ -485,6 +463,7 @@ export class ActivePokemon {
             if (why === "attacked") {
                 this.handleRage(battle);
             }
+
             return {
                 event,
                 dealt: hpBefore - this.base.hp,
@@ -638,6 +617,16 @@ export class ActivePokemon {
             target.damage(dmg, this, battle, false, "confusion");
         } else if (!this.v.substitute) {
             return this.damage(dmg, this, battle, false, "confusion").dead;
+        }
+
+        return false;
+    }
+
+    handleRecurrentDamage(battle: Battle) {
+        if (this.handleStatusDamage(battle)) {
+            return true;
+        } else if (this.v.flags.seeded && this.tickCounter(battle, "seeded")) {
+            return true;
         }
 
         return false;
