@@ -4,7 +4,7 @@
             <div class="turn" v-if="i">
                 <h2>Turn {{ i }}</h2>
             </div>
-            <div v-html="turn"></div>
+            <component :is="() => turn" />
         </template>
 
         <div ref="scrollPoint"></div>
@@ -46,16 +46,14 @@ h6 {
 <script setup lang="ts">
 import type { Status } from "../game/pokemon";
 import type { BattleEvent, InfoReason } from "../game/events";
-import { moveList } from "../game/moveList";
+import { moveList, type MoveId } from "../game/moveList";
 import { hpPercentExact } from "../game/utils";
 import type { Turn } from "../game/battle";
 import { stageTable } from "#imports";
-import DOMPurify from "dompurify";
-import { marked } from "marked";
 import "assets/colors.css";
 
 const scrollPoint = ref<HTMLDivElement>();
-const turns = ref<string[]>([]);
+const turns = ref<VNode[][]>([]);
 
 const props = defineProps<{
     players: Record<string, ClientPlayer>;
@@ -71,10 +69,10 @@ const enterTurn = async (
     cb: (e: BattleEvent) => void
 ) => {
     if (!switchTurn) {
-        turns.value.push("");
+        turns.value.push([]);
     }
     for (const e of events) {
-        turns.value[turns.value.length - 1] += htmlForEvent(e);
+        turns.value[turns.value.length - 1].push(...htmlForEvent(e));
         cb(e);
 
         if (live) {
@@ -94,6 +92,10 @@ const enterTurn = async (
     }
 };
 
+const text = (s: string) => h("p", s);
+const bold = (s: string) => h("b", s);
+const italic = (s: string) => h("i", s);
+
 const htmlForEvent = (e: BattleEvent) => {
     const players = props.players;
     const pname = (id: string, title = true) => {
@@ -106,115 +108,125 @@ const htmlForEvent = (e: BattleEvent) => {
         }
     };
 
-    const res = [];
+    const res: Array<VNode> = [];
     if (e.type === "switch") {
         const player = players[e.src];
         if (player.active && player.active.hp) {
             if (e.src === props.perspective) {
-                res.push(`Come back! ${player.active.name}!`);
+                res.push(text(`Come back! ${player.active.name}!`));
             } else {
-                res.push(`${player.name} withdrew ${player.active.name}!`);
+                res.push(text(`${player.name} withdrew ${player.active.name}!`));
             }
         }
 
         if (e.src === props.perspective) {
-            res.push(`Go! **${e.name}**!`);
+            res.push(h("p", ["Go! ", bold(`${e.name}`), "!"]));
         } else {
-            res.push(`${player.name} sent in **${e.name}**!`);
+            res.push(h("p", [`${player.name} sent in `, bold(`${e.name}`), "!"]));
         }
     } else if (e.type === "damage" || e.type === "recover") {
         const src = pname(e.src);
         const target = pname(e.target);
         const percent = roundTo(Math.abs(hpPercentExact(e.hpBefore - e.hpAfter, e.maxHp)), 1);
         if (e.type === "damage") {
-            const effMsg = `*It's ${
+            const effMsg = `It's ${
                 (e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."
-            }*`;
+            }`;
             if (e.why === "recoil") {
-                res.push(`${src} was hurt by recoil!`);
+                res.push(text(`${src} was hurt by recoil!`));
             } else if (e.why === "crash") {
-                res.push(`${src} kept going and crashed!`);
+                res.push(text(`${src} kept going and crashed!`));
             } else if (e.why === "seeded") {
-                res.push(`${src}'s health was sapped by Leech Seed!`);
+                res.push(text(`${src}'s health was sapped by Leech Seed!`));
             } else if (e.why === "psn") {
-                res.push(`${src} is hurt by poison!`);
+                res.push(text(`${src} is hurt by poison!`));
             } else if (e.why === "brn") {
-                res.push(`${src} is hurt by its burn!`);
+                res.push(text(`${src} is hurt by its burn!`));
             } else if (e.why === "attacked" && e.isCrit) {
-                res.push("A critical hit!");
+                res.push(text("A critical hit!"));
             } else if (e.why === "confusion") {
-                res.push("It hurt itself in its confusion!");
+                res.push(text("It hurt itself in its confusion!"));
             } else if (e.why === "ohko") {
-                res.push("It's a one-hit KO!");
+                res.push(text("It's a one-hit KO!"));
             } else if (e.why === "trap") {
-                res.push(`${src}'s attack continues!`);
+                res.push(text(`${src}'s attack continues!`));
             }
 
             if (e.why === "attacked" && e.hitCount === undefined && (e.eff ?? 1) !== 1) {
-                res.push(effMsg);
+                res.push(italic(effMsg));
             }
 
             if (e.why !== "explosion") {
                 res.push(
-                    `##### <span class="red">${target} lost **${percent}%** of its health!</span>`
+                    h("h5", { class: "red" }, [
+                        `${target} lost `,
+                        bold(`${percent}%`),
+                        " of its health.",
+                    ])
                 );
             }
 
             if (e.why === "substitute") {
-                res.push(`${src} put in a substitute!`);
+                res.push(text(`${src} put in a substitute!`));
             }
 
             if ((e.hitCount ?? 0) > 0) {
                 if (e.eff !== 1) {
-                    res.push(effMsg);
+                    res.push(italic(effMsg));
                 }
-                res.push(`Hit ${e.hitCount} time(s)!`);
+                res.push(text(`Hit ${e.hitCount} time(s)!`));
             }
 
             if (e.hpAfter === 0) {
-                res.push(`${target} fainted!`);
+                res.push(text(`${target} fainted!`));
             }
         } else {
             if (e.why === "drain") {
-                res.push(`${src} had it's energy drained!`);
+                res.push(text(`${src} had it's energy drained!`));
             } else if (e.why === "recover") {
-                res.push(`${src} regained health!`);
+                res.push(text(`${src} regained health!`));
             } else if (e.why === "rest") {
-                res.push(`${src} started sleeping!`);
+                res.push(text(`${src} started sleeping!`));
             }
 
             res.push(
-                `##### <span class="green">${target} gained **${percent}%** of its health.</span>`
+                h("h5", { class: "green" }, [
+                    `${target} gained `,
+                    bold(`${percent}%`),
+                    " of its health.",
+                ])
             );
         }
     } else if (e.type === "move") {
         if (e.thrashing && e.move !== "rage") {
-            res.push(`${pname(e.src)}'s thrashing about!`);
+            res.push(text(`${pname(e.src)}'s thrashing about!`));
         } else if (e.disabled) {
-            res.push(`${pname(e.src)}'s ${moveList[e.move].name} is disabled!`);
+            res.push(text(`${pname(e.src)}'s ${moveList[e.move].name} is disabled!`));
         } else {
-            res.push(`${pname(e.src)} used **${moveList[e.move].name}**!`);
+            res.push(h("p", [`${pname(e.src)} used `, bold(moveList[e.move].name), "!"]));
         }
     } else if (e.type === "victory") {
         if (e.id === myId.value) {
-            res.push(`You win!`);
+            res.push(text("You win!"));
         } else {
-            res.push(`${players[e.id].name} wins!`);
+            res.push(text(`${players[e.id].name} wins!`));
         }
     } else if (e.type === "hit_sub") {
         if (e.confusion) {
-            res.push("It hurt itself in its confusion!");
+            res.push(text("It hurt itself in its confusion!"));
         }
 
         const eff = e.eff ?? 1;
         if (eff !== 1) {
-            res.push(`*It's ${(e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."}*`);
+            res.push(
+                bold(`It's ${(e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."}`)
+            );
         }
 
         const target = pname(e.target);
-        res.push(`${target}'s substitute took the hit!`);
+        res.push(text(`${target}'s substitute took the hit!`));
         if (e.broken) {
-            res.push(`${target}'s substitute broke!`);
+            res.push(text(`${target}'s substitute broke!`));
         }
     } else if (e.type === "status") {
         const table: Record<Status, string> = {
@@ -226,14 +238,16 @@ const htmlForEvent = (e: BattleEvent) => {
             brn: "was burned",
         };
 
-        res.push(`${pname(e.id)} ${table[e.status]}!`);
+        res.push(text(`${pname(e.id)} ${table[e.status]}!`));
     } else if (e.type === "stages") {
         const name = pname(e.id);
         for (const [stage, amount] of e.stages) {
             res.push(
-                `${name}'s ${stageTable[stage]} ${amount > 0 ? "rose" : "fell"}${
-                    Math.abs(amount) > 1 ? " sharply" : ""
-                }!`
+                text(
+                    `${name}'s ${stageTable[stage]} ${amount > 0 ? "rose" : "fell"}${
+                        Math.abs(amount) > 1 ? " sharply" : ""
+                    }!`
+                )
             );
         }
     } else if (e.type === "info") {
@@ -269,34 +283,36 @@ const htmlForEvent = (e: BattleEvent) => {
             trapped: "{} can't move!",
         };
 
-        res.push(messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)));
+        res.push(
+            text(messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)))
+        );
     } else if (e.type === "transform") {
-        res.push(`${pname(e.src)} transformed into ${pname(e.target, false)}!`);
+        res.push(text(`${pname(e.src)} transformed into ${pname(e.target, false)}!`));
     } else if (e.type === "disable") {
-        res.push(`${pname(e.id)}'s ${moveList[e.move].name} was disabled!`);
+        res.push(text(`${pname(e.id)}'s ${moveList[e.move].name} was disabled!`));
     } else if (e.type === "charge") {
-        if (e.move === "skullbash") {
-            res.push(`${pname(e.id)} lowered its head!`);
-        } else if (e.move === "razorwind") {
-            res.push(`${pname(e.id)} made a whirlwind!`);
-        } else if (e.move === "skyattack") {
-            res.push(`${pname(e.id)} is glowing!`);
-        } else if (e.move === "solarbeam") {
-            res.push(`${pname(e.id)} took in sunlight!`);
-        } else if (e.move === "dig") {
-            res.push(`${pname(e.id)} dug a hole!`);
-        } else if (e.move === "fly") {
-            res.push(`${pname(e.id)} flew up high!`);
+        const chargeMessage: Partial<Record<MoveId, string>> = {
+            skullbash: "{} lowered its head!",
+            razorwind: "{} made a whirlwind!",
+            skyattack: "{} is glowing!",
+            solarbeam: "{} took in sunlight!",
+            dig: "{} dug a hole!",
+            fly: "{} flew up high!",
+        };
+
+        const msg = chargeMessage[e.move];
+        if (msg) {
+            res.push(text(msg.replace("{}", pname(e.id))));
         }
     } else if (e.type === "mimic") {
-        res.push(`${pname(e.id)} learned ${moveList[e.move].name}!`);
+        res.push(text(`${pname(e.id)} learned ${moveList[e.move].name}!`));
     } else if (e.type === "conversion") {
-        res.push(`Converted type to match ${pname(e.target, false)}!`);
+        res.push(text(`Converted type to match ${pname(e.target, false)}!`));
     } else {
-        res.push(JSON.stringify(e));
+        res.push(text(JSON.stringify(e)));
     }
 
-    return DOMPurify.sanitize(res.reduce((acc, x) => acc + `<div>${marked(x)}</div>`, ""));
+    return res;
 };
 
 const clear = () => {
