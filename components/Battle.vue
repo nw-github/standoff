@@ -47,13 +47,7 @@
             </div>
         </div>
 
-        <Textbox
-            class="textbox"
-            :players="players"
-            :myId="myId"
-            :perspective="perspective"
-            ref="textbox"
-        />
+        <Textbox class="textbox" :players="players" :perspective="perspective" ref="textbox" />
     </div>
 
     <ul>

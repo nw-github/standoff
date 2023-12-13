@@ -59,9 +59,9 @@ const turns = ref<string[]>([]);
 
 const props = defineProps<{
     players: Record<string, ClientPlayer>;
-    myId: string;
     perspective: string;
 }>();
+const myId = useMyId();
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -196,7 +196,11 @@ const htmlForEvent = (e: BattleEvent) => {
             res.push(`${pname(e.src)} used **${moveList[e.move].name}**!`);
         }
     } else if (e.type === "victory") {
-        res.push(`${players[e.id].name} wins!`);
+        if (e.id === myId.value) {
+            res.push(`You win!`);
+        } else {
+            res.push(`${players[e.id].name} wins!`);
+        }
     } else if (e.type === "hit_sub") {
         if (e.confusion) {
             res.push("It hurt itself in its confusion!");
