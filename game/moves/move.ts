@@ -38,20 +38,20 @@ export abstract class Move {
         return true;
     }
 
-    use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIndex?: number) {
+    use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIdx?: number) {
         const move = battle.moveIdOf(this)!;
         if (move === user.base.moves[user.v.disabled?.indexInMoves ?? -1]) {
             battle.event({ move, type: "move", src: user.owner.id, disabled: true });
             user.v.charging = undefined;
-            return false;
+            return;
         }
 
-        if (moveIndex !== undefined && !user.v.thrashing) {
-            user.base.pp[moveIndex]--;
-            if (user.base.pp[moveIndex] < 0) {
-                user.base.pp[moveIndex] = 63;
+        if (moveIdx !== undefined && !user.v.thrashing) {
+            user.base.pp[moveIdx]--;
+            if (user.base.pp[moveIdx] < 0) {
+                user.base.pp[moveIdx] = 63;
             }
-            user.v.lastMoveIndex = moveIndex;
+            user.v.lastMoveIndex = moveIdx;
         }
 
         battle.event({
@@ -64,5 +64,9 @@ export abstract class Move {
         return this.execute(battle, user, target);
     }
 
-    protected abstract execute(battle: Battle, user: ActivePokemon, target: ActivePokemon): boolean;
+    protected abstract execute(
+        battle: Battle,
+        user: ActivePokemon,
+        target: ActivePokemon
+    ): true | void;
 }

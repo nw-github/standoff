@@ -25,6 +25,5 @@ export class AlwaysFailMove extends Move {
 
     override execute(battle: Battle, user: ActivePokemon) {
         battle.info(user, this.why);
-        return false;
     }
 }

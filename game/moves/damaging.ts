@@ -32,7 +32,8 @@ type Flag =
     | "level"
     | "ohko"
     | "counter"
-    | "super_fang";
+    | "super_fang"
+    | "psywave";
 
 export class DamagingMove extends Move {
     readonly flag?: Flag;
@@ -77,8 +78,7 @@ export class DamagingMove extends Move {
             if (this.flag === "charge_invuln") {
                 user.v.invuln = true;
             }
-
-            return false;
+            return;
         }
 
         user.v.charging = undefined;
@@ -104,7 +104,9 @@ export class DamagingMove extends Move {
             target.v.recharge = undefined;
         }
 
-        const { dmg, isCrit, eff } = this.getDamage(user, target);
+        let { dmg, isCrit, eff } = this.getDamage(user, target);
+        isCrit ??= false;
+        eff ??= 1;
         if (dmg === 0 || !this.checkAccuracy(battle, user, target)) {
             if (dmg === 0) {
                 if (eff === 0) {
@@ -117,7 +119,7 @@ export class DamagingMove extends Move {
                 }
 
                 if (this.flag === "crash" && eff === 0) {
-                    return false;
+                    return;
                 }
             }
 
@@ -134,7 +136,7 @@ export class DamagingMove extends Move {
                 return user.damage(user.base.hp, user, battle, false, "explosion", true).dead;
             }
 
-            return false;
+            return;
         }
 
         if (this.flag === "rage") {
@@ -245,32 +247,47 @@ export class DamagingMove extends Move {
         // https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_I
         const eff = getEffectiveness(this.type, target.v.types);
         if (this.flag === "dream_eater" && target.base.status !== "slp") {
-            return { dmg: 0, isCrit: false, eff: 1 };
+            return { dmg: 0 };
         } else if (this.flag === "level") {
-            return { dmg: user.base.level, isCrit: false, eff: 1 };
+            return { dmg: user.base.level };
         } else if (this.flag === "ohko") {
-            const targetIsFaster = target.getStat("spe") > user.getStat("spe");
             return {
-                dmg: targetIsFaster || eff === 0 ? 0 : 65535,
-                isCrit: false,
+                dmg: target.getStat("spe") > user.getStat("spe") || eff === 0 ? 0 : 65535,
                 eff,
             };
         } else if (this.flag === "counter") {
-            return { dmg: this.counterDamage(user, target), isCrit: false, eff: 1 };
+            const lastMove = target.v.lastMove;
+            if (lastMove) {
+                if (lastMove.type !== "normal" && lastMove.type !== "fight") {
+                    return { dmg: 0 };
+                } else if (lastMove === this || !lastMove.power) {
+                    return { dmg: 0 };
+                }
+            }
+
+            if (target.owner.choice?.move === this) {
+                return { dmg: 0 };
+            }
+
+            return { dmg: user.v.lastDamage * 2 };
         } else if (this.flag === "super_fang") {
-            return { dmg: Math.max(Math.floor(target.base.hp / 2), 1), isCrit: false, eff: 1 };
+            return { dmg: Math.max(Math.floor(target.base.hp / 2), 1) };
+        } else if (this.flag === "psywave") {
+            // psywave has a desync glitch that we don't emulate
+            return {
+                dmg: randRangeInclusive(1, Math.max(Math.floor(user.base.level * 1.5 - 1), 1)),
+            };
         } else if (this.dmg) {
-            return { dmg: this.dmg, isCrit: false, eff: 1 };
+            return { dmg: this.dmg };
         }
 
         const baseSpe = user.base.species.stats.spe;
-        let chance: number;
-        if (this.flag === "high_crit") {
-            chance = user.v.flags.focus ? 4 * Math.floor(baseSpe / 4) : 8 * Math.floor(baseSpe / 2);
-        } else {
-            chance = Math.floor(user.v.flags.focus ? baseSpe / 8 : baseSpe / 2);
-        }
-
+        const chance =
+            this.flag === "high_crit"
+                ? user.v.flags.focus
+                    ? 4 * Math.floor(baseSpe / 4)
+                    : 8 * Math.floor(baseSpe / 2)
+                : Math.floor(user.v.flags.focus ? baseSpe / 8 : baseSpe / 2);
         const isCrit = randChance255(chance);
         const [atks, defs] = isSpecial(this.type)
             ? (["spc", "spc"] as const)
@@ -288,28 +305,11 @@ export class DamagingMove extends Move {
             eff,
         });
         if (dmg === 0) {
-            return { dmg: 0, isCrit: false, eff };
+            return { dmg: 0, eff };
         }
 
         const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
         return { dmg: Math.floor((dmg * rand) / 255), isCrit, eff };
-    }
-
-    private counterDamage(user: ActivePokemon, target: ActivePokemon) {
-        const lastMove = target.v.lastMove;
-        if (lastMove) {
-            if (lastMove.type !== "normal" && lastMove.type !== "fight") {
-                return 0;
-            } else if (lastMove === this || !lastMove.power) {
-                return 0;
-            }
-        }
-
-        if (target.owner.choice?.move === this) {
-            return 0;
-        }
-
-        return user.v.lastDamage * 2;
     }
 
     private static multiHitCount() {

@@ -21,21 +21,16 @@ export const moveList = Object.freeze({
             super("Bide", 10, "normal");
         }
 
-        override use(
-            battle: Battle,
-            user: ActivePokemon,
-            target: ActivePokemon,
-            moveIndex?: number
-        ) {
+        override use(battle: Battle, user: ActivePokemon, target: ActivePokemon, moveIdx?: number) {
             if (!user.v.bide) {
-                return super.use(battle, user, target, moveIndex);
+                return super.use(battle, user, target, moveIdx);
             }
 
             // TODO: bulbapedia says lastDamage includes the opponent's self-inflicted confusion
             // damage
             user.v.bide.dmg += user.v.lastDamage;
             if (--user.v.bide.turns !== 0) {
-                return false;
+                return;
             }
 
             battle.info(user, "bide");
@@ -45,7 +40,7 @@ export const moveList = Object.freeze({
 
             if (dmg === 0) {
                 battle.info(user, "miss");
-                return false;
+                return;
             }
 
             return target.damage(dmg * 2, user, battle, false, "attacked").dead;
@@ -54,7 +49,6 @@ export const moveList = Object.freeze({
         override execute(_: Battle, user: ActivePokemon, target: ActivePokemon) {
             target.v.lastDamage = 0;
             user.v.bide = { move: this, turns: randRangeInclusive(2, 3), dmg: 0 };
-            return false;
         }
     })(),
     conversion: new UniqueMove({
@@ -69,8 +63,6 @@ export const moveList = Object.freeze({
                 target: target.owner.id,
                 types: [...user.v.types],
             });
-
-            return false;
         },
     }),
     disable: new UniqueMove({
@@ -85,10 +77,10 @@ export const moveList = Object.freeze({
             if (!options.length || target.v.disabled) {
                 battle.info(user, "fail_generic");
                 target.handleRage(battle);
-                return false;
+                return;
             } else if (!this.checkAccuracy(battle, user, target)) {
                 target.handleRage(battle);
-                return false;
+                return;
             }
 
             const indexInMoves = randChoice(options);
@@ -99,7 +91,6 @@ export const moveList = Object.freeze({
                 move: target.base.moves[indexInMoves],
             });
             target.handleRage(battle);
-            return false;
         },
     }),
     haze: new UniqueMove({
@@ -134,7 +125,6 @@ export const moveList = Object.freeze({
             }
 
             target.base.status = undefined;
-            return false;
         },
     }),
     leechseed: new UniqueMove({
@@ -145,24 +135,23 @@ export const moveList = Object.freeze({
         execute(battle, user, target) {
             if (target.v.types.includes(this.type)) {
                 battle.info(target, "immune");
-                return false;
+                return;
             } else if (target.v.flags.seeded) {
                 battle.info(target, "fail_generic");
-                return false;
+                return;
             } else if (!this.checkAccuracy(battle, user, target)) {
-                return false;
+                return;
             }
 
             target.v.flags.seeded = true;
             battle.info(target, "seeded");
-            return false;
         },
     }),
     metronome: new UniqueMove({
         name: "Metronome",
         pp: 10,
         type: "normal",
-        execute(battle, user, target): boolean {
+        execute(battle, user, target): ReturnType<Move["execute"]> {
             const moves: Move[] = Object.values(moveList);
 
             let move;
@@ -178,18 +167,17 @@ export const moveList = Object.freeze({
         pp: 10,
         type: "normal",
         acc: 100,
-        execute(battle, user, target, indexInMoves) {
+        execute(battle, user, target) {
             if (!this.checkAccuracy(battle, user, target)) {
-                return false;
+                return;
             }
 
             user.v.mimic = {
-                indexInMoves: indexInMoves ?? user.v.lastMoveIndex ?? -1,
+                indexInMoves: user.v.lastMoveIndex ?? -1,
                 move: randChoice(target.base.moves),
             };
 
             battle.event({ type: "mimic", id: user.owner.id, move: user.v.mimic.move });
-            return false;
         },
     }),
     mirrormove: new UniqueMove({
@@ -199,31 +187,10 @@ export const moveList = Object.freeze({
         execute(battle, user, target) {
             if (!target.v.lastMove || target.v.lastMove === this) {
                 battle.info(user, "fail_generic");
-                return false;
+                return;
             }
 
             return target.v.lastMove.use(battle, user, target);
-        },
-    }),
-    psywave: new UniqueMove({
-        name: "Psywave",
-        pp: 15,
-        type: "psychic",
-        acc: 80,
-        power: 1,
-        execute(battle, user, target) {
-            if (!this.checkAccuracy(battle, user, target)) {
-                return false;
-            }
-
-            // psywave has a desync glitch that we don't emulate
-            return target.damage(
-                randRangeInclusive(1, Math.max(Math.floor(user.base.level * 1.5 - 1), 1)),
-                user,
-                battle,
-                false,
-                "attacked"
-            ).dead;
         },
     }),
     substitute: new UniqueMove({
@@ -235,10 +202,10 @@ export const moveList = Object.freeze({
             const hp = Math.floor(user.base.stats.hp / 4);
             if (user.v.substitute > 0) {
                 battle.info(user, "has_substitute");
-                return false;
+                return;
             } else if (hp > user.base.hp) {
                 battle.info(user, "cant_substitute");
-                return false;
+                return;
             }
 
             const { dead } = user.damage(hp, user, battle, false, "substitute");
@@ -267,8 +234,34 @@ export const moveList = Object.freeze({
 
             user.v.types = [...target.v.types];
             battle.event({ type: "transform", src: user.owner.id, target: target.owner.id });
-            return false;
         },
+    }),
+    // --
+    roar: new AlwaysFailMove({
+        name: "Roar",
+        pp: 20,
+        acc: 100,
+        type: "normal",
+        why: "whirlwind",
+    }),
+    splash: new AlwaysFailMove({
+        name: "Splash",
+        pp: 40,
+        type: "normal",
+        why: "splash",
+    }),
+    teleport: new AlwaysFailMove({
+        name: "Teleport",
+        pp: 20,
+        type: "psychic",
+        why: "fail_generic",
+    }),
+    whirlwind: new AlwaysFailMove({
+        name: "Whirlwind",
+        pp: 20,
+        acc: 100,
+        type: "normal",
+        why: "whirlwind",
     }),
     // --
     focusenergy: new VolatileFlagMove({
@@ -1070,6 +1063,14 @@ export const moveList = Object.freeze({
         acc: 100,
         effect: [33.2, [["spc", -1]]],
     }),
+    psywave: new DamagingMove({
+        name: "Psywave",
+        pp: 15,
+        type: "psychic",
+        acc: 80,
+        power: 1,
+        flag: "psywave",
+    }),
     quickattack: new DamagingMove({
         name: "Quick Attack",
         pp: 30,
@@ -1383,32 +1384,5 @@ export const moveList = Object.freeze({
         acc: 85,
         power: 15,
         flag: "trap",
-    }),
-    // --
-    roar: new AlwaysFailMove({
-        name: "Roar",
-        pp: 20,
-        acc: 100,
-        type: "normal",
-        why: "whirlwind",
-    }),
-    splash: new AlwaysFailMove({
-        name: "Splash",
-        pp: 40,
-        type: "normal",
-        why: "splash",
-    }),
-    teleport: new AlwaysFailMove({
-        name: "Teleport",
-        pp: 20,
-        type: "psychic",
-        why: "fail_generic",
-    }),
-    whirlwind: new AlwaysFailMove({
-        name: "Whirlwind",
-        pp: 20,
-        acc: 100,
-        type: "normal",
-        why: "whirlwind",
     }),
 });

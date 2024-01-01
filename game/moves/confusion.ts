@@ -10,14 +10,13 @@ export class ConfusionMove extends Move {
     override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
         if (target.v.substitute) {
             battle.info(target, "fail_generic");
-            return false;
+            return;
         } else if (!this.checkAccuracy(battle, user, target)) {
-            return false;
+            return;
         }
 
         if (!target.confuse(battle)) {
             battle.info(target, "fail_generic");
         }
-        return false;
     }
 }

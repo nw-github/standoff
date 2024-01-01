@@ -29,6 +29,5 @@ export class VolatileFlagMove extends Move {
             user.v.flags[this.flag] = true;
             battle.info(user, this.flag);
         }
-        return false;
     }
 }

@@ -25,7 +25,7 @@ export class RecoveryMove extends Move {
         const diff = user.base.stats.hp - user.base.hp;
         if (diff === 0 || diff % 255 === 0) {
             battle.info(user, "fail_generic");
-            return false;
+            return;
         }
 
         if (this.why === "rest") {
@@ -36,6 +36,5 @@ export class RecoveryMove extends Move {
         } else {
             user.recover(Math.floor(user.base.stats.hp / 2), user, battle, this.why);
         }
-        return false;
     }
 }
