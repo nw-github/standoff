@@ -265,6 +265,7 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
             const src = players[e.src].active!;
             src.transformed = target.transformed ?? target.speciesId;
             src.stages = { ...target.stages };
+            src.conversion = target.conversion;
         } else if (e.type === "info") {
             if (e.why === "haze") {
                 for (const player in players) {
