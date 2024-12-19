@@ -11,14 +11,14 @@
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",
-    "nuxt": "^3.14.1592",
-    "vue": "^3.5.13",
-    "vue-router": "^4.5.0"
+    "nuxt": "^3.8.0",
+    "vue": "^3.3.7",
+    "vue-router": "^4.2.5"
   },
   "dependencies": {
-    "@types/uuid": "^9.0.8",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
+    "@types/uuid": "^9.0.6",
+    "socket.io": "^4.7.2",
+    "socket.io-client": "^4.7.2",
     "uuid": "^9.0.1"
   }
 }
