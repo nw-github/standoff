@@ -1,11 +1,11 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-    devtools: { enabled: true },
-    compatibilityDate: "2025-02-08",
-    modules: ["@nuxt/ui"],
-    nitro: {
-        experimental: {
-            websocket: true,
-        },
+  devtools: { enabled: true },
+  compatibilityDate: "2025-02-08",
+  modules: ["@nuxt/ui"],
+  nitro: {
+    experimental: {
+      websocket: true,
     },
+  },
 });
