@@ -7,7 +7,7 @@ import {
     AlwaysFailMove,
     RecoveryMove,
 } from "../game/moves";
-import type { ActivePokemon, VolatileStats } from "../game/battle";
+import type { VolatileStats } from "../game/battle";
 import { moveList, type MoveId } from "../game/moveList";
 import type { SpeciesId } from "../game/species";
 import type { Stages, Type } from "../game/utils";
@@ -114,7 +114,7 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
     rage:
         "After using this move, the user will not be able to switch or do anything else except " +
         "continue to use Rage until it faints or the battle ends. Every time it is hit by a move " +
-        "or targeted by Disable, Explosion, or Self-Destruct, it's attack will increase by one " +
+        "or targeted by Disable, Explosion, or Self-Destruct, its attack will increase by one " +
         "stage. ",
     level: "Deals damage equal to the user's level.",
     ohko: "Deals 65535 damage to the target. Fails on faster opponents. ",

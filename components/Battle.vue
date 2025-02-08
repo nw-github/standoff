@@ -111,7 +111,7 @@
 </style>
 
 <script setup lang="ts">
-import type { ActivePokemon, Player, Turn } from "../game/battle";
+import type { Player, Turn } from "../game/battle";
 import type { Pokemon } from "../game/pokemon";
 import { moveList } from "../game/moveList";
 import type { Textbox } from "#build/components";

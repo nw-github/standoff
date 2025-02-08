@@ -168,14 +168,14 @@ class Account {
 const ROOM_CLEANUP_DELAY_MS = 15 * 60 * 1000;
 const ANON_SPECTATE = "spectate/";
 
-class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
+export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
     /** Name -> Account */
     private accounts: Record<string, Account> = {};
     private rooms: Record<string, Room> = {};
     private mmWaiting: Partial<Record<FormatId, [Player, Account]>> = {};
     private finishedRooms: [string, number][] = [];
 
-    constructor(server: any) {
+    constructor(server?: any) {
         super(server);
         this.on("connection", socket => this.newConnection(socket));
         this.on("error", console.error);
@@ -453,22 +453,4 @@ class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
 
         return result;
     }
-}
-
-declare global {
-    var server: GameServer;
-}
-
-export function gameServerInit(server: any, reset: boolean) {
-    if (global.server) {
-        if (reset) {
-            console.log("resetting game server...");
-            global.server.close();
-        } else {
-            return;
-        }
-    }
-
-    global.server = new GameServer(server);
-    console.log("initialized game server!");
 }

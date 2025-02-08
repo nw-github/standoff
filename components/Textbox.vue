@@ -182,7 +182,7 @@ const htmlForEvent = (e: BattleEvent) => {
             }
         } else {
             if (e.why === "drain") {
-                res.push(text(`${src} had it's energy drained!`));
+                res.push(text(`${src} had its energy drained!`));
             } else if (e.why === "recover") {
                 res.push(text(`${src} regained health!`));
             } else if (e.why === "rest") {
