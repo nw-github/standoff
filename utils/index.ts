@@ -123,11 +123,27 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
     super_fang: "Deals damage equal to 1/2 the target's current HP. ",
 };
 
-export const formatNames: Record<FormatId, string> = {
-    randoms: "Random Battle",
-    metronome: "Metronome Battle",
-    truly_randoms: "Truly Random Battle",
-    randoms_nfe: "Random Battle (NFE)",
+export const formatInfo: Record<FormatId, { name: string; icon: string; needsTeam: boolean }> = {
+    randoms: {
+        name: "Random Battle",
+        icon: "mdi:dice-3-outline",
+        needsTeam: false,
+    },
+    metronome: {
+        name: "Metronome Battle",
+        icon: "mdi:metronome",
+        needsTeam: false,
+    },
+    truly_randoms: {
+        name: "Truly Random Battle",
+        icon: "mdi:dice-6-outline",
+        needsTeam: false,
+    },
+    randoms_nfe: {
+        name: "Random Battle (NFE)",
+        icon: "mdi:dice-3-outline",
+        needsTeam: false,
+    },
 };
 
 export const describeMove = (id: MoveId) => {

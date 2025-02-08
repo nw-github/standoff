@@ -4,7 +4,7 @@ import { speciesList, type Species, type SpeciesId } from "../game/species";
 import { randChoice } from "../game/utils";
 import { AlwaysFailMove, Move } from "../game/moves";
 
-export const battleFormats = ["truly_randoms", "randoms", "randoms_nfe", "metronome"] as const;
+export const battleFormats = ["randoms", "randoms_nfe", "truly_randoms", "metronome"] as const;
 
 export type FormatId = (typeof battleFormats)[number];
 
@@ -15,13 +15,7 @@ type FormatDesc = {
 
 const speciesIds = Object.keys(speciesList) as SpeciesId[];
 
-const badMoves = new Set<MoveId>([
-    "struggle",
-    "focusenergy",
-    "payday",
-    "absorb",
-    "focusenergy",
-]);
+const badMoves = new Set<MoveId>(["struggle", "focusenergy", "payday", "absorb", "focusenergy"]);
 
 const uselessNfe = new Set<SpeciesId>(["weedle", "metapod", "kakuna", "magikarp", "caterpie"]);
 
