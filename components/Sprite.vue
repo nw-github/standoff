@@ -16,9 +16,9 @@ import type { Species } from "~/game/species";
 const props = defineProps<{ species: Species; back: boolean }>();
 const sprite = computed(() => {
   if (props.back) {
-    return `/sprites/pokemon/back/${props.species.dexId}.gif`;
+    return `/sprites/battle/back/${props.species.dexId}.gif`;
   } else {
-    return `/sprites/pokemon/${props.species.dexId}.gif`;
+    return `/sprites/battle/${props.species.dexId}.gif`;
   }
 });
 </script>
