@@ -7,7 +7,7 @@ export type Species = {
   readonly moves: MoveId[];
   readonly stats: Stats;
   readonly name: string;
-  readonly evolves: boolean;
+  readonly evolves?: boolean;
 };
 
 export type SpeciesId = keyof typeof speciesList;
@@ -3510,6 +3510,10 @@ export const speciesList = createSpeciesList({
       "explosion",
       "rest",
       "substitute",
+      "poisonpowder",
+      "leechseed",
+      "stunspore",
+      "sleeppowder",
     ],
     evolves: false,
   },
@@ -4176,6 +4180,10 @@ export const speciesList = createSpeciesList({
       "rest",
       "triattack",
       "substitute",
+      "lightscreen",
+      "minimize",
+      "recover",
+      "hydropump",
     ],
     evolves: false,
   },

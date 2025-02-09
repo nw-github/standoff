@@ -1,8 +1,8 @@
 <template>
   <Tooltip>
-    <button @click="$emit('click')" :disabled="disabled || !poke.hp">
+    <UButton @click="$emit('click')" :disabled="disabled || !poke.hp">
       {{ poke.name }}
-    </button>
+    </UButton>
 
     <template #tooltip>
       <PokemonTTContent :poke="poke" />

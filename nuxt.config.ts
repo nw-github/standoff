@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   compatibilityDate: "2025-02-08",
-  modules: ["@nuxt/ui"],
+  modules: ["@nuxt/ui", "@nuxt/image"],
   nitro: {
     experimental: {
       websocket: true,

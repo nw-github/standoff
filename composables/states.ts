@@ -1,9 +1,10 @@
+import { useLocalStorage } from "@vueuse/core";
 import { moveList, type MoveId } from "~/game/moveList";
+import { parsePokemon } from "~/game/pokemon";
 import { speciesList, type SpeciesId } from "~/game/species";
 import type { Stats } from "~/game/utils";
 
-const myId = ref("");
-export const useMyId = () => myId;
+export const useMyId = () => useState<string>("myId", () => "");
 
 export type Team = {
   name: string;
@@ -11,77 +12,60 @@ export type Team = {
   format: FormatId;
 };
 
-export class EditPokemon {
-  evs: Partial<Stats> = {};
-  ivs: Partial<Stats> = {};
-  level = 100;
+export type EditPokemon = {
+  dvs: Partial<Stats>;
+  statexp: Partial<Stats>;
+  level: number;
   name: string;
+  species: SpeciesId;
+  moves: MoveId[];
+};
 
-  constructor(public speciesId: SpeciesId, public moves: MoveId[], name?: string) {
-    this.name = name ?? speciesList[speciesId].name;
+export const serializeTeam = (team: Team) => team.pokemon.map(pokeToString).join("\n\n");
+
+export const pokeToString = (poke: EditPokemon) => {
+  const stats = (stats: Partial<Stats>, def: number, name: string, cvt: (v: number) => number) => {
+    const result = [];
+    for (const k in stats) {
+      if (stats[k as keyof Stats] !== def) {
+        result.push(`${cvt(stats[k as keyof Stats]!)} ${k}`);
+      }
+    }
+
+    if (result.length) {
+      return `${name}: ${result.join(" / ")}\n`;
+    } else {
+      return "";
+    }
+  };
+
+  let result = "";
+  if (poke.name !== speciesList[poke.species].name) {
+    result += `${poke.name} (${speciesList[poke.species].name})\n`;
+  } else {
+    result += `${speciesList[poke.species].name}\n`;
   }
 
-  get species() {
-    return speciesList[this.speciesId];
+  if (poke.level !== 100) {
+    result += `Level: ${poke.level}\n`;
   }
 
-  toString() {
-    const stats = (stats: Partial<Stats>, def: number, name: string) => {
-      const result = [];
-      for (const k in stats) {
-        if (stats[k as keyof Stats] !== def) {
-          result.push(`${stats[k as keyof Stats]} ${k}`);
-        }
-      }
+  result += stats(poke.dvs, 65535, "EVs", v => Math.floor(v / 257));
+  result += stats(poke.statexp, 15, "IVs", v => v * 2);
+  for (const move of poke.moves) {
+    result += ` - ${moveList[move].name}\n`;
+  }
+  return result;
+};
 
-      if (result.length) {
-        return `${name}: ${result.join(" / ")}\n`;
-      } else {
-        return "";
-      }
-    };
-
-    let result = "";
-    if (this.name !== this.species.name) {
-      result += `${this.name} (${this.species.name})\n`;
-    }
-
-    if (this.level !== 100) {
-      result += `Level: ${this.level}\n`;
-    }
-
-    result += stats(this.evs, 252, "EVs");
-    result += stats(this.ivs, 31, "IVs");
-    for (const move of this.moves) {
-      result += ` - ${moveList[move].name}`;
-    }
+export const pokeFromString = (src: string) => {
+  const result = parsePokemon(src);
+  if (Array.isArray(result)) {
     return result;
   }
-}
 
-export const myTeams = ref<Team[]>([
-  {
-    name: "Test",
-    format: "standard",
-    pokemon: [
-      new EditPokemon("mewtwo", ["psychic"], "MewTwo|"),
-      new EditPokemon("zapdos", ["drillpeck"], "Zapdos|"),
-      new EditPokemon("arcanine", ["fireblast"], "Arcanine|"),
-      new EditPokemon("tauros", ["bodyslam"], "Tauros|"),
-      new EditPokemon("alakazam", ["psychic"], "Alakazam|"),
-      new EditPokemon("articuno", ["blizzard"], "Articuno|"),
-    ],
-  },
-  {
-    name: "Test2",
-    format: "nfe",
-    pokemon: [
-      new EditPokemon("mewtwo", ["psychic"], "MewTwo|"),
-      new EditPokemon("zapdos", ["drillpeck"], "Zapdos|"),
-      new EditPokemon("arcanine", ["fireblast"], "Arcanine|"),
-      new EditPokemon("tauros", ["bodyslam"], "Tauros|"),
-      new EditPokemon("alakazam", ["psychic"], "Alakazam|"),
-      new EditPokemon("articuno", ["blizzard"], "Articuno|"),
-    ],
-  },
-]);
+  result.name ??= speciesList[result.species].name;
+  return result as EditPokemon;
+};
+
+export const useMyTeams = () => useLocalStorage<Team[]>("myTeams", () => []);

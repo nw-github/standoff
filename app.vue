@@ -28,6 +28,8 @@
       </main>
     </UCard>
   </UContainer>
+
+  <UNotifications />
 </template>
 
 <style>

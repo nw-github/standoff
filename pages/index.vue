@@ -2,7 +2,7 @@
   <div class="grid grid-cols-2 min-h-full">
     <div class="space-y-2 px-5">
       <h1 class="text-center">{{ status }}</h1>
-      <FormatDropdown v-model="format" by="id" />
+      <FormatDropdown v-model="format" :disabled="findingMatch" />
       <USelectMenu
         searchable
         placeholder="Select Team..."
@@ -55,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+import { serializeTeam } from "~/composables/states";
 import type { RoomDescriptor } from "~/server/utils/gameServer";
 
 const { $conn } = useNuxtApp();
@@ -66,6 +67,7 @@ const cancelling = ref(false);
 const rooms = ref<RoomDescriptor[]>([]);
 const format = ref<FormatId>("randoms");
 const selectedTeam = ref<Team | undefined>();
+const myTeams = useMyTeams();
 const validTeams = computed(() => myTeams.value.filter(team => team.format === format.value));
 watch(format, () => (selectedTeam.value = validTeams.value[0]));
 
@@ -115,8 +117,7 @@ onMounted(() => {
 const enterMatchmaking = () => {
   if (!findingMatch.value) {
     findingMatch.value = true;
-    const team = selectedTeam.value?.pokemon.map(poke => poke.toString()).join("\n\n");
-    console.log(team);
+    const team = selectedTeam.value ? serializeTeam(selectedTeam.value) : undefined;
     $conn.emit("enterMatchmaking", team, format.value, (err, problems) => {
       if (err) {
         findingMatch.value = false;

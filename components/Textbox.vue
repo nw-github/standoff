@@ -208,7 +208,7 @@ const htmlForEvent = (e: BattleEvent) => {
 
     const eff = e.eff ?? 1;
     if (eff !== 1) {
-      res.push(bold(`It's ${(e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."}`));
+      res.push(italic(`It's ${(e.eff ?? 1) > 1 ? "super effective!" : "not very effective..."}`));
     }
 
     const target = pname(e.target);
