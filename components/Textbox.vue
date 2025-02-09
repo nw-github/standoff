@@ -15,6 +15,7 @@
 .textbox {
   overflow-y: auto;
   background-color: #f1f1f1;
+  padding: 0.25rem;
 }
 
 .textbox > div {

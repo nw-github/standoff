@@ -1,12 +1,16 @@
 <template>
-  <Tooltip>
-    <button @click="$emit('click')" :disabled="!option.valid">
-      <span class="name">{{ move.name }}</span>
+  <UPopover mode="hover" :popper="{ placement: 'right' }">
+    <UButton
+      @click="$emit('click')"
+      :disabled="!option.valid"
+      class="flex justify-between content-center min-w-[200px] border p-1 text-black"
+    >
+      <span class="text-lg">{{ move.name }}</span>
       <span class="info"> {{ option.pp !== undefined ? option.pp : "--" }}/{{ move.pp }} </span>
-    </button>
+    </UButton>
 
-    <template #tooltip>
-      <ul class="tt-list">
+    <template #panel>
+      <ul class="list-none p-2 m-0 w-max max-w-[300px]">
         <li>
           <h4 class="mb-number">{{ move.power ?? "--" }}</h4>
           Power
@@ -21,14 +25,14 @@
           </h4>
           Priority
         </li>
-        <li class="padtop">{{ describeMove(option.move) }}</li>
-        <li class="padtop">
-          <span class="type">{{ toTitleCase(move.type) }}</span>
-          <span :class="category">{{ toTitleCase(category) }}</span>
+        <li class="pt-3">{{ describeMove(option.move) }}</li>
+        <li class="pt-3 space-x-1">
+          <TypeBadge :typ="move.type" />
+          <UBadge :color="categoryColor[category]">{{ toTitleCase(category) }}</UBadge>
         </li>
       </ul>
     </template>
-  </Tooltip>
+  </UPopover>
 </template>
 
 <script setup lang="ts">
@@ -52,51 +56,19 @@ const hex2rgba = (rgb: string, a: number) => {
     .map(n => parseInt(n, 16))
     .join(", ")}, ${a})`;
 };
+
+const categoryColor = {
+  physical: "red",
+  special: "gray",
+  status: "gray",
+} as const;
 </script>
 
 <style scoped>
 button {
-  display: flex;
-  justify-content: space-between;
-  align-content: center;
-  border-radius: 5px;
-  width: 200px;
-  border: 1px solid;
   border-bottom: 0px;
   background-image: linear-gradient(#fff, v-bind(bgColor));
   border-color: v-bind("hex2rgba(bgColor, 0.8)");
-  padding: 0.2rem;
-}
-
-.info {
-  color: #333;
-}
-
-.name {
-  font-size: 1.2em;
-}
-
-li > span {
-  width: min-content;
-  border-radius: 5px;
-  padding: 4px;
-  margin: 2px;
-}
-
-.type {
-  background-color: v-bind("typeColor[move.type]");
-}
-
-.physical {
-  background-color: #c92112;
-}
-
-.special {
-  background-color: #4f5870;
-}
-
-.status {
-  background-color: #8c888c;
 }
 
 .mb-number {
@@ -105,17 +77,5 @@ li > span {
   padding: 0px;
   margin: 0px;
   text-align: center;
-}
-
-.tt-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  width: max-content;
-  max-width: 300px;
-}
-
-.padtop {
-  padding-top: 10px;
 }
 </style>

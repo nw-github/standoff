@@ -20,10 +20,10 @@ export const typeColor: Record<Type, string> = {
 };
 
 export const statusColor: Record<Status, string> = {
-  psn: "#c562c5",
-  tox: "#c562c5",
-  brn: "#e67352",
+  psn: "#E879F9",
+  tox: "#E879F9",
+  brn: "#FB923C",
   frz: "#8bb4e6",
   slp: "#a4a48b",
-  par: "#bebe18",
+  par: "#F59E0B",
 };

@@ -1,5 +1,5 @@
 <template>
-  <img :srcset="sprite + ' 0.5x'" :alt="species.name" />
+  <NuxtImg :srcset="sprite" :alt="species.name" />
 </template>
 
 <style scoped>
@@ -13,12 +13,15 @@ img {
 <script setup lang="ts">
 import type { Species } from "~/game/species";
 
-const props = defineProps<{ species: Species; back: boolean }>();
+const props = defineProps<{ species: Species; kind: "front" | "back" | "box"; scale?: number }>();
 const sprite = computed(() => {
-  if (props.back) {
-    return `/sprites/battle/back/${props.species.dexId}.gif`;
+  const scale = props.scale ? ` ${props.scale}x` : "";
+  if (props.kind === "front") {
+    return `/sprites/battle/${props.species.dexId}.gif${scale}`;
+  } else if (props.kind === "back") {
+    return `/sprites/battle/back/${props.species.dexId}.gif${scale}`;
   } else {
-    return `/sprites/battle/${props.species.dexId}.gif`;
+    return `/sprites/box/${props.species.dexId}.png${scale}`;
   }
 });
 </script>

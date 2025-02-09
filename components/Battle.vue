@@ -1,54 +1,57 @@
 <template>
-  <div class="battle">
-    <div class="game" v-if="hasLoaded">
-      <div class="battlefield">
-        <template v-for="id in battlers">
-          <ActivePokemon
-            class="pokemon"
-            v-if="players[id].active"
-            :poke="players[id].active!"
-            :base="id === myId ? activeInTeam : undefined"
-            :back="id === perspective"
-          />
-        </template>
-      </div>
-
-      <div class="selections">
-        <template v-if="options && !selectionText.length">
-          <div class="moves">
-            <template v-for="(option, i) in options.moves">
-              <MoveButton
-                class="move-button"
-                v-if="option.display"
-                :option="option"
-                @click="() => selectMove(i)"
-              />
-            </template>
-          </div>
-
-          <div class="team">
-            <SwitchButton
-              class="switch-button"
-              v-for="(poke, i) in myTeam"
-              :poke="poke"
-              :disabled="i === activeIndex || !options.canSwitch"
-              @click="() => selectSwitch(i)"
+  <UCard>
+    <div class="flex">
+      <div class="flex flex-col" v-if="hasLoaded">
+        <div class="flex flex-row-reverse justify-center">
+          <template v-for="id in battlers">
+            <ActivePokemon
+              v-if="players[id].active"
+              :poke="players[id].active!"
+              :base="id === myId ? activeInTeam : undefined"
+              :back="id === perspective"
             />
-          </div>
-        </template>
-        <div class="cancel" v-else-if="options">
-          <div class="selection-text">{{ selectionText }}...</div>
-          <button @click="cancelMove">Cancel</button>
+          </template>
         </div>
-        <template v-else-if="!isBattler">
-          <!-- TODO: re-render textbox contents on switch sides -->
-          <button @click="switchSide" :disabled="true">Switch Side</button>
-        </template>
-      </div>
-    </div>
 
-    <Textbox class="textbox" :players="players" :perspective="perspective" ref="textbox" />
-  </div>
+        <div class="flex">
+          <template v-if="options && !selectionText.length">
+            <div class="flex flex-col p-2 gap-2">
+              <template v-for="(option, i) in options.moves">
+                <MoveButton
+                  class="move-button"
+                  v-if="option.display"
+                  :option="option"
+                  @click="() => selectMove(i)"
+                />
+              </template>
+            </div>
+
+            <div class="grid grid-cols-2 p-2 gap-2 test">
+              <SwitchButton
+                v-for="(poke, i) in myTeam"
+                :poke="poke"
+                :disabled="i === activeIndex || !options.canSwitch"
+                @click="() => selectSwitch(i)"
+              />
+            </div>
+          </template>
+          <div class="cancel" v-else-if="options">
+            <div class="italic">{{ selectionText }}...</div>
+            <UButton @click="cancelMove" color="red">Cancel</UButton>
+          </div>
+          <template v-else-if="!isBattler">
+            <!-- TODO: re-render textbox contents on switch sides -->
+            <UButton @click="switchSide" :disabled="true">Switch Side</UButton>
+          </template>
+          <template v-else>
+            <div class="italic">Waiting for opponent...</div>
+          </template>
+        </div>
+      </div>
+
+      <Textbox class="textbox" :players="players" :perspective="perspective" ref="textbox" />
+    </div>
+  </UCard>
 
   <ul>
     <li v-for="({ name, isSpectator, connected }, id) in players">
@@ -60,53 +63,10 @@
 </template>
 
 <style scoped>
-.battle {
-  display: flex;
-  justify-content: center;
-}
-
-.game {
-  display: flex;
-  flex-direction: column;
-  border: 1px #ccc solid;
-  border-top: none;
-}
-
 .textbox {
   width: min(100%, 600px);
   height: 60vh;
-}
-
-.battlefield {
-  min-width: 480px;
-  max-width: 480px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  border-bottom: 1px solid #ccc;
-  padding: 15px 0px;
-}
-
-.selection-text {
-  font-style: italic;
-}
-
-.selections {
-  display: flex;
-}
-
-.moves {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding: 5px;
-}
-
-.team {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 5px;
-  gap: 0.5rem;
+  border-radius: 0.5rem;
 }
 </style>
 
@@ -250,6 +210,7 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
       players[e.id].active!.status = e.status;
       if (e.id === myId.value) {
         players[e.id].active!.stats = e.stats;
+        activeInTeam.value!.status = e.status;
       }
     } else if (e.type === "stages") {
       if (battlers.value.includes(myId.value)) {

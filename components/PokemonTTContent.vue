@@ -1,28 +1,44 @@
 <template>
-  <ul class="tt-list">
-    <li>{{ poke.name }} ({{ species.types.map(toTitleCase).join("/") }})</li>
-    <li>
-      {{ poke.hp }}/{{ poke.stats.hp }} HP ({{
-        roundTo(hpPercentExact(poke.hp, poke.stats.hp), 2)
-      }}%)
-    </li>
-    <li>
+  <div class="flex flex-col space-y-1.5 p-2">
+    <div class="flex justify-between space-x-4">
+      <span>{{ species.name }}</span>
+
+      <div class="flex space-x-1">
+        <TypeBadge v-for="typ in species.types" :typ="typ" />
+      </div>
+    </div>
+
+    <UProgress :max="poke.stats.hp" :value="poke.hp" />
+    <div class="flex justify-between space-x-4">
+      <span>
+        {{ poke.hp }}/{{ poke.stats.hp }} HP ({{
+          roundTo(hpPercentExact(poke.hp, poke.stats.hp), 2)
+        }}%)
+      </span>
+
+      <UBadge v-if="poke.hp <= 0" color="red">FNT</UBadge>
+      <UBadge v-else-if="poke.status" :style="{ backgroundColor: statusColor[poke.status] }">
+        {{ poke.status.toUpperCase() }}
+      </UBadge>
+    </div>
+
+    <div class="flex space-x-1">
       <template v-for="(val, stat) in poke.stats">
         <template v-if="stat !== 'hp'">
-          <template v-if="stat !== 'atk'"> / </template>
-          <span :class="statClass(stat)">{{ active?.stats?.[stat] ?? val }}</span>
-          {{ toTitleCase(stat) }}
+          <UBadge color="black" :class="statClass(stat)">
+            <span>{{ active?.stats?.[stat] ?? val }}</span>
+            {{ toTitleCase(stat) }}
+          </UBadge>
         </template>
       </template>
-    </li>
-    <li>
-      <ul class="moves">
-        <li v-for="(move, i) in poke.moves">
-          {{ moveList[move].name }} ({{ poke.pp[i] }}/{{ moveList[move].pp }})
-        </li>
-      </ul>
-    </li>
-  </ul>
+    </div>
+
+    <ul class="pl-10 list-disc">
+      <li v-for="(move, i) in poke.moves">
+        {{ moveList[move].name }} ({{ poke.pp[i] }}/{{ moveList[move].pp }})
+      </li>
+    </ul>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -45,20 +61,11 @@ const statClass = (stat: "atk" | "def" | "spe" | "spc") => {
 </script>
 
 <style scoped>
-.tt-list {
-  list-style: none;
-  width: max-content;
-}
-
-.moves {
-  padding-left: 2rem;
-}
-
 .down {
-  color: var(--stat-down);
+  background-color: var(--stat-down);
 }
 
 .up {
-  color: var(--stat-up);
+  background-color: var(--stat-up);
 }
 </style>

@@ -151,7 +151,7 @@ export const formatInfo: Record<FormatId, { name: string; icon: string; needsTea
   },
   randoms_nfe: {
     name: "Random Battle (NFE)",
-    icon: "mdi:dice-3-outline",
+    icon: "mdi:dice-1-outline",
     needsTeam: false,
   },
 };

@@ -30,12 +30,11 @@
       </template>
       <template #pokemon-data="{ row }">
         <div class="flex space-x-2">
-          <NuxtImg
+          <Sprite
             v-for="poke in (row as Team).pokemon"
-            :srcset="`/sprites/box/${speciesList[poke.species].dexId}.png`"
-            :alt="speciesList[poke.species].name"
-            width="66px"
-            height="60px"
+            :species="speciesList[poke.species]"
+            :scale="0.5"
+            kind="box"
           />
         </div>
       </template>
@@ -51,14 +50,6 @@
     <!-- <UPagination /> -->
   </UCard>
 </template>
-
-<style scoped>
-img {
-  image-rendering: pixelated;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: crisp-edges;
-}
-</style>
 
 <script setup lang="ts">
 import { speciesList } from "~/game/species";

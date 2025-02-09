@@ -1,57 +1,64 @@
 <template>
-  <div class="self">
-    <div class="all-info">
-      <div class="info-text">
+  <div class="self w-full">
+    <div class="all-info relative w-3/4 flex flex-col">
+      <div class="flex justify-between">
         <span>{{ poke.name }}</span>
         <span>Lv. {{ poke.level }}</span>
       </div>
 
       <div class="healthbar">
         <div class="hp-fill"></div>
-        <div class="hp-text">{{ hp }}%</div>
+        <div class="w-full text-center absolute text-[#ccc]">{{ hp }}%</div>
       </div>
-      <div class="effects">
-        <Tooltip class="transformed" v-if="poke.transformed">
-          Transformed
-
-          <template #tooltip> Was: {{ speciesList[poke.speciesId].name }} </template>
-        </Tooltip>
+      <div class="flex gap-1 flex-wrap effects">
+        <UBadge color="black" v-if="poke.transformed">Transformed</UBadge>
 
         <template v-if="!species.types.every((ty, i) => ty === poke.conversion?.[i])">
-          <div :style="{ backgroundColor: typeColor[ty] }" v-for="ty in poke.conversion">
-            {{ toTitleCase(ty) }}
-          </div>
+          <TypeBadge v-for="ty in poke.conversion" :typ="ty" />
         </template>
 
-        <div class="status" v-if="poke.status">
+        <UBadge v-if="poke.status" :style="{ backgroundColor: statusColor[poke.status] }">
           {{ poke.status.toUpperCase() }}
-        </div>
+        </UBadge>
 
         <template v-for="(val, stage) in poke.stages">
-          <div v-if="val" :class="val > 0 ? 'up' : 'down'">
+          <UBadge v-if="val" :class="val > 0 ? 'up' : 'down'">
             {{ roundTo(stageMultipliers[val] / 100, 2) }}x {{ toTitleCase(stage) }}
-          </div>
+          </UBadge>
         </template>
       </div>
     </div>
-    <Tooltip class="sprite-container">
-      <div class="center-item">
-        <Sprite :back="back" :species="species" />
+
+    <UPopover mode="hover" class="w-1/2" :popper="{ placement: 'top' }">
+      <div class="flex w-full">
+        <BattleSprite :back="back" :species="species" />
       </div>
 
-      <template #tooltip>
-        <template v-if="base && !poke.transformed">
-          <PokemonTTContent :poke="base" :active="poke" />
-        </template>
-        <template v-else>
-          <ul>
-            <li>{{ species.name }} ({{ species.types.map(toTitleCase).join("/") }})</li>
-            <li><br /></li>
-            <li class="info">{{ minSpe }} to {{ maxSpe }} Spe</li>
-          </ul>
-        </template>
+      <template #panel>
+        <div class="p-2">
+          <template v-if="base && !poke.transformed">
+            <PokemonTTContent :poke="base" :active="poke" />
+          </template>
+          <template v-else>
+            <div class="flex flex-col gap-5">
+              <div class="flex justify-between space-x-4">
+                <span>
+                  {{ species.name }}
+                  <span v-if="poke.transformed">
+                    (Was: {{ speciesList[poke.speciesId].name }})
+                  </span>
+                </span>
+                <div class="flex space-x-1">
+                  <TypeBadge v-for="typ in species.types" :typ="typ" />
+                </div>
+              </div>
+
+              <span class="italic text-center">{{ minSpe }} to {{ maxSpe }} Spe</span>
+            </div>
+          </template>
+        </div>
       </template>
-    </Tooltip>
+    </UPopover>
   </div>
 </template>
 
@@ -73,53 +80,19 @@
   transition: width 0.5s, background-color 0.5s;
 }
 
-.hp-text {
-  width: 100%;
-  text-align: center;
-  position: absolute;
-  color: #ccc;
-}
-
-.sprite-container {
-  width: 50%;
-}
-
 .all-info {
-  width: 50%;
   order: v-bind("back ? 2 : 0");
-  position: relative;
-  top: 15%;
+  top: 10%; /* check */
   font-size: 0.9em;
-  display: flex;
-  flex-direction: column;
   gap: 0.2rem;
-}
-
-.info-text {
-  display: flex;
-  justify-content: space-between;
-}
-
-.effects {
-  display: flex;
-  gap: 0.2rem;
-  flex-wrap: wrap;
 }
 
 .effects > * {
-  height: min-content;
-  width: max-content;
-  padding: 1px 3px;
-  color: white;
-  border-radius: 5px;
+  padding: 2px 3px;
 }
 
 .status {
   background-color: v-bind("poke.status ? statusColor[poke.status] : 'transparent'");
-}
-
-.transformed {
-  background-color: #333;
 }
 
 .down {
@@ -128,29 +101,6 @@
 
 .up {
   background-color: var(--stat-up);
-}
-
-.self {
-  width: 100%;
-  padding: 5px;
-  display: flex;
-  gap: 1rem;
-}
-
-.info {
-  font-style: italic;
-}
-
-.center-item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
 }
 </style>
 
