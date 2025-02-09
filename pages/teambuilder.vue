@@ -34,8 +34,8 @@
             v-for="poke in (row as Team).pokemon"
             :srcset="`/sprites/box/${speciesList[poke.species].dexId}.png`"
             :alt="speciesList[poke.species].name"
-            width="102px"
-            height="84px"
+            width="66px"
+            height="60px"
           />
         </div>
       </template>
