@@ -124,6 +124,16 @@ const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
 };
 
 export const formatInfo: Record<FormatId, { name: string; icon: string; needsTeam: boolean }> = {
+  standard: {
+    name: "Standard Battle",
+    icon: "akar-icons:sword",
+    needsTeam: true,
+  },
+  nfe: {
+    name: "Standard Battle (NFE)",
+    icon: "mingcute:mickeymouse-line",
+    needsTeam: true,
+  },
   randoms: {
     name: "Random Battle",
     icon: "mdi:dice-3-outline",
@@ -136,7 +146,7 @@ export const formatInfo: Record<FormatId, { name: string; icon: string; needsTea
   },
   truly_randoms: {
     name: "Truly Random Battle",
-    icon: "mdi:dice-6-outline",
+    icon: "mdi:dice-5-outline",
     needsTeam: false,
   },
   randoms_nfe: {

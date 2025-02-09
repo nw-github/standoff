@@ -2,11 +2,18 @@
   <div class="grid grid-cols-2 min-h-full">
     <div class="space-y-2 px-5">
       <h1 class="text-center">{{ status }}</h1>
-      <USelectMenu v-model="format" :options="formats" by="id" />
-      <USelectMenu placeholder="Select Team..." disabled />
+      <FormatDropdown v-model="format" by="id" />
+      <USelectMenu
+        searchable
+        placeholder="Select Team..."
+        v-model="selectedTeam"
+        :options="validTeams"
+        :disabled="!formatInfo[format].needsTeam"
+        option-attribute="name"
+      />
       <UButton
         @click="enterMatchmaking"
-        :disabled="!myId.length"
+        :disabled="!myId.length || (formatInfo[format].needsTeam && !selectedTeam)"
         :color="findingMatch ? 'red' : 'primary'"
         :loading="cancelling"
       >
@@ -17,14 +24,14 @@
     <div class="space-y-2 px-5">
       <h1 class="text-center">Battles</h1>
       <div class="flex space-x-2">
-        <USelectMenu
+        <FormatDropdown
           v-model="filterFormats"
-          :options="formatNames"
           multiple
           class="w-1/2"
           placeholder="Filter by format..."
         />
         <UInput
+          v-model="battleQuery"
           icon="i-heroicons-magnifying-glass-20-solid"
           :trailing="false"
           placeholder="Search..."
@@ -47,8 +54,6 @@
   </div>
 </template>
 
-<style scoped></style>
-
 <script setup lang="ts">
 import type { RoomDescriptor } from "~/server/utils/gameServer";
 
@@ -59,12 +64,10 @@ const myId = useMyId();
 const findingMatch = ref(false);
 const cancelling = ref(false);
 const rooms = ref<RoomDescriptor[]>([]);
-const formats = battleFormats.map(id => ({
-  id,
-  label: formatInfo[id].name,
-  icon: formatInfo[id].icon,
-}));
-const format = ref(formats[0]);
+const format = ref<FormatId>("randoms");
+const selectedTeam = ref<Team | undefined>();
+const validTeams = computed(() => myTeams.value.filter(team => team.format === format.value));
+watch(format, () => (selectedTeam.value = validTeams.value[0]));
 
 const roomsRows = computed(() =>
   rooms.value.map(room => ({
@@ -81,7 +84,6 @@ const emptyState = {
   label: "There are currently no active battles. Be the first!",
   icon: "i-heroicons-circle-stack-20-solid",
 };
-const formatNames = battleFormats.map(format => formatInfo[format].name);
 const filterFormats = ref<string[]>([]);
 const battleQuery = ref<string>();
 
@@ -113,10 +115,13 @@ onMounted(() => {
 const enterMatchmaking = () => {
   if (!findingMatch.value) {
     findingMatch.value = true;
-    $conn.emit("enterMatchmaking", [], format.value.id, err => {
+    const team = selectedTeam.value?.pokemon.map(poke => poke.toString()).join("\n\n");
+    console.log(team);
+    $conn.emit("enterMatchmaking", team, format.value, (err, problems) => {
       if (err) {
         findingMatch.value = false;
         status.value = `Matchmaking failed: ${err}`;
+        console.log(problems);
       }
     });
   } else {

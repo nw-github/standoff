@@ -5,7 +5,7 @@ import { Pokemon } from "../../game/pokemon";
 import { hpPercent } from "../../game/utils";
 import { Battle, Player, Turn } from "../../game/battle";
 import { BattleEvent } from "../../game/events";
-import { FormatId, formatDescs } from "../../utils/formats";
+import { type FormatId, type TeamProblems, formatDescs } from "../../utils/formats";
 
 export type LoginResponse = {
   id: string;
@@ -34,9 +34,9 @@ export interface ClientMessage {
   logout: (ack: () => void) => void;
 
   enterMatchmaking: (
-    team: Pokemon[],
+    team: string | undefined,
     format: FormatId,
-    ack: (err?: "must_login" | "invalid_team") => void
+    ack: (err?: "must_login" | "invalid_team", problems?: TeamProblems) => void
   ) => void;
   exitMatchmaking: (ack: () => void) => void;
 
@@ -230,18 +230,23 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       this.logout(socket);
       ack();
     });
-    socket.on("enterMatchmaking", (_team, format, ack) => {
+    socket.on("enterMatchmaking", (team, format, ack) => {
       const account = socket.account;
       if (!account) {
         return ack("must_login");
       }
 
-      ack();
       if (account.matchmaking) {
+        ack();
         this.leaveMatchmaking(account);
+      } else {
+        const problems = this.enterMatchmaking(account, format, team);
+        if (problems) {
+          ack("invalid_team", problems);
+        } else {
+          ack();
+        }
       }
-
-      this.enterMatchmaking(account, format);
     });
     socket.on("exitMatchmaking", ack => {
       if (socket.account) {
@@ -360,9 +365,24 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
     }
   }
 
-  private enterMatchmaking(account: Account, format: FormatId) {
+  private enterMatchmaking(account: Account, format: FormatId, team?: string) {
+    let player;
+    if (formatDescs[format].validate) {
+      if (!team) {
+        return ["Must provide a team for this format"];
+      }
+
+      const [success, result] = formatDescs[format].validate(team);
+      if (!success) {
+        return result;
+      }
+
+      player = new Player(account.id, result);
+    } else {
+      player = new Player(account.id, formatDescs[format].generate!());
+    }
+
     // highly advanced matchmaking algorithm
-    const player = new Player(account.id, formatDescs[format].generate!());
     const mm = this.mmWaiting[format];
     if (mm) {
       const roomId = uuid();
