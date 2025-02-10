@@ -7,7 +7,7 @@ export type Species = {
   readonly moves: MoveId[];
   readonly stats: Stats;
   readonly name: string;
-  readonly evolves?: boolean;
+  readonly evolves: boolean;
 };
 
 export type SpeciesId = keyof typeof speciesList;

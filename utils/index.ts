@@ -74,7 +74,7 @@ const descriptions: Partial<Record<MoveId, string>> = {
     "Removes the effects of Leech Seed, Mist, Reflect, Light Screen, Focus Energy, and " +
     "Disable, the stat reduction for burn and paralysis, confusion, and all stat stages " +
     "for both the user and the target. Also turns bad poison into regular poison for the " +
-    "user, and removes any non-volatile status for the target. ",
+    "user, and removes any non-volatile status for the target.",
   leechseed:
     "Plants a seed on the target. After the target attacks, it will lose 1/16 of their max " +
     "HP, and it will be restored to the user. Ends if the target switches out.",
@@ -84,7 +84,7 @@ const descriptions: Partial<Record<MoveId, string>> = {
   substitute:
     "The user sacrifices 1/4 its HP to create a substitute with 1/4 its HP + 1. The " +
     "substitute protects it from status and stat stage changes from the opponent's attacks, " +
-    "excluding Leech Seed, Disable, direct sleep or paralysis, and indirect confusion. ",
+    "excluding Leech Seed, Disable, direct sleep or paralysis, and indirect confusion.",
   superfang: "Damages the target for 1/2 its current HP.",
   transform: "Copies the target's stats, species, moves, and types. Each move is given 5 PP.",
   focusenergy: "Quarters the user's critical hit rate.",
@@ -92,8 +92,8 @@ const descriptions: Partial<Record<MoveId, string>> = {
   reflect: "Halves damage dealt by physical attacks. Ends on switch out.",
   mist: "Protects the user from stat dropping moves. Ends on switch out.",
   bide:
-    "The user sits dormant for 2-3 turns, damaging the opponent for 2x the damage received " +
-    "during the idling period. ",
+    "The user sits dormant for 2-3 turns, then damages the opponent for 2x the damage received " +
+    "during the idling period.",
 };
 
 const flagDesc: Record<NonNullable<DamagingMove["flag"]>, string> = {
