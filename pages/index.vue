@@ -55,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+import { useLocalStorage } from "@vueuse/core";
 import { serializeTeam } from "~/composables/states";
 import type { RoomDescriptor } from "~/server/utils/gameServer";
 
@@ -65,7 +66,7 @@ const myId = useMyId();
 const findingMatch = ref(false);
 const cancelling = ref(false);
 const rooms = ref<RoomDescriptor[]>([]);
-const format = ref<FormatId>("randoms");
+const format = useLocalStorage<FormatId>("lastFormat", () => "randoms");
 const selectedTeam = ref<Team | undefined>();
 const myTeams = useMyTeams();
 const validTeams = computed(() => myTeams.value.filter(team => team.format === format.value));

@@ -1,6 +1,11 @@
 <template>
   <UPopover mode="hover" :popper="{ placement: 'right' }">
-    <UButton @click="$emit('click')" class="w-full" :disabled="disabled || !poke.hp">
+    <UButton
+      @click="$emit('click')"
+      class="w-full"
+      :disabled="disabled || !poke.hp"
+      :color="active ? 'blue' : 'primary'"
+    >
       <div class="w-full space-y-0.5">
         <div class="flex items-center gap-1 w-full">
           <Sprite kind="box" :species="species" />
@@ -21,7 +26,7 @@ import { speciesList } from "~/game/species";
 import { Pokemon } from "../game/pokemon";
 
 defineEmits<{ (e: "click"): void }>();
-const props = defineProps<{ poke: Pokemon; disabled: boolean }>();
+const props = defineProps<{ poke: Pokemon; disabled: boolean; active: boolean }>();
 const species = computed(() => speciesList[props.poke.speciesId]);
 const colorForHp = computed(() => {
   if (props.poke.stats.hp / props.poke.hp < 0.1) {

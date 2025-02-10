@@ -32,6 +32,7 @@
               v-for="(poke, i) in myTeam"
               :poke="poke"
               :disabled="i === activeIndex || !options.canSwitch"
+              :active="i === activeIndex"
               @click="() => selectSwitch(i)"
             />
           </div>
@@ -66,8 +67,7 @@
     />
   </div>
 
-  <audio ref="effectController"></audio>
-  <audio ref="musicController"></audio>
+  <audio ref="sfxController"></audio>
 </template>
 
 <style scoped>
@@ -98,16 +98,27 @@ const myTeam = ref<Pokemon[]>(props.init.team ?? []);
 const activeIndex = ref(0);
 const activeInTeam = computed<Pokemon | undefined>(() => myTeam.value[activeIndex.value]);
 const textbox = ref<InstanceType<typeof Textbox>>();
-const effectController = ref<HTMLAudioElement>();
-const musicController = ref<HTMLAudioElement>();
 const hasLoaded = ref(false);
 const perspective = ref<string>("");
 const isBattler = ref(false);
+const sfxController = ref<HTMLAudioElement>();
+const currentTrack = useCurrentTrack();
+const sfxVol = useSfxVolume();
+
+effect(() => {
+  if (sfxController.value) {
+    sfxController.value.volume = sfxVol.value ?? 1.0;
+  }
+});
 
 let sequenceNo = 0;
 onMounted(async () => {
   if (process.server) {
     return;
+  }
+
+  if (allMusicTracks.length) {
+    currentTrack.value = allMusicTracks[Math.floor(Math.random() * allMusicTracks.length)];
   }
 
   for (const { isSpectator, id, name } of props.init.players) {
@@ -155,6 +166,10 @@ onMounted(async () => {
   });
 });
 
+onUnmounted(() => {
+  currentTrack.value = undefined;
+});
+
 const selectMove = (index: number) => {
   selectionText.value = `${players[myId.value].active!.name} will use ${
     moveList[options.value!.moves[index].move].name
@@ -196,10 +211,9 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
   sequenceNo++;
 
   const playSound = (path: string, speed = 1.0) => {
-    effectController.value!.src = path;
-    effectController.value!.play();
-    effectController.value!.volume = 0.15;
-    effectController.value!.playbackRate = speed;
+    sfxController.value!.src = path;
+    sfxController.value!.play();
+    sfxController.value!.playbackRate = speed;
   };
 
   const playCry = (speciesId: SpeciesId, speed = 1.0) => {
@@ -229,15 +243,19 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
         activeInTeam.value!.hp = e.hpAfter;
       }
 
-      if (live && e.type === "damage" && (e.why === "attacked" || e.why === "confusion")) {
-        const eff = e.eff ?? 1;
+      if (
+        live &&
+        e.type === "damage" &&
+        (e.why === "attacked" || e.why === "confusion" || e.why === "ohko")
+      ) {
+        const eff = e.why === "ohko" || !e.eff ? 1 : e.eff;
         const track = eff > 1 ? "supereffective" : eff < 1 ? "ineffective" : "neutral";
         playSound(`/effects/${track}.mp3`);
 
         if (e.hpAfter === 0) {
-          effectController.value!.onended = () => {
+          sfxController.value!.onended = () => {
             playCry(players[e.target].active!.speciesId, 0.9);
-            effectController.value!.onended = null;
+            sfxController.value!.onended = null;
           };
         }
       }

@@ -38,7 +38,7 @@ export const randChoiceWeighted = <T>(arr: T[], weights: number[]) => {
     weights[i] += weights[i - 1];
   }
 
-  const random = Math.random() * weights[weights.length - 1];
+  const random = Math.random() * weights.at(-1)!;
   for (i = 0; i < weights.length; i++) {
     if (weights[i] > random) {
       break;

@@ -73,7 +73,7 @@ const enterTurn = async (
     turns.value.push([]);
   }
   for (const e of events) {
-    turns.value[turns.value.length - 1].push(...htmlForEvent(e));
+    turns.value.at(-1)!.push(...htmlForEvent(e));
     cb(e);
 
     if (live) {

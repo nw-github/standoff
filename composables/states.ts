@@ -69,3 +69,13 @@ export const pokeFromString = (src: string) => {
 };
 
 export const useMyTeams = () => useLocalStorage<Team[]>("myTeams", () => []);
+
+export const useCurrentTrack = () => useState<string | undefined>("currentTrack", () => undefined);
+
+export const allMusicTracks = Object.keys(import.meta.glob("/public/music/**/*.{mp3,wav}"));
+
+export const musicTrackName = (track: string) => {
+  return track.slice(track.lastIndexOf("/") + 1, track.lastIndexOf("."));
+};
+
+export const useSfxVolume = () => useLocalStorage("sfxVolume", () => 0.8);
