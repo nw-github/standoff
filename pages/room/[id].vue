@@ -1,10 +1,10 @@
 <template>
-  <div v-if="!battleProps">
-    <h1>{{ status }}</h1>
-  </div>
-  <div v-else>
+  <template v-if="!battleProps">
+    <h1 v-if="!battleProps">{{ status }}</h1>
+  </template>
+  <template v-else>
     <Battle v-bind="battleProps" />
-  </div>
+  </template>
 </template>
 
 <script setup lang="ts">

@@ -83,7 +83,7 @@ const enterTurn = async (
         block: "center",
         inline: "center",
       });
-      await delay(300);
+      await delay(e.type === "damage" ? 500 : 300);
     }
   }
 

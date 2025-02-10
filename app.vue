@@ -1,6 +1,6 @@
 <template>
-  <UContainer>
-    <UCard class="min-h-screen my-6">
+  <UContainer class="h-screen py-6">
+    <UCard class="h-full">
       <template #header>
         <nav class="flex justify-between">
           <UHorizontalNavigation :links />
@@ -15,7 +15,10 @@
               <template #panel>
                 <div class="p-4">
                   <h2>Username</h2>
-                  <div class="h-20 w-48" />
+                  <div class="h-2"></div>
+                  <UCheckbox label="Music" />
+                  <UCheckbox label="Sound effects" />
+                  <UCheckbox label="Announce presence when spectating" />
                 </div>
               </template>
             </UPopover>
