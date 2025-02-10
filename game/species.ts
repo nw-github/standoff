@@ -369,7 +369,7 @@ export const speciesList = createSpeciesList({
     name: "Metapod",
     types: ["bug"],
     stats: { hp: 50, atk: 20, def: 55, spc: 25, spe: 30 },
-    moves: ["harden"],
+    moves: ["tackle", "stringshot", "harden"],
     evolves: true,
   },
   butterfree: {
@@ -378,6 +378,9 @@ export const speciesList = createSpeciesList({
     types: ["bug", "flying"],
     stats: { hp: 60, atk: 45, def: 50, spc: 80, spe: 70 },
     moves: [
+      "tackle",
+      "stringshot",
+      "harden",
       "razorwind",
       "gust",
       "whirlwind",
@@ -421,7 +424,7 @@ export const speciesList = createSpeciesList({
     name: "Kakuna",
     types: ["bug", "poison"],
     stats: { hp: 45, atk: 25, def: 50, spc: 25, spe: 35 },
-    moves: ["harden"],
+    moves: ["poisonsting", "stringshot", "harden"],
     evolves: true,
   },
   beedrill: {
@@ -430,6 +433,9 @@ export const speciesList = createSpeciesList({
     types: ["bug", "poison"],
     stats: { hp: 65, atk: 90, def: 40, spc: 45, spe: 75 },
     moves: [
+      "poisonsting",
+      "stringshot",
+      "harden",
       "swordsdance",
       "cut",
       "furyattack",
@@ -786,6 +792,12 @@ export const speciesList = createSpeciesList({
     types: ["electric"],
     stats: { hp: 60, atk: 90, def: 55, spc: 90, spe: 110 },
     moves: [
+      "slam",
+      "tailwhip",
+      "surf",
+      "agility",
+      "quickattack",
+      "lightscreen",
       "megapunch",
       "payday",
       "megakick",
@@ -959,6 +971,9 @@ export const speciesList = createSpeciesList({
     types: ["poison", "ground"],
     stats: { hp: 90, atk: 92, def: 87, spc: 75, spe: 76 },
     moves: [
+      "bite",
+      "growl",
+      "furyswipes",
       "megapunch",
       "payday",
       "scratch",
@@ -1072,6 +1087,9 @@ export const speciesList = createSpeciesList({
     types: ["poison", "ground"],
     stats: { hp: 81, atk: 102, def: 77, spc: 75, spe: 85 },
     moves: [
+      "furyattack",
+      "leer",
+      "focusenergy",
       "megapunch",
       "payday",
       "doublekick",
@@ -1167,6 +1185,10 @@ export const speciesList = createSpeciesList({
     types: ["normal"],
     stats: { hp: 95, atk: 70, def: 73, spc: 85, spe: 60 },
     moves: [
+      "pound",
+      "growl",
+      "defensecurl",
+      "lightscreen",
       "doubleslap",
       "megapunch",
       "megakick",
@@ -1244,6 +1266,9 @@ export const speciesList = createSpeciesList({
     types: ["fire"],
     stats: { hp: 73, atk: 76, def: 75, spc: 100, spe: 100 },
     moves: [
+      "flamethrower",
+      "firespin",
+      "confuseray",
       "bodyslam",
       "takedown",
       "doubleedge",
@@ -1319,6 +1344,7 @@ export const speciesList = createSpeciesList({
     types: ["normal"],
     stats: { hp: 140, atk: 70, def: 45, spc: 50, spe: 45 },
     moves: [
+      "pound",
       "doubleslap",
       "megapunch",
       "megakick",
@@ -1481,6 +1507,7 @@ export const speciesList = createSpeciesList({
     types: ["grass", "poison"],
     stats: { hp: 75, atk: 80, def: 85, spc: 100, spe: 50 },
     moves: [
+      "absorb",
       "swordsdance",
       "cut",
       "bodyslam",
@@ -1964,6 +1991,9 @@ export const speciesList = createSpeciesList({
     types: ["fire"],
     stats: { hp: 90, atk: 110, def: 80, spc: 80, spe: 95 },
     moves: [
+      "bite",
+      "flamethrower",
+      "agility",
       "bodyslam",
       "takedown",
       "doubleedge",
@@ -2067,6 +2097,9 @@ export const speciesList = createSpeciesList({
     types: ["water", "fight"],
     stats: { hp: 90, atk: 95, def: 95, spc: 70, spe: 70 },
     moves: [
+      "hydropump",
+      "amnesia",
+      "bubble",
       "doubleslap",
       "megapunch",
       "megakick",
@@ -2391,6 +2424,9 @@ export const speciesList = createSpeciesList({
     types: ["grass", "poison"],
     stats: { hp: 80, atk: 105, def: 65, spc: 100, spe: 70 },
     moves: [
+      "slam",
+      "vinewhip",
+      "growth",
       "swordsdance",
       "cut",
       "bodyslam",
@@ -3077,6 +3113,8 @@ export const speciesList = createSpeciesList({
     types: ["water", "ice"],
     stats: { hp: 50, atk: 95, def: 180, spc: 85, spe: 70 },
     moves: [
+      "tackle",
+      "leer",
       "takedown",
       "doubleedge",
       "supersonic",
@@ -4460,6 +4498,7 @@ export const speciesList = createSpeciesList({
     stats: { hp: 95, atk: 125, def: 79, spc: 100, spe: 81 },
     moves: [
       "tackle",
+      "splash",
       "bodyslam",
       "takedown",
       "doubleedge",
@@ -4572,6 +4611,8 @@ export const speciesList = createSpeciesList({
     types: ["water"],
     stats: { hp: 130, atk: 65, def: 60, spc: 110, spe: 65 },
     moves: [
+      "growl",
+      "focusenergy",
       "sandattack",
       "tackle",
       "bodyslam",
@@ -4610,6 +4651,9 @@ export const speciesList = createSpeciesList({
     types: ["electric"],
     stats: { hp: 65, atk: 65, def: 60, spc: 110, spe: 130 },
     moves: [
+      "bite",
+      "growl",
+      "focusenergy",
       "doublekick",
       "sandattack",
       "tackle",
@@ -4645,6 +4689,8 @@ export const speciesList = createSpeciesList({
     types: ["fire"],
     stats: { hp: 65, atk: 130, def: 60, spc: 110, spe: 65 },
     moves: [
+      "growl",
+      "focusenergy",
       "sandattack",
       "tackle",
       "bodyslam",
