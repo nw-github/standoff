@@ -1,6 +1,6 @@
 <template>
   <UContainer class="h-screen py-6">
-    <UCard class="h-full">
+    <UCard class="h-full flex flex-col" :ui="{ body: { base: 'grow overflow-hidden' } }">
       <template #header>
         <nav class="flex justify-between">
           <UHorizontalNavigation :links />
@@ -57,9 +57,7 @@
         </nav>
       </template>
 
-      <main class="h-full">
-        <NuxtPage />
-      </main>
+      <NuxtPage />
     </UCard>
   </UContainer>
 
@@ -72,10 +70,6 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-}
-
-.select-menu > * {
-  position: relative;
 }
 </style>
 

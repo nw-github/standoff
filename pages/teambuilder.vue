@@ -1,5 +1,5 @@
 <template>
-  <UCard>
+  <UCard class="h-full flex flex-col" :ui="{ body: { base: 'grow overflow-auto' } }">
     <template #header>
       <h1 class="text-2xl text-center pb-5">Your Teams</h1>
       <div class="flex space-x-2">

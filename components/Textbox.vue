@@ -1,46 +1,92 @@
 <template>
-  <div class="textbox">
-    <template v-for="(turn, i) in turns">
-      <div class="turn" v-if="i">
-        <h2>Turn {{ i }}</h2>
+  <UCard class="card h-full w-full flex flex-col" :ui="{ body: { base: 'grow overflow-auto' } }">
+    <template #header>
+      <div class="flex justify-between items-center">
+        <div>
+          <UTooltip
+            v-if="players[myId] && !players[myId].isSpectator"
+            text="Forfeit"
+            :popper="{ placement: 'top' }"
+          >
+            <UButton icon="material-symbols:close" variant="link" color="red" size="lg" />
+          </UTooltip>
+          <UTooltip text="Open calculator" :popper="{ placement: 'top' }">
+            <UButton icon="iconamoon:calculator-light" variant="link" color="gray" size="lg" />
+          </UTooltip>
+          <UTooltip text="Start Timer" :popper="{ placement: 'top' }">
+            <UButton
+              icon="material-symbols:alarm-add-outline"
+              variant="link"
+              color="gray"
+              size="lg"
+            />
+          </UTooltip>
+        </div>
+
+        <UPopover mode="hover" :popper="{ placement: 'bottom-start' }" class="w-min">
+          <UButton
+            color="white"
+            variant="ghost"
+            label="Players"
+            trailing-icon="i-heroicons-chevron-down-20-solid"
+          />
+          <template #panel>
+            <div class="p-2 space-y-1 flex flex-col">
+              <span v-for="(player, id) in players">{{ playerInfo(player, id) }}</span>
+            </div>
+          </template>
+        </UPopover>
       </div>
-      <component :is="() => turn" />
     </template>
 
-    <div ref="scrollPoint"></div>
-  </div>
+    <template #default>
+      <template v-for="(turn, i) in turns">
+        <div class="bg-gray-300 dark:bg-gray-700 w-full px-1" v-if="i">
+          <h2 class="text-xl">Turn {{ i }}</h2>
+        </div>
+        <div class="turn p-1">
+          <component :is="() => turn" />
+        </div>
+      </template>
+      <div ref="scrollPoint"></div>
+    </template>
+
+    <template #footer>
+      <UInput placeholder="Send a message..." disabled>
+        <template #trailing>
+          <UButton icon="material-symbols:send" variant="link" disabled color="gray" />
+        </template>
+      </UInput>
+    </template>
+  </UCard>
 </template>
 
 <style scoped>
-.textbox {
-  overflow-y: auto;
-  background-color: #f1f1f1;
-  padding: 0.25rem;
+.card > :nth-child(1) {
+  padding: 0.2rem;
 }
 
-.textbox > div {
-  padding: 0px 5px;
-}
-
-.turn {
-  background-color: #ccc;
+/* for some reason setting p-0 in the card :ui doesn't work */
+.card > :nth-child(2) {
+  padding: 0;
 }
 </style>
 
 <style>
-.textbox h3,
-h4,
-h5,
-h6 {
-  font-weight: normal;
-}
+.turn {
+  .red {
+    color: var(--stat-down);
+    @apply text-sm;
+  }
 
-.textbox .red {
-  color: var(--stat-down);
-}
+  .green {
+    color: green;
+    @apply text-sm;
+  }
 
-.textbox .green {
-  color: green;
+  > * {
+    padding: 0 0.25rem;
+  }
 }
 </style>
 
@@ -50,7 +96,7 @@ import type { BattleEvent, InfoReason } from "../game/events";
 import { moveList, type MoveId } from "../game/moveList";
 import { hpPercentExact } from "../game/utils";
 import type { Turn } from "../game/battle";
-import { stageTable } from "#imports";
+import { stageTable, type ClientPlayer } from "#imports";
 import "assets/colors.css";
 
 const scrollPoint = ref<HTMLDivElement>();
@@ -61,7 +107,6 @@ const props = defineProps<{
   perspective: string;
 }>();
 const myId = useMyId();
-
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const enterTurn = async (
@@ -93,9 +138,9 @@ const enterTurn = async (
   }
 };
 
-const text = (s: string) => h("p", s);
-const bold = (s: string) => h("b", s);
-const italic = (s: string) => h("i", s);
+const text = (s: any, color: string = "") => h("p", { class: color }, s);
+const bold = (s: any) => h("b", s);
+const italic = (s: any) => h("i", s);
 
 const htmlForEvent = (e: BattleEvent) => {
   const players = props.players;
@@ -121,9 +166,9 @@ const htmlForEvent = (e: BattleEvent) => {
     }
 
     if (e.src === props.perspective) {
-      res.push(h("p", ["Go! ", bold(`${e.name}`), "!"]));
+      res.push(text(["Go! ", bold(`${e.name}`), "!"]));
     } else {
-      res.push(h("p", [`${player.name} sent in `, bold(`${e.name}`), "!"]));
+      res.push(text([`${player.name} sent in `, bold(`${e.name}`), "!"]));
     }
   } else if (e.type === "damage" || e.type === "recover") {
     const src = pname(e.src);
@@ -156,9 +201,7 @@ const htmlForEvent = (e: BattleEvent) => {
       }
 
       if (e.why !== "explosion") {
-        res.push(
-          h("h5", { class: "red" }, [`${target} lost `, bold(`${percent}%`), " of its health."])
-        );
+        res.push(text([`${target} lost `, bold(`${percent}%`), " of its health."], "red"));
       }
 
       if (e.why === "substitute") {
@@ -184,9 +227,7 @@ const htmlForEvent = (e: BattleEvent) => {
         res.push(text(`${src} started sleeping!`));
       }
 
-      res.push(
-        h("h5", { class: "green" }, [`${target} gained `, bold(`${percent}%`), " of its health."])
-      );
+      res.push(text([`${target} gained `, bold(`${percent}%`), " of its health."], "green"));
     }
   } else if (e.type === "move") {
     if (e.thrashing && e.move !== "rage") {
@@ -194,7 +235,7 @@ const htmlForEvent = (e: BattleEvent) => {
     } else if (e.disabled) {
       res.push(text(`${pname(e.src)}'s ${moveList[e.move].name} is disabled!`));
     } else {
-      res.push(h("p", [`${pname(e.src)} used `, bold(moveList[e.move].name), "!"]));
+      res.push(text([`${pname(e.src)} used `, bold(moveList[e.move].name), "!"]));
     }
   } else if (e.type === "victory") {
     if (e.id === myId.value) {
@@ -304,6 +345,20 @@ const htmlForEvent = (e: BattleEvent) => {
 
 const clear = () => {
   turns.value.length = 0;
+};
+
+const playerInfo = (player: ClientPlayer, id: string) => {
+  let label = player.name;
+  if (id === myId.value) {
+    label += " (Me)";
+  }
+  if (player.isSpectator) {
+    label += " (Spectator)";
+  }
+  if (!player.connected) {
+    label += " (Disconnected)";
+  }
+  return label;
 };
 
 defineExpose({ enterTurn, clear });

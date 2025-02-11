@@ -10,29 +10,29 @@
         <div class="hp-fill"></div>
         <div class="w-full text-center absolute text-[#ccc]">{{ hp }}%</div>
       </div>
-      <div class="flex gap-1 flex-wrap effects">
-        <UBadge color="black" v-if="poke.transformed">Transformed</UBadge>
+      <div class="relative">
+        <div class="flex gap-1 flex-wrap effects absolute">
+          <UBadge color="black" v-if="poke.transformed">Transformed</UBadge>
 
-        <template v-if="!species.types.every((ty, i) => ty === poke.conversion?.[i])">
-          <TypeBadge v-for="ty in poke.conversion" :typ="ty" />
-        </template>
+          <template v-if="!species.types.every((ty, i) => ty === poke.conversion?.[i])">
+            <TypeBadge v-for="ty in poke.conversion" :typ="ty" />
+          </template>
 
-        <UBadge v-if="poke.status" :style="{ backgroundColor: statusColor[poke.status] }">
-          {{ poke.status.toUpperCase() }}
-        </UBadge>
-
-        <template v-for="(val, stage) in poke.stages">
-          <UBadge v-if="val" :class="val > 0 ? 'up' : 'down'">
-            {{ roundTo(stageMultipliers[val] / 100, 2) }}x {{ toTitleCase(stage) }}
+          <UBadge v-if="poke.status" :style="{ backgroundColor: statusColor[poke.status] }">
+            {{ poke.status.toUpperCase() }}
           </UBadge>
-        </template>
+
+          <template v-for="(val, stage) in poke.stages">
+            <UBadge v-if="val" :class="val > 0 ? 'up' : 'down'">
+              {{ roundTo(stageMultipliers[val] / 100, 2) }}x {{ toTitleCase(stage) }}
+            </UBadge>
+          </template>
+        </div>
       </div>
     </div>
 
     <UPopover mode="hover" class="w-1/2" :popper="{ placement: 'top' }">
-      <div class="flex w-full">
-        <BattleSprite :back="back" :species="species" />
-      </div>
+      <BattleSprite :back="back" :species="species" />
 
       <template #panel>
         <div class="p-2">

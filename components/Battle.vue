@@ -41,41 +41,24 @@
           <div class="italic">{{ selectionText }}...</div>
           <UButton @click="cancelMove" color="red">Cancel</UButton>
         </div>
-        <template v-else-if="!isBattler">
-          <!-- TODO: re-render textbox contents on switch sides -->
-          <UButton @click="switchSide" :disabled="true">Switch Side</UButton>
+        <template v-else-if="!victor">
+          <template v-if="!isBattler">
+            <!-- TODO: re-render textbox contents on switch sides -->
+            <UButton @click="switchSide" :disabled="true">Switch Side</UButton>
+          </template>
+          <div v-else class="italic">Waiting for opponent...</div>
         </template>
-        <template v-else>
-          <div class="italic">Waiting for opponent...</div>
-        </template>
+        <div v-else>
+          <div>{{ victor === myId ? "You" : players[victor].name }} Won!</div>
+          <UButton to="/">Go Home</UButton>
+        </div>
       </div>
-
-      <ul>
-        <li v-for="({ name, isSpectator, connected }, id) in players">
-          <template v-if="id === myId">(Me) </template>
-          {{ name }}: {{ id }} {{ isSpectator ? "(spectator)" : "" }}
-          {{ !connected ? "(disconnected)" : "" }}
-        </li>
-      </ul>
     </div>
 
-    <Textbox
-      class="textbox rounded-lg"
-      :players="players"
-      :perspective="perspective"
-      ref="textbox"
-    />
+    <Textbox :players="players" :perspective="perspective" ref="textbox" />
+    <audio ref="sfxController"></audio>
   </div>
-
-  <audio ref="sfxController"></audio>
 </template>
-
-<style scoped>
-.textbox {
-  width: min(100%, 600px);
-  height: 60vh;
-}
-</style>
 
 <script setup lang="ts">
 import type { Player, Turn } from "../game/battle";
@@ -104,6 +87,7 @@ const isBattler = ref(false);
 const sfxController = ref<HTMLAudioElement>();
 const currentTrack = useCurrentTrack();
 const sfxVol = useSfxVolume();
+const victor = ref<string>();
 
 effect(() => {
   if (sfxController.value) {
@@ -113,7 +97,7 @@ effect(() => {
 
 let sequenceNo = 0;
 onMounted(async () => {
-  if (process.server) {
+  if (import.meta.server) {
     return;
   }
 
@@ -246,7 +230,7 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
       if (
         live &&
         e.type === "damage" &&
-        (e.why === "attacked" || e.why === "confusion" || e.why === "ohko")
+        (e.why === "attacked" || e.why === "confusion" || e.why === "ohko" || e.why === "trap")
       ) {
         const eff = e.why === "ohko" || !e.eff ? 1 : e.eff;
         const track = eff > 1 ? "supereffective" : eff < 1 ? "ineffective" : "neutral";
@@ -308,6 +292,8 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
       }
     } else if (e.type === "conversion") {
       players[e.user].active!.conversion = e.types;
+    } else if (e.type === "victory") {
+      victor.value = e.id;
     }
   };
 

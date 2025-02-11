@@ -15,9 +15,12 @@
         @click="enterMatchmaking"
         :disabled="!myId.length || (formatInfo[format].needsTeam && !selectedTeam)"
         :color="findingMatch ? 'red' : 'primary'"
-        :loading="cancelling"
       >
-        {{ cancelling ? "Cancelling..." : findingMatch ? "Cancel" : "Start Matchmaking" }}
+        {{ cancelling ? "Cancelling..." : findingMatch ? "Cancel" : "Find Match" }}
+
+        <template #leading v-if="findingMatch || cancelling">
+          <UIcon name="i-heroicons-arrow-path-20-solid" class="animate-spin size-5" />
+        </template>
       </UButton>
     </div>
 
@@ -91,7 +94,7 @@ const filterFormats = ref<string[]>([]);
 const battleQuery = ref<string>();
 
 onMounted(() => {
-  if (process.server) {
+  if (import.meta.server) {
     return;
   }
 

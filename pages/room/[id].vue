@@ -14,7 +14,7 @@ const status = ref("Loading...");
 const battleProps = ref<{ init: JoinRoomResponse; room: string }>();
 
 onMounted(() => {
-  if (process.server) {
+  if (import.meta.server) {
     return;
   }
 
