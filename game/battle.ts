@@ -282,6 +282,12 @@ export class Battle {
     return this.players.find(pl => pl.id === id);
   }
 
+  forfeit(player: Player) {
+    this._victor = this.opponentOf(player);
+    this.event({ type: "info", id: player.id, why: "forfeit" });
+    return this.endTurn();
+  }
+
   private userMove({ move, user, indexInMoves }: ChosenMove, target: ActivePokemon) {
     if (user.v.trapped) {
       this.info(user, "trapped");

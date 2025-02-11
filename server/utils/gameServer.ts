@@ -16,9 +16,12 @@ export type JoinRoomResponse = {
   options?: Player["options"];
   players: { id: string; name: string; isSpectator: boolean; nPokemon: number }[];
   turns: Turn[];
+  chats: Chats;
 };
 
 export type ChoiceError = "invalid_choice" | "bad_room" | "not_in_battle" | "too_late";
+
+export type Chats = Record<number, { player: string; message: string }[]>;
 
 export type RoomDescriptor = {
   id: string;
@@ -45,11 +48,16 @@ export interface ClientMessage {
   choose: (
     room: string,
     idx: number,
-    type: "move" | "switch",
+    type: "move" | "switch" | "forfeit",
     turn: number,
     ack: (err?: ChoiceError) => void
   ) => void;
   cancel: (room: string, turn: number, ack: (err?: ChoiceError) => void) => void;
+  chat: (
+    room: string,
+    message: string,
+    ack: (resp?: "bad_room" | "not_in_room" | "bad_message") => void
+  ) => void;
 }
 
 export interface ServerMessage {
@@ -66,6 +74,7 @@ export interface ServerMessage {
   ) => void;
   userLeave: (room: string, id: string) => void;
   userDisconnect: (room: string, id: string) => void;
+  userChat: (room: string, id: string, message: string, turn: number) => void;
 }
 
 declare module "socket.io" {
@@ -82,6 +91,8 @@ type Room = {
   turns: Turn[];
   accounts: Set<Account>;
   format: FormatId;
+  chats: Chats;
+  visualTurnNo: number;
 };
 
 class Account {
@@ -291,6 +302,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
           events: GameServer.censorEvents(events, player),
           switchTurn,
         })),
+        chats: room.chats,
       });
     });
     socket.on("leaveRoom", (roomId, ack) => {
@@ -320,10 +332,12 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         if (!player.chooseSwitch(index)) {
           return ack("invalid_choice");
         }
+      } else if (type !== "forfeit") {
+        return ack("invalid_choice");
       }
 
       ack();
-      const turn = room.battle.nextTurn();
+      const turn = type === "forfeit" ? room.battle.forfeit(player) : room.battle.nextTurn();
       if (!turn) {
         return;
       }
@@ -333,6 +347,10 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       }
 
       room.turns.push(turn);
+      if (!turn.switchTurn) {
+        room.visualTurnNo++;
+      }
+
       for (const account of room.accounts) {
         account.nextTurn(room, turn);
       }
@@ -350,6 +368,30 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
 
       info[0].cancel();
       ack();
+    });
+    socket.on("chat", (roomId, message, ack) => {
+      if (!message.trim().length) {
+        return ack("bad_message");
+      }
+
+      const room = this.rooms[roomId];
+      if (!room) {
+        return ack("bad_room");
+      }
+
+      const account = socket.account;
+      if (!account || !account.rooms.has(room)) {
+        return ack("not_in_room");
+      }
+
+      ack();
+
+      if (!room.chats[room.visualTurnNo]) {
+        room.chats[room.visualTurnNo] = [];
+      }
+
+      room.chats[room.visualTurnNo].push({ message, player: account.id });
+      this.to(roomId).emit("userChat", roomId, account.id, message, room.visualTurnNo);
     });
     socket.on("getRooms", ack =>
       ack(
@@ -404,6 +446,8 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         turns: [turn0],
         accounts: new Set(),
         format,
+        chats: {},
+        visualTurnNo: 0,
       };
 
       account.joinBattle(this.rooms[roomId]);

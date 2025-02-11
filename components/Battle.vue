@@ -40,14 +40,14 @@
       <UDivider class="pb-2" />
 
       <template v-if="options && !selectionText.length">
-        <div class="grid grid-cols-[1fr,1.5fr] gap-2 items-center">
+        <div class="grid grid-cols-[1fr,1.5fr] gap-2">
           <div class="flex flex-col gap-2">
             <template v-for="(option, i) in options.moves">
               <MoveButton v-if="option.display" :option="option" @click="() => selectMove(i)" />
             </template>
           </div>
 
-          <div class="grid grid-cols-2 gap-2">
+          <div class="grid grid-cols-2 gap-2 items-center">
             <SwitchButton
               v-for="(poke, i) in myTeam"
               :poke="poke"
@@ -75,7 +75,15 @@
       </div>
     </div>
 
-    <Textbox :players="players" :perspective="perspective" ref="textbox" />
+    <Textbox
+      :players="players"
+      :perspective="perspective"
+      :chats="init.chats"
+      ref="textbox"
+      @chat="sendChat"
+      @forfeit="forfeit"
+      :victor="victor"
+    />
     <audio ref="sfxController"></audio>
   </div>
 </template>
@@ -155,11 +163,7 @@ onMounted(async () => {
 
   $conn.on("userLeave", (roomId, id) => {
     if (roomId === props.room) {
-      if (!(id in battlers)) {
-        delete players[id];
-      } else {
-        players[id].connected = false;
-      }
+      players[id].connected = false;
     }
   });
 
@@ -168,11 +172,33 @@ onMounted(async () => {
       players[id].connected = false;
     }
   });
+
+  $conn.on("userChat", (roomId, id, message, turn) => {
+    if (roomId === props.room) {
+      if (!props.init.chats[turn]) {
+        props.init.chats[turn] = [];
+      }
+
+      props.init.chats[turn].push({ message, player: id });
+    }
+  });
 });
 
 onUnmounted(() => {
   currentTrack.value = undefined;
 });
+
+const sendChat = (message: string) => {
+  $conn.emit("chat", props.room, message, err => {
+    // TODO: do something with the error
+  });
+};
+
+const forfeit = () => {
+  $conn.emit("choose", props.room, 0, "forfeit", sequenceNo, err => {
+    // TODO: do something with the error
+  });
+};
 
 const selectMove = (index: number) => {
   selectionText.value = `${players[myId.value].active!.name} will use ${
@@ -269,7 +295,6 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
 
       if (e.hpAfter === 0) {
         players[e.target].nFainted++;
-        console.log("nfainted for ", e.target);
       }
 
       if (e.why === "rest") {

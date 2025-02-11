@@ -142,7 +142,8 @@ export type InfoReason =
   | "rage"
   | "disable_end"
   | "bide"
-  | "trapped";
+  | "trapped"
+  | "forfeit";
 
 type InfoEvent = {
   type: "info";

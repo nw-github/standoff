@@ -3,12 +3,15 @@
     <template #header>
       <div class="flex justify-between items-center">
         <div>
-          <UTooltip
-            v-if="players[myId] && !players[myId].isSpectator"
-            text="Forfeit"
-            :popper="{ placement: 'top' }"
-          >
-            <UButton icon="material-symbols:close" variant="link" color="red" size="lg" />
+          <UTooltip text="Forfeit" :popper="{ placement: 'top' }">
+            <UButton
+              icon="material-symbols:close"
+              variant="link"
+              color="red"
+              size="lg"
+              :disabled="!players[myId] || players[myId].isSpectator || !!victor"
+              @click="() => (forfeitModalOpen = true)"
+            />
           </UTooltip>
           <UTooltip text="Open calculator" :popper="{ placement: 'top' }">
             <UButton icon="iconamoon:calculator-light" variant="link" color="gray" size="lg" />
@@ -46,19 +49,54 @@
         </div>
         <div class="turn p-1">
           <component :is="() => turn" />
+          <template v-for="{ message, player } in chats[i] ?? []">
+            <p>
+              <b>{{ players[player].name }}</b
+              >: {{ message }}
+            </p>
+          </template>
         </div>
       </template>
       <div ref="scrollPoint"></div>
     </template>
 
     <template #footer>
-      <UInput placeholder="Send a message..." disabled>
+      <UInput placeholder="Send a message..." v-model="message" v-on:keyup.enter="sendMessage">
         <template #trailing>
-          <UButton icon="material-symbols:send" variant="link" disabled color="gray" />
+          <UButton
+            icon="material-symbols:send"
+            variant="link"
+            color="gray"
+            :padded="false"
+            v-show="message !== ''"
+            @click="sendMessage"
+          />
         </template>
       </UInput>
     </template>
   </UCard>
+
+  <UModal v-model="forfeitModalOpen">
+    <UAlert
+      title="Are you sure?"
+      description="You are about to forfeit the match."
+      icon="iconamoon:attention-circle"
+      :actions="[
+        {
+          variant: 'solid',
+          color: 'primary',
+          label: 'Forfeit',
+          click: () => ((forfeitModalOpen = false), $emit('forfeit')),
+        },
+        {
+          variant: 'outline',
+          color: 'primary',
+          label: 'Cancel',
+          click: () => (forfeitModalOpen = false),
+        },
+      ]"
+    />
+  </UModal>
 </template>
 
 <style scoped>
@@ -112,6 +150,7 @@ import { hpPercentExact } from "../game/utils";
 import type { Turn } from "../game/battle";
 import { stageTable, type ClientPlayer } from "#imports";
 import "assets/colors.css";
+import type { Chats } from "~/server/utils/gameServer";
 
 const scrollPoint = ref<HTMLDivElement>();
 const turns = ref<VNode[][]>([]);
@@ -119,8 +158,31 @@ const turns = ref<VNode[][]>([]);
 const props = defineProps<{
   players: Record<string, ClientPlayer>;
   perspective: string;
+  chats: Chats;
+  victor?: string;
 }>();
+const emit = defineEmits<{ (e: "chat", message: string): void; (e: "forfeit"): void }>();
 const myId = useMyId();
+const message = ref("");
+const forfeitModalOpen = ref(false);
+
+watch(props.chats, async () => {
+  await nextTick();
+  scrollPoint.value?.scrollIntoView({
+    behavior: "smooth",
+    block: "center",
+    inline: "center",
+  });
+});
+
+const sendMessage = () => {
+  const msg = message.value.trim();
+  if (msg.length) {
+    emit("chat", message.value);
+  }
+  message.value = "";
+};
+
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const enterTurn = async (
@@ -325,14 +387,19 @@ const htmlForEvent = (e: BattleEvent) => {
       disable_end: "{}'s disabled no more!",
       bide: "{} unleashed energy!",
       trapped: "{} can't move!",
+      forfeit: "{} forfeit the match.",
     };
 
-    res.push(
-      text(
-        messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)),
-        e.why === "confused" ? "confused" : ""
-      )
-    );
+    if (e.why === "forfeit") {
+      res.push(text(messages[e.why].replace("{}", players[e.id].name)));
+    } else {
+      res.push(
+        text(
+          messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)),
+          e.why === "confused" ? "confused" : ""
+        )
+      );
+    }
   } else if (e.type === "transform") {
     res.push(text(`${pname(e.src)} transformed into ${pname(e.target, false)}!`));
   } else if (e.type === "disable") {
