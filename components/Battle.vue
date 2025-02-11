@@ -1,33 +1,53 @@
 <template>
   <div
-    class="flex h-full m-2 p-6 rounded-lg dark:divide-gray-800 ring-1 ring-gray-200 dark:ring-gray-800 shadow"
+    class="flex h-full p-4 rounded-lg dark:divide-gray-800 ring-1 ring-gray-200 dark:ring-gray-800 shadow space-x-4"
   >
     <div class="flex flex-col" v-if="hasLoaded">
-      <div class="flex flex-row-reverse justify-center">
+      <div class="flex flex-row-reverse">
         <template v-for="id in battlers">
-          <ActivePokemon
-            v-if="players[id].active"
-            :poke="players[id].active!"
-            :base="id === myId ? activeInTeam : undefined"
-            :back="id === perspective"
-          />
+          <div v-if="id === perspective && players[id].active">
+            <div class="h-28"></div>
+            <ActivePokemon
+              :poke="players[id].active"
+              :base="id === myId ? activeInTeam : undefined"
+              back
+            />
+          </div>
+          <div v-else-if="players[id].active">
+            <div class="flex justify-end p-2">
+              <!-- i < players[id].nPokemon | UIcon dies with double ternary for some reason -->
+              <UIcon
+                v-for="(_, i) in players[id].nPokemon"
+                :name="
+                  i < players[id].nPokemon - players[id].nFainted
+                    ? 'ic:baseline-catching-pokemon'
+                    : 'tabler:pokeball-off'
+                "
+                class="size-5 bg-primary dark:bg-gray-200"
+              />
+              <UIcon
+                v-for="_ in 6 - players[id].nPokemon"
+                name="ci:dot-03-m"
+                class="size-5 bg-primary dark:bg-gray-200"
+              />
+            </div>
+
+            <ActivePokemon :poke="players[id].active" />
+          </div>
         </template>
       </div>
 
-      <div class="flex">
-        <template v-if="options && !selectionText.length">
-          <div class="flex flex-col p-2 gap-2">
+      <UDivider class="pb-2" />
+
+      <template v-if="options && !selectionText.length">
+        <div class="grid grid-cols-[1fr,1.5fr] gap-2 items-center">
+          <div class="flex flex-col gap-2">
             <template v-for="(option, i) in options.moves">
-              <MoveButton
-                class="move-button"
-                v-if="option.display"
-                :option="option"
-                @click="() => selectMove(i)"
-              />
+              <MoveButton v-if="option.display" :option="option" @click="() => selectMove(i)" />
             </template>
           </div>
 
-          <div class="grid grid-cols-2 p-2 gap-2 test">
+          <div class="grid grid-cols-2 gap-2">
             <SwitchButton
               v-for="(poke, i) in myTeam"
               :poke="poke"
@@ -36,22 +56,22 @@
               @click="() => selectSwitch(i)"
             />
           </div>
-        </template>
-        <div class="cancel" v-else-if="options">
-          <div class="italic">{{ selectionText }}...</div>
-          <UButton @click="cancelMove" color="red">Cancel</UButton>
         </div>
-        <template v-else-if="!victor">
-          <template v-if="!isBattler">
-            <!-- TODO: re-render textbox contents on switch sides -->
-            <UButton @click="switchSide" :disabled="true">Switch Side</UButton>
-          </template>
-          <div v-else class="italic">Waiting for opponent...</div>
-        </template>
-        <div v-else>
-          <div>{{ victor === myId ? "You" : players[victor].name }} Won!</div>
-          <UButton to="/">Go Home</UButton>
+      </template>
+      <div class="cancel" v-else-if="options">
+        <div class="italic">{{ selectionText }}...</div>
+        <UButton @click="cancelMove" color="red">Cancel</UButton>
+      </div>
+      <template v-else-if="!victor">
+        <div v-if="!isBattler">
+          <!-- TODO: re-render textbox contents on switch sides -->
+          <UButton @click="switchSide" :disabled="true">Switch Side</UButton>
         </div>
+        <div v-else class="italic">Waiting for opponent...</div>
+      </template>
+      <div v-else>
+        <div>{{ victor === myId ? "You" : players[victor].name }} Won!</div>
+        <UButton to="/">Go Home</UButton>
       </div>
     </div>
 
@@ -105,8 +125,8 @@ onMounted(async () => {
     currentTrack.value = allMusicTracks[Math.floor(Math.random() * allMusicTracks.length)];
   }
 
-  for (const { isSpectator, id, name } of props.init.players) {
-    players[id] = { name, isSpectator, connected: true };
+  for (const { isSpectator, id, name, nPokemon } of props.init.players) {
+    players[id] = { name, isSpectator, connected: true, nPokemon, nFainted: 0 };
     if (!isSpectator && !battlers.value.includes(id)) {
       battlers.value.push(id);
     }
@@ -127,9 +147,9 @@ onMounted(async () => {
     }
   });
 
-  $conn.on("userJoin", (roomId, name, id, isSpectator) => {
+  $conn.on("userJoin", (roomId, name, id, isSpectator, nPokemon) => {
     if (roomId === props.room) {
-      players[id] = { name, isSpectator, connected: true };
+      players[id] = { name, isSpectator, nPokemon, connected: true, nFainted: 0 };
     }
   });
 
@@ -205,6 +225,11 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
     playSound(`/effects/cries/${track}.wav`, speed);
   };
 
+  const playDmg = (eff: number) => {
+    const track = eff > 1 ? "supereffective" : eff < 1 ? "ineffective" : "neutral";
+    playSound(`/effects/${track}.mp3`);
+  };
+
   const handleEvent = (e: BattleEvent) => {
     if (e.type === "switch") {
       const player = players[e.src];
@@ -232,9 +257,7 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
         e.type === "damage" &&
         (e.why === "attacked" || e.why === "confusion" || e.why === "ohko" || e.why === "trap")
       ) {
-        const eff = e.why === "ohko" || !e.eff ? 1 : e.eff;
-        const track = eff > 1 ? "supereffective" : eff < 1 ? "ineffective" : "neutral";
-        playSound(`/effects/${track}.mp3`);
+        playDmg(e.why === "ohko" || !e.eff ? 1 : e.eff);
 
         if (e.hpAfter === 0) {
           sfxController.value!.onended = () => {
@@ -242,6 +265,11 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
             sfxController.value!.onended = null;
           };
         }
+      }
+
+      if (e.hpAfter === 0) {
+        players[e.target].nFainted++;
+        console.log("nfainted for ", e.target);
       }
 
       if (e.why === "rest") {
@@ -294,6 +322,8 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
       players[e.user].active!.conversion = e.types;
     } else if (e.type === "victory") {
       victor.value = e.id;
+    } else if (e.type === "hit_sub" && live) {
+      playDmg(e.eff ?? 1);
     }
   };
 

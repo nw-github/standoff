@@ -278,6 +278,10 @@ export class Battle {
     return this.endTurn();
   }
 
+  findPlayer(id: string) {
+    return this.players.find(pl => pl.id === id);
+  }
+
   private userMove({ move, user, indexInMoves }: ChosenMove, target: ActivePokemon) {
     if (user.v.trapped) {
       this.info(user, "trapped");

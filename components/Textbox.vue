@@ -87,6 +87,20 @@
   > * {
     padding: 0 0.25rem;
   }
+
+  .move,
+  .confused {
+    padding-top: 0.5rem;
+  }
+
+  .move + .move,
+  .move:first-child {
+    padding-top: 0;
+  }
+
+  .confused + .move {
+    padding-top: 0;
+  }
 }
 </style>
 
@@ -138,7 +152,7 @@ const enterTurn = async (
   }
 };
 
-const text = (s: any, color: string = "") => h("p", { class: color }, s);
+const text = (s: any, clazz: string = "") => h("p", { class: clazz }, s);
 const bold = (s: any) => h("b", s);
 const italic = (s: any) => h("i", s);
 
@@ -159,16 +173,16 @@ const htmlForEvent = (e: BattleEvent) => {
     const player = players[e.src];
     if (player.active && player.active.hp) {
       if (e.src === props.perspective) {
-        res.push(text(`Come back! ${player.active.name}!`));
+        res.push(text(`Come back! ${player.active.name}!`, "move"));
       } else {
-        res.push(text(`${player.name} withdrew ${player.active.name}!`));
+        res.push(text(`${player.name} withdrew ${player.active.name}!`, "move"));
       }
     }
 
     if (e.src === props.perspective) {
-      res.push(text(["Go! ", bold(`${e.name}`), "!"]));
+      res.push(text(["Go! ", bold(`${e.name}`), "!"], "move"));
     } else {
-      res.push(text([`${player.name} sent in `, bold(`${e.name}`), "!"]));
+      res.push(text([`${player.name} sent in `, bold(`${e.name}`), "!"], "move"));
     }
   } else if (e.type === "damage" || e.type === "recover") {
     const src = pname(e.src);
@@ -231,11 +245,11 @@ const htmlForEvent = (e: BattleEvent) => {
     }
   } else if (e.type === "move") {
     if (e.thrashing && e.move !== "rage") {
-      res.push(text(`${pname(e.src)}'s thrashing about!`));
+      res.push(text(`${pname(e.src)}'s thrashing about!`, "move"));
     } else if (e.disabled) {
-      res.push(text(`${pname(e.src)}'s ${moveList[e.move].name} is disabled!`));
+      res.push(text(`${pname(e.src)}'s ${moveList[e.move].name} is disabled!`, "move"));
     } else {
-      res.push(text([`${pname(e.src)} used `, bold(moveList[e.move].name), "!"]));
+      res.push(text([`${pname(e.src)} used `, bold(moveList[e.move].name), "!"], "move"));
     }
   } else if (e.type === "victory") {
     if (e.id === myId.value) {
@@ -313,7 +327,12 @@ const htmlForEvent = (e: BattleEvent) => {
       trapped: "{} can't move!",
     };
 
-    res.push(text(messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false))));
+    res.push(
+      text(
+        messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)),
+        e.why === "confused" ? "confused" : ""
+      )
+    );
   } else if (e.type === "transform") {
     res.push(text(`${pname(e.src)} transformed into ${pname(e.target, false)}!`));
   } else if (e.type === "disable") {

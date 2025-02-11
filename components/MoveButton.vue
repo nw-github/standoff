@@ -3,7 +3,7 @@
     <UButton
       @click="$emit('click')"
       :disabled="!option.valid"
-      class="flex justify-between content-center min-w-[200px] border p-1 text-black"
+      class="flex justify-between content-center w-full border p-1 text-black"
     >
       <span class="text-lg">{{ move.name }}</span>
       <span class="info"> {{ option.pp !== undefined ? option.pp : "--" }}/{{ move.pp }} </span>

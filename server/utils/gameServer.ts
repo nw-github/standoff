@@ -14,7 +14,7 @@ export type LoginResponse = {
 export type JoinRoomResponse = {
   team?: Pokemon[];
   options?: Player["options"];
-  players: { id: string; name: string; isSpectator: boolean }[];
+  players: { id: string; name: string; isSpectator: boolean; nPokemon: number }[];
   turns: Turn[];
 };
 
@@ -57,7 +57,13 @@ export interface ServerMessage {
 
   nextTurn: (room: string, turn: Turn, options?: Player["options"]) => void;
 
-  userJoin: (room: string, name: string, id: string, isSpectator: boolean) => void;
+  userJoin: (
+    room: string,
+    name: string,
+    id: string,
+    isSpectator: boolean,
+    nPokemon: number
+  ) => void;
   userLeave: (room: string, id: string) => void;
   userDisconnect: (room: string, id: string) => void;
 }
@@ -105,7 +111,10 @@ class Account {
     }
 
     if (server) {
-      server.to(room.id).emit("userJoin", room.id, this.name, this.id, !this.battles.has(room));
+      const player = room.battle.findPlayer(this.id);
+      server
+        .to(room.id)
+        .emit("userJoin", room.id, this.name, this.id, !!player, player?.team.length ?? 0);
     }
     room.accounts.add(this);
     this.rooms.add(room);
@@ -155,7 +164,7 @@ class Account {
   }
 
   nextTurn(room: Room, { events, switchTurn }: Turn) {
-    const player = room.battle.players.find(pl => pl.id === this.id);
+    const player = room.battle.findPlayer(this.id);
     const turn = { switchTurn, events: GameServer.censorEvents(events, player) };
     for (const socket of this.sockets) {
       socket.emit("nextTurn", room.id, turn, player?.options);
@@ -261,7 +270,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       }
 
       const account = socket.account;
-      const player = account && room.battle.players.find(pl => pl.id === account.id);
+      const player = account && room.battle.findPlayer(account.id);
       if (account) {
         account.joinRoom(room, this);
       } else {
@@ -276,6 +285,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
           name: account.name,
           id: account.id,
           isSpectator: !account.battles.has(room),
+          nPokemon: room.battle.findPlayer(account.id)?.team.length ?? 0,
         })),
         turns: room.turns.map(({ events, switchTurn }) => ({
           events: GameServer.censorEvents(events, player),
@@ -426,7 +436,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       return "not_in_battle";
     }
 
-    const player = room.battle.players.find(pl => pl.id === account.id);
+    const player = room.battle.findPlayer(account.id);
     if (!player) {
       return "not_in_battle";
     }

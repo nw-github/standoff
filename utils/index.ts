@@ -28,6 +28,8 @@ export type ClientPlayer = {
   name: string;
   isSpectator: boolean;
   connected: boolean;
+  nPokemon: number;
+  nFainted: number;
   active?: ClientActivePokemon;
 };
 

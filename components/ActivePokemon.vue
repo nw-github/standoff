@@ -1,13 +1,12 @@
 <template>
-  <div class="self w-full">
-    <div class="all-info relative w-3/4 flex flex-col">
+  <div class="w-full flex flex-col items-center">
+    <div class="all-info relative w-3/4 flex flex-col top-[10%] gap-1 text-sm">
       <div class="flex justify-between">
         <span>{{ poke.name }}</span>
         <span>Lv. {{ poke.level }}</span>
       </div>
-
-      <div class="healthbar">
-        <div class="hp-fill"></div>
+      <div class="relative h-5 overflow-hidden rounded-md bg-[#333]">
+        <div class="hp-fill absolute h-full rounded-md"></div>
         <div class="w-full text-center absolute text-[#ccc]">{{ hp }}%</div>
       </div>
       <div class="relative">
@@ -31,7 +30,7 @@
       </div>
     </div>
 
-    <UPopover mode="hover" class="w-1/2" :popper="{ placement: 'top' }">
+    <UPopover mode="hover" :popper="{ placement: 'top', offsetDistance: 0 }">
       <BattleSprite :back="back" :species="species" />
 
       <template #panel>
@@ -63,28 +62,10 @@
 </template>
 
 <style scoped>
-.healthbar {
-  background-color: #333;
-  border-radius: 5px;
-  position: relative;
-  height: 1.2rem;
-  overflow: hidden;
-}
-
 .hp-fill {
   width: v-bind("hp + '%'");
   background-color: v-bind("hpColor(hp)");
-  height: 100%;
-  position: absolute;
-  border-radius: 5px;
   transition: width 0.5s, background-color 0.5s;
-}
-
-.all-info {
-  order: v-bind("back ? 2 : 0");
-  top: 10%; /* check */
-  font-size: 0.9em;
-  gap: 0.2rem;
 }
 
 .effects > * {
@@ -110,7 +91,7 @@ import { calcStat, type Pokemon } from "../game/pokemon";
 import { speciesList } from "../game/species";
 import "assets/colors.css";
 
-const props = defineProps<{ poke: ClientActivePokemon; base?: Pokemon; back: boolean }>();
+const props = defineProps<{ poke: ClientActivePokemon; base?: Pokemon; back?: boolean }>();
 const species = computed(() => speciesList[props.poke.transformed ?? props.poke.speciesId]);
 const minSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 0, 0));
 const maxSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 15, 65535));

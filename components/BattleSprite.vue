@@ -6,5 +6,5 @@
 
 <script setup lang="ts">
 import type { Species } from "~/game/species";
-defineProps<{ species: Species; back: boolean }>();
+defineProps<{ species: Species; back?: boolean }>();
 </script>
