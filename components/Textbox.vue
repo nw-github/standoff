@@ -13,7 +13,7 @@
               @click="() => (forfeitModalOpen = true)"
             />
           </UTooltip>
-          <UTooltip text="Open calculator" :popper="{ placement: 'top' }">
+          <UTooltip text="Open Calculator" :popper="{ placement: 'top' }">
             <UButton icon="iconamoon:calculator-light" variant="link" color="gray" size="lg" />
           </UTooltip>
           <UTooltip text="Start Timer" :popper="{ placement: 'top' }">
@@ -22,11 +22,12 @@
               variant="link"
               color="gray"
               size="lg"
+              :disabled="!players[myId] || players[myId].isSpectator || !!victor"
             />
           </UTooltip>
         </div>
 
-        <UPopover mode="hover" :popper="{ placement: 'bottom-start' }" class="w-min">
+        <UPopover mode="hover" :popper="{ placement: 'bottom-start' }">
           <UButton
             color="white"
             variant="ghost"
@@ -47,7 +48,7 @@
         <div class="bg-gray-300 dark:bg-gray-700 w-full px-1" v-if="i">
           <h2 class="text-xl">Turn {{ i }}</h2>
         </div>
-        <div class="turn p-1">
+        <div class="events p-1">
           <component :is="() => turn" />
           <template v-for="{ message, player } in chats[i] ?? []">
             <p>
@@ -111,17 +112,9 @@
 </style>
 
 <style>
-.turn {
-  .red {
-    color: var(--stat-down);
-    @apply text-sm;
-  }
+@import "assets/turn.css";
 
-  .green {
-    color: green;
-    @apply text-sm;
-  }
-
+.events {
   > * {
     padding: 0 0.25rem;
   }
@@ -188,14 +181,15 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 const enterTurn = async (
   { events, switchTurn }: Turn,
   live: boolean,
-  cb: (e: BattleEvent) => void
+  cb: (e: BattleEvent, html: VNode[]) => void
 ) => {
   if (!switchTurn) {
     turns.value.push([]);
   }
   for (const e of events) {
-    turns.value.at(-1)!.push(...htmlForEvent(e));
-    cb(e);
+    const html = htmlForEvent(e);
+    turns.value.at(-1)!.push(...html);
+    cb(e, html);
 
     if (live) {
       await nextTick();

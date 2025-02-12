@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex h-full p-4 rounded-lg dark:divide-gray-800 ring-1 ring-gray-200 dark:ring-gray-800 shadow space-x-4"
+    class="flex h-full p-4 overflow-auto rounded-lg dark:divide-gray-800 ring-1 ring-gray-200 dark:ring-gray-800 shadow space-x-4"
   >
     <div class="flex flex-col" v-if="hasLoaded">
       <div class="flex flex-row-reverse">
@@ -35,6 +35,18 @@
             <ActivePokemon :poke="players[id].active" />
           </div>
         </template>
+      </div>
+
+      <div class="relative" v-if="liveEvents.length">
+        <div
+          class="events absolute w-full flex flex-col bottom-1 p-2 rounded-lg bg-gray-300 dark:bg-gray-700 bg-opacity-80 dark:bg-opacity-80"
+        >
+          <template v-for="[events, _] in liveEvents">
+            <div>
+              <component :is="() => events" />
+            </div>
+          </template>
+        </div>
       </div>
 
       <UDivider class="pb-2" />
@@ -88,6 +100,10 @@
   </div>
 </template>
 
+<style scoped>
+@import "assets/turn.css";
+</style>
+
 <script setup lang="ts">
 import type { Player, Turn } from "../game/battle";
 import type { Pokemon } from "../game/pokemon";
@@ -97,6 +113,7 @@ import type { JoinRoomResponse } from "../server/utils/gameServer";
 import { clamp, randChoice } from "../game/utils";
 import { speciesList, type SpeciesId } from "~/game/species";
 import type { BattleEvent } from "~/game/events";
+import { useIntervalFn } from "@vueuse/core";
 
 const { $conn } = useNuxtApp();
 const props = defineProps<{ init: JoinRoomResponse; room: string }>();
@@ -116,6 +133,11 @@ const sfxController = ref<HTMLAudioElement>();
 const currentTrack = useCurrentTrack();
 const sfxVol = useSfxVolume();
 const victor = ref<string>();
+const liveEvents = ref<[VNode[], number][]>([]);
+
+useIntervalFn(() => {
+  liveEvents.value = liveEvents.value.filter(ev => Date.now() - ev[1] < 1400);
+}, 500);
 
 effect(() => {
   if (sfxController.value) {
@@ -256,7 +278,11 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Player["options"]
     playSound(`/effects/${track}.mp3`);
   };
 
-  const handleEvent = (e: BattleEvent) => {
+  const handleEvent = (e: BattleEvent, html: VNode[]) => {
+    if (live) {
+      liveEvents.value.push([html, Date.now()]);
+    }
+
     if (e.type === "switch") {
       const player = players[e.src];
       player.active = { ...e, stages: {} };

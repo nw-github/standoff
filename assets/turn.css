@@ -1,0 +1,11 @@
+.events {
+  .red {
+    color: var(--stat-down);
+    @apply text-sm;
+  }
+
+  .green {
+    color: green;
+    @apply text-sm;
+  }
+}
