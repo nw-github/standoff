@@ -25,11 +25,9 @@
         <div
           class="events absolute w-full flex flex-col bottom-1 p-2 rounded-lg bg-gray-300 dark:bg-gray-700 bg-opacity-90 dark:bg-opacity-90"
         >
-          <template v-for="[events, _] in liveEvents">
-            <div>
-              <component :is="() => events" />
-            </div>
-          </template>
+          <div v-for="[events, _] in liveEvents">
+            <component :is="() => events" />
+          </div>
         </div>
       </div>
 
@@ -115,8 +113,22 @@
   </div>
 </template>
 
-<style scoped>
-@import "assets/turn.css";
+<style>
+@import "../assets/colors.css";
+
+.events {
+  @apply text-sm sm:text-base;
+
+  .red {
+    color: var(--stat-down);
+    @apply text-xs sm:text-sm;
+  }
+
+  .green {
+    color: green;
+    @apply text-xs sm:text-sm;
+  }
+}
 </style>
 
 <script setup lang="ts">
@@ -164,6 +176,7 @@ const opponent = computed(() => props.battlers.find(v => v != perspective.value)
 const victor = ref<string>();
 const htmlTurns = ref<[VNode[], boolean][]>([]);
 const liveEvents = ref<[VNode[], number][]>([]);
+const soundQueue = ref<[string, number][]>([]);
 
 useIntervalFn(() => {
   liveEvents.value = liveEvents.value.filter(ev => Date.now() - ev[1] < 1400);
@@ -172,6 +185,14 @@ useIntervalFn(() => {
 effect(() => {
   if (sfxController.value) {
     sfxController.value.volume = sfxVol.value ?? 1.0;
+    sfxController.value.onended = () => {
+      const res = soundQueue.value.shift();
+      if (res) {
+        sfxController.value!.src = res[0];
+        sfxController.value!.play();
+        sfxController.value!.playbackRate = res[1];
+      }
+    };
   }
 });
 
@@ -243,17 +264,21 @@ const cancelMove = () => {
 const runTurn = async (turn: Turn, live: boolean) => {
   selectionText.value = "";
 
-  const playSound = (path: string, speed = 1.0) => {
+  const playSound = (path: string, speed = 1.0, useQueue = false) => {
     if (sfxController.value) {
-      sfxController.value.src = path;
-      sfxController.value.play();
-      sfxController.value.playbackRate = speed;
+      if (sfxController.value.paused || !useQueue) {
+        sfxController.value.src = path;
+        sfxController.value.play();
+        sfxController.value.playbackRate = speed;
+      } else {
+        soundQueue.value.push([path, speed]);
+      }
     }
   };
 
   const playCry = (speciesId: SpeciesId, speed = 1.0) => {
     const track = speciesList[speciesId].dexId.toString().padStart(3, "0");
-    playSound(`/effects/cries/${track}.wav`, speed);
+    playSound(`/effects/cries/${track}.wav`, speed, true);
   };
 
   const playDmg = (eff: number) => {
@@ -291,11 +316,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
         playDmg(e.why === "ohko" || !e.eff ? 1 : e.eff);
 
         if (e.hpAfter === 0 && sfxController.value) {
-          const species = props.players[e.target].active!.speciesId;
-          sfxController.value.onended = () => {
-            playCry(species, 0.9);
-            sfxController.value!.onended = null;
-          };
+          playCry(props.players[e.target].active!.speciesId, 0.9);
         }
       }
 
@@ -305,6 +326,9 @@ const runTurn = async (turn: Turn, live: boolean) => {
 
       if (e.why === "rest") {
         props.players[e.target].active!.status = "slp";
+        if (e.target === myId.value) {
+          activeInTeam.value!.status = "slp";
+        }
       }
 
       if (e.why === "substitute") {
@@ -551,7 +575,7 @@ const htmlForEvent = (e: BattleEvent) => {
       splash: "No effect!",
       seeded: "{} was seeded!",
       mist_protect: "{} is protected by the mist!",
-      mist: "{}'s' shrouded in mist!",
+      mist: "{}'s shrouded in mist!",
       light_screen: "{}'s protected against special attacks!",
       reflect: "{} is gained armor!",
       focus: "{} is getting pumped!",

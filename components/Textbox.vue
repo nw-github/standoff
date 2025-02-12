@@ -121,9 +121,18 @@
 </style>
 
 <style>
-@import "assets/turn.css";
-
+@import "../assets/colors.css";
 .events {
+  .red {
+    color: var(--stat-down);
+    @apply text-sm;
+  }
+
+  .green {
+    color: green;
+    @apply text-sm;
+  }
+
   > * {
     padding: 0 0.25rem;
   }

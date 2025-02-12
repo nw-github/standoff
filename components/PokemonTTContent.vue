@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col space-y-1.5 p-2">
+  <div class="flex flex-col space-y-1.5 p-2 text-sm sm:text-md">
     <div class="flex justify-between space-x-4">
       <span>{{ species.name }}</span>
 
