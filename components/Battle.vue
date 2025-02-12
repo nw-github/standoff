@@ -185,7 +185,7 @@ watch(
         }
       }
     }
-  }
+  },
 );
 
 watch(props.turns, () => runTurns(props.turns.slice(htmlTurns.value.length), true));
@@ -264,7 +264,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
   const handleEvent = (e: BattleEvent) => {
     if (e.type === "switch") {
       const player = props.players[e.src];
-      player.active = { ...e, stages: {} };
+      player.active = { ...e, stages: {}, substitute: false };
       if (e.src === myId.value) {
         if (activeInTeam.value?.status === "tox") {
           activeInTeam.value.status = "psn";
@@ -305,6 +305,10 @@ const runTurn = async (turn: Turn, live: boolean) => {
 
       if (e.why === "rest") {
         props.players[e.target].active!.status = "slp";
+      }
+
+      if (e.why === "substitute") {
+        props.players[e.target].active!.substitute = true;
       }
     } else if (e.type === "status") {
       props.players[e.id].active!.status = e.status;
@@ -353,8 +357,13 @@ const runTurn = async (turn: Turn, live: boolean) => {
       props.players[e.user].active!.conversion = e.types;
     } else if (e.type === "victory") {
       victor.value = e.id;
-    } else if (e.type === "hit_sub" && live) {
-      playDmg(e.eff ?? 1);
+    } else if (e.type === "hit_sub") {
+      if (e.broken) {
+        props.players[e.target].active!.substitute = false;
+      }
+      if (live) {
+        playDmg(e.eff ?? 1);
+      }
     }
   };
 
@@ -526,8 +535,8 @@ const htmlForEvent = (e: BattleEvent) => {
         text(
           `${name}'s ${stageTable[stage]} ${amount > 0 ? "rose" : "fell"}${
             Math.abs(amount) > 1 ? " sharply" : ""
-          }!`
-        )
+          }!`,
+        ),
       );
     }
   } else if (e.type === "info") {
@@ -570,8 +579,8 @@ const htmlForEvent = (e: BattleEvent) => {
       res.push(
         text(
           messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)),
-          e.why === "confused" ? "confused" : ""
-        )
+          e.why === "confused" ? "confused" : "",
+        ),
       );
     }
   } else if (e.type === "transform") {

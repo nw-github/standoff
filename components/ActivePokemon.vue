@@ -31,7 +31,7 @@
     </div>
 
     <UPopover mode="hover" :popper="{ placement: 'top', offsetDistance: 0 }">
-      <BattleSprite :back="back" :species="species" />
+      <BattleSprite :back="back" :species="species" :substitute="poke.substitute" />
 
       <template #panel>
         <div class="p-2">
@@ -96,7 +96,7 @@ const species = computed(() => speciesList[props.poke.transformed ?? props.poke.
 const minSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 0, 0));
 const maxSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 15, 65535));
 const hp = computed(() =>
-  props.base ? hpPercent(props.base.hp, props.base.stats.hp) : props.poke.hp
+  props.base ? hpPercent(props.base.hp, props.base.stats.hp) : props.poke.hp,
 );
 
 // https://stackoverflow.com/questions/8022885/rgb-to-hsv-color-in-javascript/54070620#54070620
@@ -122,7 +122,7 @@ const hpColor = (num: number) => {
   const [r, g, b] = hsv2rgb(
     lerp(red.h, green.h, num / 100),
     lerp(red.s, green.s, num / 100),
-    lerp(red.v, green.v, num / 100)
+    lerp(red.v, green.v, num / 100),
   );
   return `rgb(${r}, ${g}, ${b})`;
 };

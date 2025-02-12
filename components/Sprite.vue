@@ -13,13 +13,19 @@ img {
 <script setup lang="ts">
 import type { Species } from "~/game/species";
 
-const props = defineProps<{ species: Species; kind: "front" | "back" | "box"; scale?: number }>();
+const props = defineProps<{
+  species: Species;
+  kind: "front" | "back" | "box";
+  scale?: number;
+  substitute?: boolean;
+}>();
 const sprite = computed(() => {
   const scale = props.scale ? ` ${1 / props.scale}x` : "";
+  const id = props.substitute ? "substitute" : props.species.dexId;
   if (props.kind === "front") {
-    return `/sprites/battle/${props.species.dexId}.gif${scale}`;
+    return `/sprites/battle/${id}.gif${scale}`;
   } else if (props.kind === "back") {
-    return `/sprites/battle/back/${props.species.dexId}.gif${scale}`;
+    return `/sprites/battle/back/${id}.gif${scale}`;
   } else {
     return `/sprites/box/${props.species.dexId}.png${scale}`;
   }
