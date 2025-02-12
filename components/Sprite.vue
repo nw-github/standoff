@@ -15,7 +15,7 @@ import type { Species } from "~/game/species";
 
 const props = defineProps<{ species: Species; kind: "front" | "back" | "box"; scale?: number }>();
 const sprite = computed(() => {
-  const scale = props.scale ? ` ${props.scale}x` : "";
+  const scale = props.scale ? ` ${1 / props.scale}x` : "";
   if (props.kind === "front") {
     return `/sprites/battle/${props.species.dexId}.gif${scale}`;
   } else if (props.kind === "back") {

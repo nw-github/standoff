@@ -5,8 +5,8 @@
       :disabled="!option.valid"
       class="flex justify-between content-center w-full border p-1 text-black"
     >
-      <span class="text-lg">{{ move.name }}</span>
-      <span class="info"> {{ option.pp !== undefined ? option.pp : "--" }}/{{ move.pp }} </span>
+      <span class="text-sm md:text-lg">{{ move.name }}</span>
+      <span> {{ option.pp !== undefined ? option.pp : "--" }}/{{ move.pp }} </span>
     </UButton>
 
     <template #panel>

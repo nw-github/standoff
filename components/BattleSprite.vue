@@ -1,6 +1,9 @@
 <template>
-  <div class="w-[256px] h-[234px] flex items-center justify-center">
-    <Sprite :species="species" :kind="back ? 'back' : 'front'" :scale="0.5" />
+  <div class="w-[256px] h-[234px] items-center justify-center hidden md:flex">
+    <Sprite :species="species" :kind="back ? 'back' : 'front'" :scale="2" />
+  </div>
+  <div class="w-[128px] h-[117px] items-center justify-center flex md:hidden">
+    <Sprite :species="species" :kind="back ? 'back' : 'front'" :scale="1" />
   </div>
 </template>
 

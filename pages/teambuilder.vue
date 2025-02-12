@@ -33,7 +33,7 @@
           <Sprite
             v-for="poke in (row as Team).pokemon"
             :species="speciesList[poke.species]"
-            :scale="0.5"
+            :scale="2"
             kind="box"
           />
         </div>

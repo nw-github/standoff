@@ -51,6 +51,8 @@ class SwitchMove extends Move {
   }
 }
 
+export type Options = NonNullable<Player["options"]>;
+
 export type Turn = {
   events: BattleEvent[];
   switchTurn: boolean;

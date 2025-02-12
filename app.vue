@@ -3,7 +3,15 @@
     <UCard class="h-full flex flex-col" :ui="{ body: { base: 'grow overflow-hidden' } }">
       <template #header>
         <nav class="flex justify-between">
-          <UHorizontalNavigation :links />
+          <UHorizontalNavigation class="hidden sm:block" :links />
+
+          <UPopover class="block sm:hidden" :popper="{ placement: 'bottom-start' }">
+            <UButton icon="heroicons:bars-3-16-solid" variant="link" color="gray" />
+            <template #panel>
+              <UVerticalNavigation :links />
+            </template>
+          </UPopover>
+
           <div class="flex items-center space-x-3">
             <UToggle
               v-model="dark"

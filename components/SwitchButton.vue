@@ -16,7 +16,7 @@
     </UButton>
 
     <template #panel>
-      <PokemonTTContent class="p-2" :poke="poke" />
+      <PokemonTTContent :poke="poke" />
     </template>
   </UPopover>
 </template>

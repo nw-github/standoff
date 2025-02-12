@@ -3,7 +3,7 @@ import { Server as SocketIoServer, Socket as SocketIoClient } from "socket.io";
 
 import { Pokemon } from "../../game/pokemon";
 import { hpPercent } from "../../game/utils";
-import { Battle, Player, Turn } from "../../game/battle";
+import { Battle, Options, Player, Turn } from "../../game/battle";
 import { BattleEvent } from "../../game/events";
 import { type FormatId, type TeamProblems, formatDescs } from "../../utils/formats";
 
@@ -13,7 +13,7 @@ export type LoginResponse = {
 
 export type JoinRoomResponse = {
   team?: Pokemon[];
-  options?: Player["options"];
+  options?: Options;
   players: { id: string; name: string; isSpectator: boolean; nPokemon: number }[];
   turns: Turn[];
   chats: Chats;
@@ -63,7 +63,7 @@ export interface ClientMessage {
 export interface ServerMessage {
   foundMatch: (room: string) => void;
 
-  nextTurn: (room: string, turn: Turn, options?: Player["options"]) => void;
+  nextTurn: (room: string, turn: Turn, options?: Options) => void;
 
   userJoin: (
     room: string,

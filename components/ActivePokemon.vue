@@ -1,9 +1,9 @@
 <template>
   <div class="w-full flex flex-col items-center">
-    <div class="all-info relative w-3/4 flex flex-col top-[10%] gap-1 text-sm">
-      <div class="flex justify-between">
-        <span>{{ poke.name }}</span>
-        <span>Lv. {{ poke.level }}</span>
+    <div class="relative w-3/4 flex flex-col top-[10%] gap-0.5 sm:gap-1 text-sm">
+      <div class="flex justify-between flex-col sm:flex-row space-y-0">
+        <span class="font-bold">{{ poke.name }}</span>
+        <span class="text-[0.75rem] sm:text-sm">Lv. {{ poke.level }}</span>
       </div>
       <div class="relative h-5 overflow-hidden rounded-md bg-[#333]">
         <div class="hp-fill absolute h-full rounded-md"></div>
