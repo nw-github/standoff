@@ -22,6 +22,7 @@ export type ClientActivePokemon = {
   stats?: VolatileStats;
   transformed?: SpeciesId;
   conversion?: Type[];
+  substitute: boolean;
 };
 
 export type ClientPlayer = {

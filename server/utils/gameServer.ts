@@ -17,6 +17,7 @@ export type JoinRoomResponse = {
   players: { id: string; name: string; isSpectator: boolean; nPokemon: number }[];
   turns: Turn[];
   chats: Chats;
+  format: FormatId;
 };
 
 export type ChoiceError = "invalid_choice" | "bad_room" | "not_in_battle" | "too_late";
@@ -124,7 +125,7 @@ class Account {
       const player = room.battle.findPlayer(this.id);
       server
         .to(room.id)
-        .emit("userJoin", room.id, this.name, this.id, !!player, player?.team.length ?? 0);
+        .emit("userJoin", room.id, this.name, this.id, !player, player?.team.length ?? 0);
     }
     room.accounts.add(this);
     this.rooms.add(room);
@@ -134,16 +135,11 @@ class Account {
     }
   }
 
-  leaveRoom(room: Room, forfeit: boolean, server: GameServer) {
+  leaveRoom(room: Room, server: GameServer) {
     if (this.battles.has(room)) {
-      if (!forfeit) {
-        // TODO: start room disconnect timer
-        server.to(room.id).emit("userDisconnect", room.id, this.id);
-        return;
-      }
-
-      // TODO: forfeit
-      this.battles.delete(room);
+      // TODO: start room disconnect timer
+      server.to(room.id).emit("userDisconnect", room.id, this.id);
+      return;
     }
 
     room.accounts.delete(this);
@@ -168,7 +164,7 @@ class Account {
     delete socket.account;
     if (!this.sockets.size) {
       for (const room of [...this.rooms]) {
-        this.leaveRoom(room, false, server);
+        this.leaveRoom(room, server);
       }
     }
   }
@@ -211,7 +207,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       for (const [roomId] of this.finishedRooms.splice(0, index + 1)) {
         const room = this.rooms[roomId];
         for (const account of room.accounts) {
-          account.leaveRoom(room, true, this);
+          account.leaveRoom(room, this);
         }
         delete this.rooms[roomId];
       }
@@ -302,6 +298,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
           switchTurn,
         })),
         chats: room.chats,
+        format: room.format,
       });
     });
     socket.on("leaveRoom", (roomId, ack) => {
@@ -314,7 +311,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         return ack("must_login");
       }
 
-      socket.account.leaveRoom(room, true, this);
+      socket.account.leaveRoom(room, this);
     });
     socket.on("choose", (roomId, index, type, sequenceNo, ack) => {
       const info = this.validatePlayer(socket, roomId, sequenceNo);
