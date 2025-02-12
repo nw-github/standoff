@@ -94,10 +94,6 @@ const filterFormats = ref<string[]>([]);
 const battleQuery = ref<string>();
 
 onMounted(() => {
-  if (import.meta.server) {
-    return;
-  }
-
   status.value = `Logging in as ${username.value}...`;
 
   $conn.emit("login", username.value, resp => {

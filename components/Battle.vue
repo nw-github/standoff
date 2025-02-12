@@ -105,19 +105,19 @@
           icon="heroicons:bars-3-16-solid"
           variant="outline"
           color="gray"
-          @click="(slideover = true), (unseen = 0)"
+          @click="(slideoverOpen = true), (unseen = 0)"
           ref="menuButton"
         />
       </UChip>
 
-      <USlideover v-model="slideover">
+      <USlideover v-model="slideoverOpen">
         <Textbox
           :players="players"
           :chats="init.chats"
           :turns="turns"
           @chat="sendChat"
           @forfeit="forfeit"
-          @close="slideover = false"
+          @close="slideoverOpen = false"
           :victor="victor"
           closable
         />
@@ -143,8 +143,6 @@ import type { JoinRoomResponse } from "../server/utils/gameServer";
 import { useElementVisibility, useIntervalFn } from "@vueuse/core";
 import { stageTable } from "#imports";
 
-const slideover = ref(false);
-
 const { $conn } = useNuxtApp();
 const props = defineProps<{ init: JoinRoomResponse; room: string }>();
 const myId = useMyId();
@@ -163,11 +161,12 @@ const sfxController = ref<HTMLAudioElement>();
 const currentTrack = useCurrentTrack();
 const sfxVol = useSfxVolume();
 const victor = ref<string>();
-const turns = ref<VNode[][]>([]);
+const turns = ref<[VNode[], boolean][]>([]);
 const liveEvents = ref<[VNode[], number][]>([]);
 const unseen = ref(0);
 const menuButton = ref<HTMLElement>();
 const isMenuVisible = useElementVisibility(menuButton);
+const slideoverOpen = ref(false);
 
 useIntervalFn(() => {
   liveEvents.value = liveEvents.value.filter(ev => Date.now() - ev[1] < 1400);
@@ -181,10 +180,6 @@ effect(() => {
 
 let sequenceNo = 0;
 onMounted(async () => {
-  if (import.meta.server) {
-    return;
-  }
-
   if (allMusicTracks.length) {
     currentTrack.value = randChoice(allMusicTracks);
   }
@@ -413,12 +408,10 @@ const runTurn = async (turn: Turn, live: boolean, newOptions?: Options) => {
     }
   };
 
-  if (!turn.switchTurn) {
-    turns.value.push([]);
-  }
+  turns.value.push([[], turn.switchTurn]);
   for (const e of turn.events) {
     const html = htmlForEvent(e);
-    turns.value.at(-1)!.push(...html);
+    turns.value.at(-1)![0].push(...html);
 
     handleEvent(e);
     if (live) {

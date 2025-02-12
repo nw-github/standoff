@@ -14,10 +14,6 @@ const status = ref("Loading...");
 const battleProps = ref<{ init: JoinRoomResponse; room: string }>();
 
 onMounted(() => {
-  if (import.meta.server) {
-    return;
-  }
-
   const room = `${route.params.id}`;
   $conn.emit("joinRoom", room, resp => {
     if (resp === "bad_room") {

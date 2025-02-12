@@ -53,8 +53,8 @@
     </template>
 
     <template #default>
-      <template v-for="(turn, i) in turns">
-        <div class="bg-gray-300 dark:bg-gray-700 w-full px-1" v-if="i">
+      <template v-for="([turn, switchTurn], i) in turns">
+        <div class="bg-gray-300 dark:bg-gray-700 w-full px-1" v-if="i && !switchTurn">
           <h2 class="text-xl">Turn {{ i }}</h2>
         </div>
         <div class="events p-1">
@@ -148,7 +148,7 @@
 import type { Chats } from "~/server/utils/gameServer";
 
 const props = defineProps<{
-  turns: VNode[][];
+  turns: [VNode[], boolean][];
   players: Record<string, ClientPlayer>;
   chats: Chats;
   victor?: string;

@@ -21,6 +21,9 @@ watch(currentTrack, value => {
       title: `Now Playing: ${musicTrackName(value)}`,
       icon: "heroicons-outline:speaker-wave",
     });
+    if (musicController.value) {
+      musicController.value.play().catch(_err => {});
+    }
   }
 });
 

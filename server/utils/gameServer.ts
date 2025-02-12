@@ -92,7 +92,6 @@ type Room = {
   accounts: Set<Account>;
   format: FormatId;
   chats: Chats;
-  visualTurnNo: number;
 };
 
 class Account {
@@ -347,10 +346,6 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       }
 
       room.turns.push(turn);
-      if (!turn.switchTurn) {
-        room.visualTurnNo++;
-      }
-
       for (const account of room.accounts) {
         account.nextTurn(room, turn);
       }
@@ -386,12 +381,13 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
 
       ack();
 
-      if (!room.chats[room.visualTurnNo]) {
-        room.chats[room.visualTurnNo] = [];
+      const turn = Math.max(room.turns.length - 1, 0);
+      if (!room.chats[turn]) {
+        room.chats[turn] = [];
       }
 
-      room.chats[room.visualTurnNo].push({ message, player: account.id });
-      this.to(roomId).emit("userChat", roomId, account.id, message, room.visualTurnNo);
+      room.chats[turn].push({ message, player: account.id });
+      this.to(roomId).emit("userChat", roomId, account.id, message, turn);
     });
     socket.on("getRooms", ack =>
       ack(
@@ -447,7 +443,6 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         accounts: new Set(),
         format,
         chats: {},
-        visualTurnNo: 0,
       };
 
       account.joinBattle(this.rooms[roomId]);
