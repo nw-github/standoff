@@ -3,10 +3,9 @@
 </template>
 
 <script setup lang="ts">
-const props = defineProps<{ volume?: number }>();
-
 const toast = useToast();
 const currentTrack = useCurrentTrack();
+const musicVol = useMusicVolume();
 const musicController = ref<HTMLAudioElement>();
 const track = computed(() => {
   return (
@@ -29,7 +28,7 @@ watch(currentTrack, value => {
 
 effect(() => {
   if (musicController.value) {
-    musicController.value.volume = props.volume ?? 1.0;
+    musicController.value.volume = musicVol.value ?? 1.0;
   }
 });
 </script>

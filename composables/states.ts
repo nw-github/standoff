@@ -79,3 +79,5 @@ export const musicTrackName = (track: string) => {
 };
 
 export const useSfxVolume = () => useLocalStorage("sfxVolume", () => 0.8);
+
+export const useMusicVolume = () => useLocalStorage("musicVolume", () => 1.0);

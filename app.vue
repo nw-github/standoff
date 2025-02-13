@@ -69,7 +69,7 @@
   </UContainer>
 
   <UNotifications />
-  <MusicController :volume="musicVol" />
+  <MusicController />
 </template>
 
 <style>
@@ -81,9 +81,7 @@
 </style>
 
 <script setup lang="ts">
-import { useLocalStorage } from "@vueuse/core";
-
-const musicVol = useLocalStorage("musicVolume", () => 1.0);
+const musicVol = useMusicVolume();
 const sfxVol = useSfxVolume();
 const currentTrack = useCurrentTrack();
 const musicTrackItems = allMusicTracks.map(track => ({

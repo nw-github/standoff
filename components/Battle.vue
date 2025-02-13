@@ -7,8 +7,8 @@
 
       <div class="flex">
         <template v-for="(player, id) in players">
-          <div v-if="id === perspective && player.active" class="order-1">
-            <div class="h-16"></div>
+          <div v-if="id === perspective && player.active" class="order-1 pb-2 sm:pb-0">
+            <div class="h-10 sm:h-14"></div>
             <ActivePokemon
               :poke="player.active"
               :base="id === myId ? activeInTeam : undefined"
@@ -23,7 +23,7 @@
 
       <div class="relative w-full z-10" v-if="liveEvents.length">
         <div
-          class="events absolute w-full flex flex-col bottom-1 p-2 rounded-lg bg-gray-300 dark:bg-gray-700 bg-opacity-90 dark:bg-opacity-90"
+          class="events absolute w-full flex flex-col bottom-1 p-2 rounded-lg bg-gray-300 dark:bg-gray-700 bg-opacity-90 dark:bg-opacity-95"
         >
           <div v-for="[events, _] in liveEvents">
             <component :is="() => events" />
@@ -60,7 +60,7 @@
             <div class="min-[900px]:hidden p-2 flex justify-end items-start" ref="menuDiv">
               <UChip :show="unseen !== 0" :text="unseen" size="xl">
                 <UButton
-                  icon="heroicons:bars-3-16-solid"
+                  icon="material-symbols:chat-outline"
                   variant="link"
                   color="gray"
                   @click="(slideoverOpen = true), (unseen = 0)"
@@ -100,7 +100,7 @@
         </div>
         <template v-else-if="!victor">
           <div v-if="!isBattler && !isRunningTurn">
-            <UButton @click="perspective = opponent">Switch Sides</UButton>
+            <UButton @click="perspective = opponent" icon="mi:switch">Switch Sides</UButton>
           </div>
           <div v-else-if="!isRunningTurn" class="italic">Waiting for opponent...</div>
           <div v-else>
@@ -143,8 +143,6 @@
         closable
       />
     </USlideover>
-
-    <audio ref="sfxController"></audio>
   </div>
 </template>
 
@@ -205,7 +203,6 @@ const myId = useMyId();
 const sfxVol = useSfxVolume();
 const currentTrack = useCurrentTrack();
 const selectionText = ref("");
-const sfxController = ref<HTMLAudioElement>();
 const menuButton = ref<HTMLElement>();
 const isMenuVisible = useElementVisibility(menuButton);
 const unseen = ref(0);
@@ -223,26 +220,16 @@ const opponent = computed(() => props.battlers.find(v => v != perspective.value)
 const victor = ref<string>();
 const htmlTurns = ref<[VNode[], boolean][]>([]);
 const liveEvents = ref<[VNode[], number][]>([]);
-const soundQueue = ref<[string, number][]>([]);
+const soundQueue = ref<[string, boolean][]>([]);
+
+const audioContext = new AudioContext();
+const savedAudio: Record<string, AudioBuffer> = {};
+let audioPaused = true;
 
 useIntervalFn(() => {
   liveEvents.value = liveEvents.value.filter(ev => Date.now() - ev[1] < 1400);
   updateMarker.value++;
 }, 400);
-
-effect(() => {
-  if (sfxController.value) {
-    sfxController.value.volume = sfxVol.value ?? 1.0;
-    sfxController.value.onended = () => {
-      const res = soundQueue.value.shift();
-      if (res) {
-        sfxController.value!.src = res[0];
-        sfxController.value!.play();
-        sfxController.value!.playbackRate = res[1];
-      }
-    };
-  }
-});
 
 watch(
   () => props.options,
@@ -260,7 +247,7 @@ watch(
 watch(props.turns, () => runTurns(props.turns.slice(htmlTurns.value.length), true));
 
 watch(props.chats, () => {
-  if (isMenuVisible.value) {
+  if (isMenuVisible.value && !slideoverOpen.value) {
     unseen.value++;
   }
 });
@@ -316,21 +303,17 @@ const cancelMove = () => {
 const runTurn = async (turn: Turn, live: boolean) => {
   selectionText.value = "";
 
-  const playSound = (path: string, speed = 1.0, useQueue = false) => {
-    if (sfxController.value) {
-      if (sfxController.value.paused || !useQueue) {
-        sfxController.value.src = path;
-        sfxController.value.play();
-        sfxController.value.playbackRate = speed;
-      } else {
-        soundQueue.value.push([path, speed]);
-      }
+  const playSound = async (path: string, pitchDown = false, useQueue = false) => {
+    if (audioPaused || !useQueue) {
+      rawPlaySound(path, pitchDown);
+    } else {
+      soundQueue.value.push([path, pitchDown]);
     }
   };
 
-  const playCry = (speciesId: SpeciesId, speed = 1.0) => {
+  const playCry = (speciesId: SpeciesId, pitchDown = false) => {
     const track = speciesList[speciesId].dexId.toString().padStart(3, "0");
-    playSound(`/effects/cries/${track}.wav`, speed, true);
+    playSound(`/effects/cries/${track}.wav`, pitchDown, true);
   };
 
   const playDmg = (eff: number) => {
@@ -367,8 +350,8 @@ const runTurn = async (turn: Turn, live: boolean) => {
       ) {
         playDmg(e.why === "ohko" || !e.eff ? 1 : e.eff);
 
-        if (e.hpAfter === 0 && sfxController.value) {
-          playCry(props.players[e.target].active!.speciesId, 0.9);
+        if (e.hpAfter === 0) {
+          playCry(props.players[e.target].active!.speciesId, true);
         }
       }
 
@@ -482,6 +465,32 @@ const runTurn = async (turn: Turn, live: boolean) => {
   }
 
   skippingTurn.value = false;
+};
+
+const rawPlaySound = async (path: string, pitchDown = false) => {
+  if (!savedAudio[path]) {
+    const sound = await $fetch<Blob>(path, { method: "GET" });
+    savedAudio[path] = await audioContext.decodeAudioData(await sound.arrayBuffer());
+  }
+  const source = audioContext.createBufferSource();
+  source.buffer = savedAudio[path];
+
+  const gain = audioContext.createGain();
+  gain.gain.value = sfxVol.value;
+  gain.connect(audioContext.destination);
+
+  source.connect(gain);
+  source.detune.value = pitchDown ? -350 : 0;
+  source.onended = () => {
+    const res = soundQueue.value.shift();
+    if (res) {
+      rawPlaySound(res[0], res[1]);
+    } else {
+      audioPaused = true;
+    }
+  };
+  source.start();
+  audioPaused = false;
 };
 
 let currentTurn: Promise<void> | undefined;
