@@ -20,14 +20,15 @@ const props = defineProps<{
   substitute?: boolean;
 }>();
 const sprite = computed(() => {
-  const scale = props.scale ? ` ${1 / props.scale}x` : "";
+  const scale =
+    1 / (props.substitute && props.kind !== "front" ? (props.scale ?? 1) / 2 : props.scale ?? 1);
   const id = props.substitute ? "substitute" : props.species.dexId;
   if (props.kind === "front") {
-    return `/sprites/battle/${id}.gif${scale}`;
+    return `/sprites/battle/${id}.gif ${scale}x`;
   } else if (props.kind === "back") {
-    return `/sprites/battle/back/${id}.gif${scale}`;
+    return `/sprites/battle/back/${id}.gif ${scale}x`;
   } else {
-    return `/sprites/box/${props.species.dexId}.png${scale}`;
+    return `/sprites/box/${props.species.dexId}.png ${scale}x`;
   }
 });
 </script>

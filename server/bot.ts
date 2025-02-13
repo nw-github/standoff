@@ -77,9 +77,10 @@ export function startBot(format: FormatId = "randoms", botFunction: BotFunction 
     let turnNo = 0;
 
     const handleEvent = (e: BattleEvent) => {
+      // TODO: unify this and Battle.vue:handleEvent
       if (e.type === "switch") {
         const player = players[e.src];
-        player.active = { ...e, stages: {}, substitute: false };
+        player.active = { ...e, stages: {}, flags: {} };
         if (e.src === myId) {
           if (team?.[activeIndex]?.status === "tox") {
             team[activeIndex].status = "psn";
@@ -103,7 +104,6 @@ export function startBot(format: FormatId = "randoms", botFunction: BotFunction 
         }
 
         if (e.why === "substitute") {
-          players[e.target].active!.substitute = true;
         }
       } else if (e.type === "status") {
         players[e.id].active!.status = e.status;
@@ -147,7 +147,6 @@ export function startBot(format: FormatId = "randoms", botFunction: BotFunction 
         players[e.user].active!.conversion = e.types;
       } else if (e.type === "hit_sub") {
         if (e.broken) {
-          players[e.target].active!.substitute = false;
         }
       }
     };

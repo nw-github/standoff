@@ -53,9 +53,10 @@
     </template>
 
     <template #default>
+      {{ void (turnCounter = 0) }}
       <template v-for="([turn, switchTurn], i) in turns">
         <div class="bg-gray-300 dark:bg-gray-700 w-full px-1" v-if="i && !switchTurn">
-          <h2 class="text-xl">Turn {{ i }}</h2>
+          <h2 class="text-xl">Turn {{ ++turnCounter }}</h2>
         </div>
         <div class="events p-1">
           <component :is="() => turn" />
@@ -203,4 +204,6 @@ const playerInfo = (player: ClientPlayer, id: string) => {
   }
   return label;
 };
+
+let turnCounter = 0;
 </script>

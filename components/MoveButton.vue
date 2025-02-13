@@ -71,6 +71,11 @@ button {
   border-color: v-bind("hex2rgba(bgColor, 0.8)");
 }
 
+button:hover,
+button:focus {
+  opacity: 0.8;
+}
+
 .mb-number {
   display: inline-block;
   width: 30px;

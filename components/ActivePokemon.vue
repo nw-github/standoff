@@ -21,6 +21,12 @@
             {{ poke.status.toUpperCase() }}
           </UBadge>
 
+          <template v-for="(value, flag) in poke.flags">
+            <UBadge v-if="value && flag !== 'substitute'" :color="flagInfo[flag].color">
+              {{ flagInfo[flag].name }}
+            </UBadge>
+          </template>
+
           <template v-for="(val, stage) in poke.stages">
             <UBadge v-if="val" :class="val > 0 ? 'up' : 'down'">
               {{ roundTo(stageMultipliers[val] / 100, 2) }}x {{ toTitleCase(stage) }}
@@ -31,7 +37,7 @@
     </div>
 
     <UPopover mode="hover" :popper="{ placement: 'top', offsetDistance: 0 }">
-      <BattleSprite :back="back" :species="species" :substitute="poke.substitute" />
+      <BattleSprite :back="back" :species="species" :substitute="poke.flags.substitute" />
 
       <template #panel>
         <div class="p-2">
@@ -126,4 +132,14 @@ const hpColor = (num: number) => {
   );
   return `rgb(${r}, ${g}, ${b})`;
 };
+
+const flagInfo = {
+  confused: { color: "red", name: "Confused" },
+  disabled: { color: "red", name: "Disable" },
+  focus: { color: "emerald", name: "Focus Energy" },
+  light_screen: { color: "pink", name: "Light Screen" },
+  reflect: { color: "pink", name: "Reflect" },
+  mist: { color: "teal", name: "Mist" },
+  seeded: { color: "lime", name: "Leech Seed" },
+} as const;
 </script>

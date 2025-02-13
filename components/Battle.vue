@@ -39,7 +39,9 @@
 
       <div class="w-full">
         <template v-if="options && !selectionText.length && !isRunningTurn">
-          <div class="grid sm:grid-rows-[1fr,1.5fr] gap-2 sm:grid-cols-[1fr,1.5fr]">
+          <div
+            class="grid sm:grid-rows-[1fr,1.5fr] md:grid-rows-none gap-2 sm:grid-cols-[1fr,1.5fr] h-min"
+          >
             <div class="flex flex-col gap-1 sm:gap-2">
               <template v-for="(option, i) in options.moves">
                 <MoveButton v-if="option.display" :option="option" @click="selectMove(i)" />
@@ -128,6 +130,10 @@
     color: green;
     @apply text-xs sm:text-sm;
   }
+
+  > :first-child {
+    padding-top: 0;
+  }
 }
 </style>
 
@@ -140,6 +146,7 @@ import { clamp, hpPercentExact, randChoice } from "../game/utils";
 import { moveList, type MoveId } from "../game/moveList";
 import { useElementVisibility, useIntervalFn } from "@vueuse/core";
 import { stageTable } from "#imports";
+import type { ClientVolatileFlag } from "~/utils";
 
 const emit = defineEmits<{
   (e: "chat", message: string): void;
@@ -289,7 +296,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
   const handleEvent = (e: BattleEvent) => {
     if (e.type === "switch") {
       const player = props.players[e.src];
-      player.active = { ...e, stages: {}, substitute: false };
+      player.active = { ...e, stages: {}, flags: {} };
       if (e.src === myId.value) {
         if (activeInTeam.value?.status === "tox") {
           activeInTeam.value.status = "psn";
@@ -332,7 +339,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
       }
 
       if (e.why === "substitute") {
-        props.players[e.target].active!.substitute = true;
+        props.players[e.target].active!.flags.substitute = true;
       }
     } else if (e.type === "status") {
       props.players[e.id].active!.status = e.status;
@@ -355,6 +362,15 @@ const runTurn = async (turn: Turn, live: boolean) => {
       src.transformed = target.transformed ?? target.speciesId;
       src.stages = { ...target.stages };
     } else if (e.type === "info") {
+      const enableFlag: Partial<Record<InfoReason, ClientVolatileFlag>> = {
+        became_confused: "confused",
+        confused: "confused", // thrash, petal dance
+        light_screen: "light_screen",
+        reflect: "reflect",
+        seeded: "seeded",
+        focus: "focus",
+      };
+
       if (e.why === "haze") {
         for (const player in props.players) {
           const active = props.players[player].active;
@@ -369,6 +385,13 @@ const runTurn = async (turn: Turn, live: boolean) => {
           }
 
           active.stages = {};
+          active.flags.confused = false;
+          active.flags.reflect = false;
+          active.flags.light_screen = false;
+          active.flags.focus = false;
+          active.flags.mist = false;
+          active.flags.seeded = false;
+          active.flags.disabled = false;
         }
 
         if (isBattler.value) {
@@ -376,6 +399,12 @@ const runTurn = async (turn: Turn, live: boolean) => {
         }
       } else if (e.why === "wake" || e.why === "thaw") {
         props.players[e.id].active!.status = undefined;
+      } else if (e.why === "disable_end") {
+        props.players[e.id].active!.flags.disabled = false;
+      } else if (e.why === "confused_end") {
+        props.players[e.id].active!.flags.confused = false;
+      } else if (enableFlag[e.why]) {
+        props.players[e.id].active!.flags[enableFlag[e.why]!] = true;
       }
     } else if (e.type === "conversion") {
       props.players[e.user].active!.conversion = e.types;
@@ -383,11 +412,13 @@ const runTurn = async (turn: Turn, live: boolean) => {
       victor.value = e.id;
     } else if (e.type === "hit_sub") {
       if (e.broken) {
-        props.players[e.target].active!.substitute = false;
+        props.players[e.target].active!.flags.substitute = false;
       }
       if (live) {
         playDmg(e.eff ?? 1);
       }
+    } else if (e.type === "disable") {
+      props.players[e.id].active!.flags.disabled = true;
     }
   };
 
@@ -442,16 +473,16 @@ const htmlForEvent = (e: BattleEvent) => {
     const player = props.players[e.src];
     if (player.active && player.active.hp) {
       if (e.src === perspective.value) {
-        res.push(text(`Come back! ${player.active.name}!`, "move"));
+        res.push(text(`Come back! ${player.active.name}!`, "switch"));
       } else {
-        res.push(text(`${player.name} withdrew ${player.active.name}!`, "move"));
+        res.push(text(`${player.name} withdrew ${player.active.name}!`, "switch"));
       }
     }
 
     if (e.src === perspective.value) {
-      res.push(text(["Go! ", bold(`${e.name}`), "!"], "move"));
+      res.push(text(["Go! ", bold(`${e.name}`), "!"], "switch"));
     } else {
-      res.push(text([`${player.name} sent in `, bold(`${e.name}`), "!"], "move"));
+      res.push(text([`${player.name} sent in `, bold(`${e.name}`), "!"], "switch"));
     }
   } else if (e.type === "damage" || e.type === "recover") {
     const src = pname(e.src);
@@ -600,10 +631,16 @@ const htmlForEvent = (e: BattleEvent) => {
     if (e.why === "forfeit") {
       res.push(text(messages[e.why].replace("{}", props.players[e.id].name)));
     } else {
+      const clazz: Partial<Record<InfoReason, string>> = {
+        confused: "confused",
+        sleep: "move",
+        disable_end: "move",
+        wake: "move",
+      };
       res.push(
         text(
           messages[e.why].replace("{}", pname(e.id)).replace("{l}", pname(e.id, false)),
-          e.why === "confused" ? "confused" : "",
+          clazz[e.why],
         ),
       );
     }

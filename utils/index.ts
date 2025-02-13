@@ -7,10 +7,13 @@ import {
   AlwaysFailMove,
   RecoveryMove,
 } from "../game/moves";
-import type { VolatileStats } from "../game/battle";
+import { volatileFlags, type VolatileStats } from "../game/battle";
 import { moveList, type MoveId } from "../game/moveList";
 import type { SpeciesId } from "../game/species";
 import type { Stages, Type } from "../game/utils";
+
+export const clientVolatiles = [...volatileFlags, "substitute", "confused", "disabled"] as const;
+export type ClientVolatileFlag = (typeof clientVolatiles)[number];
 
 export type ClientActivePokemon = {
   speciesId: SpeciesId;
@@ -22,7 +25,7 @@ export type ClientActivePokemon = {
   stats?: VolatileStats;
   transformed?: SpeciesId;
   conversion?: Type[];
-  substitute: boolean;
+  flags: Partial<Record<ClientVolatileFlag, boolean>>;
 };
 
 export type ClientPlayer = {
