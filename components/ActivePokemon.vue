@@ -75,7 +75,7 @@
 }
 
 .effects > * {
-  padding: 2px 3px;
+  padding: 1px 2px;
 }
 
 .status {

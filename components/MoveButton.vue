@@ -73,7 +73,7 @@ button {
 
 button:hover,
 button:focus {
-  opacity: 0.8;
+  filter: brightness(110%);
 }
 
 .mb-number {

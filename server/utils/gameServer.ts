@@ -18,7 +18,10 @@ export type JoinRoomResponse = {
   turns: Turn[];
   chats: Chats;
   format: FormatId;
+  timer?: BattleTimer;
 };
+
+export type BattleTimer = { startedAt: number; duration: number };
 
 export type ChoiceError = "invalid_choice" | "bad_room" | "not_in_battle" | "too_late";
 
@@ -40,7 +43,7 @@ export interface ClientMessage {
   enterMatchmaking: (
     team: string | undefined,
     format: FormatId,
-    ack: (err?: "must_login" | "invalid_team", problems?: TeamProblems) => void
+    ack: (err?: "must_login" | "invalid_team", problems?: TeamProblems) => void,
   ) => void;
   exitMatchmaking: (ack: () => void) => void;
 
@@ -51,27 +54,32 @@ export interface ClientMessage {
     idx: number,
     type: "move" | "switch" | "forfeit",
     turn: number,
-    ack: (err?: ChoiceError) => void
+    ack: (err?: ChoiceError) => void,
   ) => void;
   cancel: (room: string, turn: number, ack: (err?: ChoiceError) => void) => void;
   chat: (
     room: string,
     message: string,
-    ack: (resp?: "bad_room" | "not_in_room" | "bad_message") => void
+    ack: (resp?: "bad_room" | "not_in_room" | "bad_message") => void,
+  ) => void;
+  startTimer: (
+    room: string,
+    ack: (resp?: "bad_room" | "not_in_room" | "not_in_battle" | "already_on") => void,
   ) => void;
 }
 
 export interface ServerMessage {
   foundMatch: (room: string) => void;
 
-  nextTurn: (room: string, turn: Turn, options?: Options) => void;
+  nextTurn: (room: string, turn: Turn, options?: Options, timer?: BattleTimer) => void;
+  timerStart: (room: string, who: string, timer: BattleTimer) => void;
 
   userJoin: (
     room: string,
     name: string,
     id: string,
     isSpectator: boolean,
-    nPokemon: number
+    nPokemon: number,
   ) => void;
   userLeave: (room: string, id: string) => void;
   userDisconnect: (room: string, id: string) => void;
@@ -86,26 +94,90 @@ declare module "socket.io" {
 
 type Socket = SocketIoClient<ClientMessage, ServerMessage>;
 
-type Room = {
-  id: string;
-  battle: Battle;
+const ROOM_CLEANUP_DELAY_MS = 15 * 60 * 1000;
+const TURN_DECISION_TIME_MS = 45 * 1000;
+const ANON_SPECTATE = "spectate/";
+
+class Room {
   turns: Turn[];
-  accounts: Set<Account>;
-  format: FormatId;
-  chats: Chats;
-};
+  accounts = new Set<Account>();
+  chats: Chats = [];
+  timer?: NodeJS.Timeout;
+  lastTurn: number = Date.now();
+
+  constructor(
+    public id: string,
+    public battle: Battle,
+    init: Turn,
+    public format: FormatId,
+    public server: GameServer,
+  ) {
+    this.turns = [init];
+  }
+
+  endTurn() {
+    if (this.battle.victor) {
+      clearInterval(this.timer);
+      this.timer = undefined;
+      setTimeout(() => {
+        for (const account of this.accounts) {
+          account.leaveRoom(this, this.server);
+        }
+        delete this.server.rooms[this.id];
+      }, ROOM_CLEANUP_DELAY_MS);
+      return;
+    }
+
+    this.lastTurn = Date.now();
+  }
+
+  startTimer(initiator: Account) {
+    if (this.timer || this.battle.victor) {
+      return false;
+    }
+
+    this.timer = setInterval(() => {
+      if (Date.now() - this.lastTurn < TURN_DECISION_TIME_MS || this.battle.victor) {
+        return;
+      }
+
+      for (const account of this.accounts) {
+        const player = this.battle.findPlayer(account.id);
+        if (player && !player.choice && player.options) {
+          this.server.broadcastTurn(this, this.battle.forfeit(player, "forfeit_timer"));
+          return;
+        }
+      }
+    }, 1000);
+
+    this.endTurn();
+    for (const account of this.accounts) {
+      const info = this.timerInfo(account);
+      if (info) {
+        for (const socket of account.sockets) {
+          socket.emit("timerStart", this.id, initiator.id, info);
+        }
+      }
+    }
+    return true;
+  }
+
+  timerInfo(_account: Account) {
+    // TODO: per-player timer duration
+    return this.timer && !this.battle.victor
+      ? ({ startedAt: this.lastTurn, duration: TURN_DECISION_TIME_MS } satisfies BattleTimer)
+      : undefined;
+  }
+}
 
 class Account {
-  name: string;
   id = uuid();
   battles = new Set<Room>();
   rooms = new Set<Room>();
   sockets = new Set<Socket>();
   matchmaking?: FormatId;
 
-  constructor(name: string) {
-    this.name = name;
-  }
+  constructor(public name: string) {}
 
   joinBattle(room: Room) {
     this.joinRoom(room);
@@ -168,50 +240,19 @@ class Account {
       }
     }
   }
-
-  nextTurn(room: Room, { events, switchTurn }: Turn) {
-    const player = room.battle.findPlayer(this.id);
-    const turn = { switchTurn, events: GameServer.censorEvents(events, player) };
-    for (const socket of this.sockets) {
-      socket.emit("nextTurn", room.id, turn, player?.options);
-    }
-  }
 }
-
-const ROOM_CLEANUP_DELAY_MS = 15 * 60 * 1000;
-const ANON_SPECTATE = "spectate/";
 
 export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
   /** Name -> Account */
   private accounts: Record<string, Account> = {};
-  private rooms: Record<string, Room> = {};
   private mmWaiting: Partial<Record<FormatId, [Player, Account]>> = {};
-  private finishedRooms: [string, number][] = [];
+  rooms: Record<string, Room> = {};
 
   constructor(server?: any) {
     super(server);
     this.on("connection", socket => this.newConnection(socket));
     this.on("error", console.error);
     this.on("close", () => console.log("game server has closed..."));
-
-    setInterval(() => {
-      let index = -1;
-      for (const [, finishedAt] of this.finishedRooms) {
-        if (Date.now() - finishedAt < ROOM_CLEANUP_DELAY_MS) {
-          break;
-        }
-
-        index++;
-      }
-
-      for (const [roomId] of this.finishedRooms.splice(0, index + 1)) {
-        const room = this.rooms[roomId];
-        for (const account of room.accounts) {
-          account.leaveRoom(room, this);
-        }
-        delete this.rooms[roomId];
-      }
-    }, 1000 * 60);
   }
 
   private newConnection(socket: Socket) {
@@ -299,6 +340,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         })),
         chats: room.chats,
         format: room.format,
+        timer: account && room.timerInfo(account),
       });
     });
     socket.on("leaveRoom", (roomId, ack) => {
@@ -333,24 +375,11 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       }
 
       ack();
-      const turn = type === "forfeit" ? room.battle.forfeit(player) : room.battle.nextTurn();
-      if (!turn) {
-        return;
+      const turn =
+        type === "forfeit" ? room.battle.forfeit(player, "forfeit") : room.battle.nextTurn();
+      if (turn) {
+        this.broadcastTurn(room, turn);
       }
-
-      if (room.battle.victor) {
-        this.finishedRooms.push([roomId, Date.now()]);
-      }
-
-      room.turns.push(turn);
-      for (const account of room.accounts) {
-        account.nextTurn(room, turn);
-      }
-
-      this.to(`${ANON_SPECTATE}${roomId}`).emit("nextTurn", roomId, {
-        switchTurn: turn.switchTurn,
-        events: GameServer.censorEvents(turn.events),
-      });
     });
     socket.on("cancel", (roomId, sequenceNo, ack) => {
       const info = this.validatePlayer(socket, roomId, sequenceNo);
@@ -360,6 +389,21 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
 
       info[0].cancel();
       ack();
+    });
+    socket.on("startTimer", (roomId, ack) => {
+      const room = this.rooms[roomId];
+      if (!room) {
+        return ack("bad_room");
+      }
+
+      const account = socket.account;
+      if (!account || !account.rooms.has(room)) {
+        return ack("not_in_room");
+      } else if (!room.battle.findPlayer(account.id)) {
+        return ack("not_in_battle");
+      }
+
+      ack(room.startTimer(account) ? "already_on" : undefined);
     });
     socket.on("chat", (roomId, message, ack) => {
       if (!message.trim().length) {
@@ -377,14 +421,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       }
 
       ack();
-
-      const turn = Math.max(room.turns.length - 1, 0);
-      if (!room.chats[turn]) {
-        room.chats[turn] = [];
-      }
-
-      room.chats[turn].push({ message, player: account.id });
-      this.to(roomId).emit("userChat", roomId, account.id, message, turn);
+      this.sendChat(room, message, account.id, true);
     });
     socket.on("getRooms", ack =>
       ack(
@@ -394,8 +431,8 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
             id,
             players: [...room.accounts].filter(acc => acc.battles.has(room)).map(acc => acc.name),
             format: room.format,
-          }))
-      )
+          })),
+      ),
     );
     socket.on("disconnect", () => this.logout(socket));
   }
@@ -433,14 +470,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       const roomId = uuid();
       const [opponent, opponentAcc] = mm;
       const [battle, turn0] = Battle.start(player, opponent);
-      this.rooms[roomId] = {
-        id: roomId,
-        battle,
-        turns: [turn0],
-        accounts: new Set(),
-        format,
-        chats: {},
-      };
+      this.rooms[roomId] = new Room(roomId, battle, turn0, format, this);
 
       account.joinBattle(this.rooms[roomId]);
       opponentAcc.joinBattle(this.rooms[roomId]);
@@ -482,6 +512,36 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
     }
 
     return [player, room] as const;
+  }
+
+  broadcastTurn(room: Room, turn: Turn) {
+    room.turns.push(turn);
+    room.endTurn();
+
+    const { switchTurn, events } = turn;
+    for (const account of room.accounts) {
+      const player = room.battle.findPlayer(account.id);
+      const result = { switchTurn, events: GameServer.censorEvents(events, player) };
+      for (const socket of account.sockets) {
+        socket.emit("nextTurn", room.id, result, player?.options, room.timerInfo(account));
+      }
+    }
+
+    this.to(`${ANON_SPECTATE}${room.id}`).emit("nextTurn", room.id, {
+      switchTurn,
+      events: GameServer.censorEvents(events),
+    });
+  }
+
+  sendChat(room: Room, message: string, player: string, save: boolean) {
+    const turn = Math.max(room.turns.length - 1, 0);
+    if (save) {
+      if (!room.chats[turn]) {
+        room.chats[turn] = [];
+      }
+      room.chats[turn].push({ message, player });
+    }
+    this.to(room.id).emit("userChat", room.id, player, message, turn);
   }
 
   static censorEvents(events: BattleEvent[], player?: Player) {

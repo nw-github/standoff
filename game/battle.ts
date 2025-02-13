@@ -284,9 +284,9 @@ export class Battle {
     return this.players.find(pl => pl.id === id);
   }
 
-  forfeit(player: Player) {
+  forfeit(player: Player, why: "forfeit" | "forfeit_timer") {
     this._victor = this.opponentOf(player);
-    this.event({ type: "info", id: player.id, why: "forfeit" });
+    this.event({ type: "info", id: player.id, why });
     return this.endTurn();
   }
 
@@ -431,7 +431,7 @@ export class ActivePokemon {
     isCrit: boolean,
     why: DamageReason,
     direct?: boolean,
-    eff?: number
+    eff?: number,
   ) {
     if (why === "attacked" || why === "confusion" || why === "recoil" || why === "crash") {
       // Counter uses the damage it would've done ignoring substitutes
@@ -646,7 +646,7 @@ export class ActivePokemon {
 
   applyStages(stat: keyof VolatileStats, negative: boolean) {
     this.v.stats[stat] = Math.floor(
-      (this.base.stats[stat] * stageMultipliers[this.v.stages[stat]]) / 100
+      (this.base.stats[stat] * stageMultipliers[this.v.stages[stat]]) / 100,
     );
     // https://www.smogon.com/rb/articles/rby_mechanics_guide#stat-mechanics
     if (negative) {

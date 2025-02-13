@@ -143,7 +143,8 @@ export type InfoReason =
   | "disable_end"
   | "bide"
   | "trapped"
-  | "forfeit";
+  | "forfeit"
+  | "forfeit_timer";
 
 type InfoEvent = {
   type: "info";

@@ -78,12 +78,15 @@
 
     <div class="hidden min-[900px]:block h-full w-full">
       <Textbox
-        :players="players"
-        :chats="chats"
+        :players
+        :chats
+        :victor
+        :timer
+        :hasOptions="!!options"
         :turns="htmlTurns"
         @chat="message => $emit('chat', message)"
         @forfeit="$emit('forfeit')"
-        :victor="victor"
+        @timer="$emit('timer')"
       />
     </div>
     <div class="min-[900px]:hidden p-2 flex justify-end items-start" ref="menuDiv">
@@ -99,13 +102,16 @@
 
       <USlideover v-model="slideoverOpen">
         <Textbox
-          :players="players"
-          :chats="chats"
+          :players
+          :chats
+          :victor
+          :timer
+          :hasOptions="!!options"
           :turns="htmlTurns"
           @chat="message => $emit('chat', message)"
           @forfeit="$emit('forfeit')"
+          @timer="$emit('timer')"
           @close="slideoverOpen = false"
-          :victor="victor"
           closable
         />
       </USlideover>
@@ -147,12 +153,14 @@ import { moveList, type MoveId } from "../game/moveList";
 import { useElementVisibility, useIntervalFn } from "@vueuse/core";
 import { stageTable } from "#imports";
 import type { ClientVolatileFlag } from "~/utils";
+import type { BattleTimer } from "~/server/utils/gameServer";
 
 const emit = defineEmits<{
   (e: "chat", message: string): void;
   (e: "forfeit"): void;
   (e: "move", index: number): void;
   (e: "switch", index: number): void;
+  (e: "timer"): void;
   (e: "cancel"): void;
 }>();
 const props = defineProps<{
@@ -162,6 +170,7 @@ const props = defineProps<{
   turns: Turn[];
   chats: Chats;
   battlers: string[];
+  timer?: BattleTimer;
 }>();
 const myId = useMyId();
 const sfxVol = useSfxVolume();
@@ -626,9 +635,10 @@ const htmlForEvent = (e: BattleEvent) => {
       bide: "{} unleashed energy!",
       trapped: "{} can't move!",
       forfeit: "{} forfeit the match.",
+      forfeit_timer: "{} ran out of time.",
     };
 
-    if (e.why === "forfeit") {
+    if (e.why === "forfeit" || e.why === "forfeit_timer") {
       res.push(text(messages[e.why].replace("{}", props.players[e.id].name)));
     } else {
       const clazz: Partial<Record<InfoReason, string>> = {

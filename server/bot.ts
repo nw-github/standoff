@@ -44,6 +44,8 @@ export function startBot(format: FormatId = "randoms", botFunction: BotFunction 
           return;
         }
 
+        $conn.emit("startTimer", roomId, () => {});
+
         console.log(`[${name}] found a match for '${resp.format}': ${roomId}`);
         playGame(roomId, resp, botFunction, () => {
           console.log(`[${name}] finished game ${roomId} (${resp.format})`);

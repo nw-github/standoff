@@ -10,11 +10,13 @@
       :turns
       :chats
       :battlers
+      :timer
       @chat="sendChat"
       @forfeit="forfeit"
       @move="selectMove"
       @switch="selectSwitch"
       @cancel="cancelMove"
+      @timer="startTimer"
     />
   </template>
 </template>
@@ -22,7 +24,7 @@
 <script setup lang="ts">
 import type { Options, Turn } from "~/game/battle";
 import type { Pokemon } from "~/game/pokemon";
-import type { Chats } from "~/server/utils/gameServer";
+import type { BattleTimer, Chats } from "~/server/utils/gameServer";
 
 const { $conn } = useNuxtApp();
 const route = useRoute();
@@ -33,6 +35,7 @@ const turns = ref<Turn[]>([]);
 const options = ref<Options>();
 const chats = reactive<Chats>({});
 const team = ref<Pokemon[]>();
+const timer = ref<BattleTimer>();
 const room = `${route.params.id}`;
 const loaded = ref(false);
 
@@ -54,18 +57,26 @@ onMounted(() => {
     turns.value = resp.turns;
     team.value = resp.team;
     options.value = resp.options;
+    timer.value = resp.timer;
     sequenceNo += resp.turns.length;
 
     for (const k in resp.chats) {
       chats[k] = resp.chats[k];
     }
+
+    if (resp.timer) {
+      chats[0] ??= [];
+      chats[0].unshift({ player: "", message: "The timer is on." });
+    }
+
     loaded.value = true;
   });
 
-  $conn.on("nextTurn", async (roomId, turn, opts) => {
+  $conn.on("nextTurn", async (roomId, turn, opts, tmr) => {
+    timer.value = tmr || undefined;
     if (roomId === room) {
       turns.value.push(turn);
-      options.value = opts;
+      options.value = opts || undefined;
       sequenceNo++;
     }
   });
@@ -97,6 +108,20 @@ onMounted(() => {
       chats[turn].push({ message, player: id });
     }
   });
+
+  $conn.on("timerStart", (roomId, who, tmr) => {
+    if (roomId === room) {
+      const turn = Math.max(turns.value.length - 1, 0);
+      if (timer.value === undefined) {
+        if (!chats[turn]) {
+          chats[turn] = [];
+        }
+        chats[turn].push({ message: `${players[who].name} started the timer.`, player: "" });
+      }
+
+      timer.value = tmr || undefined;
+    }
+  });
 });
 
 const sendChat = (message: string) => {
@@ -125,6 +150,12 @@ const selectSwitch = (index: number) => {
 
 const cancelMove = () => {
   $conn.emit("cancel", room, sequenceNo, err => {
+    // TODO: do something with the error
+  });
+};
+
+const startTimer = () => {
+  $conn.emit("startTimer", room, err => {
     // TODO: do something with the error
   });
 };
