@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-2 min-h-full">
+  <div class="grid grid-rows-2 sm:grid-cols-2">
     <div class="space-y-2 px-5">
       <h1 class="text-center">{{ status }}</h1>
       <FormatDropdown v-model="format" :disabled="findingMatch" />
@@ -19,7 +19,7 @@
         {{ cancelling ? "Cancelling..." : findingMatch ? "Cancel" : "Find Match" }}
 
         <template #leading v-if="findingMatch || cancelling">
-          <UIcon name="i-heroicons-arrow-path-20-solid" class="animate-spin size-5" />
+          <UIcon name="heroicons:arrow-path-20-solid" class="animate-spin size-5" />
         </template>
       </UButton>
     </div>
@@ -35,7 +35,7 @@
         />
         <UInput
           v-model="battleQuery"
-          icon="i-heroicons-magnifying-glass-20-solid"
+          icon="heroicons:magnifying-glass-20-solid"
           :trailing="false"
           placeholder="Search..."
           class="w-full"
@@ -80,7 +80,7 @@ const roomsRows = computed(() =>
     name: room.players.join(" vs. "),
     to: "/room/" + room.id,
     format: room.format,
-  }))
+  })),
 );
 const roomsCols = [
   { key: "type", label: "Type" },
@@ -88,7 +88,7 @@ const roomsCols = [
 ];
 const emptyState = {
   label: "There are currently no active battles. Be the first!",
-  icon: "i-heroicons-circle-stack-20-solid",
+  icon: "heroicons:circle-stack-20-solid",
 };
 const filterFormats = ref<string[]>([]);
 const battleQuery = ref<string>();

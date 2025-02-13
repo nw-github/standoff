@@ -218,7 +218,8 @@ export function randomBot(
 ) {
   const validSwitches = team!.filter((poke, i) => poke.hp !== 0 && i !== activePokemon);
   const validMoves = options.moves.filter(move => move.valid);
-  if (!validMoves.length || (options.canSwitch && validSwitches.length && Math.random() < 0.15)) {
+  const switchRandomly = random.int(0, 10) === 1;
+  if (!validMoves.length || (options.canSwitch && validSwitches.length && switchRandomly)) {
     return [team.indexOf(random.choice(validSwitches)!), "switch"] as const;
   } else {
     return [options.moves.indexOf(random.choice(validMoves)!), "move"] as const;

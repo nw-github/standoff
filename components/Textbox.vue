@@ -6,7 +6,7 @@
           <UTooltip v-if="closable" text="Close" :popper="{ placement: 'top' }">
             <UButton
               icon="material-symbols:close"
-              variant="ghost"
+              variant="link"
               color="gray"
               size="lg"
               @click="$emit('close')"
@@ -15,7 +15,7 @@
           <UTooltip text="Forfeit" :popper="{ placement: 'top' }">
             <UButton
               icon="material-symbols:flag-rounded"
-              variant="ghost"
+              variant="link"
               color="red"
               size="lg"
               :disabled="!players[myId] || players[myId].isSpectator || !!victor"
@@ -25,33 +25,6 @@
           <UTooltip text="Open Calculator" :popper="{ placement: 'top' }">
             <UButton icon="iconamoon:calculator-light" variant="ghost" color="gray" size="lg" />
           </UTooltip>
-          <UTooltip
-            :text="timer === undefined ? 'Start Timer' : 'Timer is on'"
-            :popper="{ placement: 'top' }"
-          >
-            <UButton
-              color="gray"
-              leading-icon="material-symbols:alarm-add-outline"
-              variant="ghost"
-              size="sm"
-              @click="$emit('timer')"
-              :disabled="!players[myId] || players[myId].isSpectator || !!victor || !!timer"
-            >
-              <span v-if="timer && !hasOptions">--</span>
-              <template v-else-if="timer">
-                <!-- timestamp is used to keep updating -->
-                {{
-                  (timestamp,
-                  void (timeLeft = Math.floor(
-                    (timer.startedAt + timer.duration - Date.now()) / 1000,
-                  )))
-                }}
-                <span :class="timeLeft <= 5 ? 'text-red-400' : ''">{{
-                  Math.max(timeLeft, 0)
-                }}</span>
-              </template>
-            </UButton>
-          </UTooltip>
         </div>
 
         <UPopover mode="hover" :popper="{ placement: 'bottom-start' }">
@@ -59,7 +32,7 @@
             color="white"
             variant="ghost"
             label="Players"
-            trailing-icon="i-heroicons-chevron-down-20-solid"
+            trailing-icon="heroicons:chevron-down-20-solid"
           />
           <template #panel>
             <div class="p-2 space-y-1 flex flex-col">
@@ -174,38 +147,22 @@
 </style>
 
 <script setup lang="ts">
-import { useTimestamp } from "@vueuse/core";
-import type { BattleTimer, Chats } from "~/server/utils/gameServer";
-
 const props = defineProps<{
   turns: [VNode[], boolean][];
   players: Record<string, ClientPlayer>;
   chats: Chats;
   victor?: string;
   closable?: boolean;
-  timer?: BattleTimer;
-  hasOptions: boolean;
 }>();
 const emit = defineEmits<{
   (e: "chat", message: string): void;
   (e: "forfeit"): void;
   (e: "close"): void;
-  (e: "timer"): void;
 }>();
 const myId = useMyId();
 const message = ref("");
 const scrollPoint = ref<HTMLDivElement>();
 const forfeitModalOpen = ref(false);
-const timestamp = useTimestamp({ interval: 1000 });
-
-watch(
-  () => props.timer,
-  value => {
-    console.log("timer: ", value);
-  },
-);
-
-let timeLeft = 0;
 
 watch([props.chats, props.turns], async () => {
   await nextTick();

@@ -32,16 +32,51 @@
       </div>
 
       <div class="w-full relative" v-if="players[perspective]">
-        <TeamDisplay class="absolute bottom-0 justify-start z-0" :player="players[perspective]" />
+        <div class="absolute bottom-0 z-0 flex flex-row justify-between w-full p-0.5">
+          <TeamDisplay :player="players[perspective]" class="self-end" />
+
+          <div class="flex flex-row">
+            <UTooltip
+              :text="timer === undefined ? 'Start Timer' : 'Timer is on'"
+              :popper="{ placement: 'top' }"
+            >
+              {{
+                (updateMarker,
+                void (timeLeft = timer
+                  ? Math.floor((timer.startedAt + timer.duration - Date.now()) / 1000)
+                  : 1000))
+              }}
+              <UButton
+                class="my-1"
+                leading-icon="material-symbols:alarm-add-outline"
+                variant="ghost"
+                @click="$emit('timer')"
+                :color="timeLeft <= 10 ? 'red' : 'gray'"
+                :disabled="!players[myId] || players[myId].isSpectator || !!victor || !!timer"
+                :label="timer && !options ? '--' : timer ? `${Math.max(timeLeft, 0)}` : ''"
+              />
+            </UTooltip>
+
+            <div class="min-[900px]:hidden p-2 flex justify-end items-start" ref="menuDiv">
+              <UChip :show="unseen !== 0" :text="unseen" size="xl">
+                <UButton
+                  icon="heroicons:bars-3-16-solid"
+                  variant="link"
+                  color="gray"
+                  @click="(slideoverOpen = true), (unseen = 0)"
+                  ref="menuButton"
+                />
+              </UChip>
+            </div>
+          </div>
+        </div>
       </div>
 
       <UDivider class="pb-2" />
 
       <div class="w-full">
         <template v-if="options && !selectionText.length && !isRunningTurn">
-          <div
-            class="grid sm:grid-rows-[1fr,1.5fr] md:grid-rows-none gap-2 sm:grid-cols-[1fr,1.5fr] h-min"
-          >
+          <div class="grid gap-2 sm:grid-cols-[1fr,1.5fr] h-min">
             <div class="flex flex-col gap-1 sm:gap-2">
               <template v-for="(option, i) in options.moves">
                 <MoveButton v-if="option.display" :option="option" @click="selectMove(i)" />
@@ -68,10 +103,19 @@
             <UButton @click="perspective = opponent">Switch Sides</UButton>
           </div>
           <div v-else-if="!isRunningTurn" class="italic">Waiting for opponent...</div>
+          <div v-else>
+            <UButton
+              icon="material-symbols:skip-next-outline"
+              @click="skippingTurn = true"
+              v-if="!skippingTurn"
+            >
+              Skip Turn
+            </UButton>
+          </div>
         </template>
         <div v-else>
           <div>{{ victor === myId ? "You" : players[victor].name }} won!</div>
-          <UButton to="/">Go Home</UButton>
+          <UButton to="/" icon="heroicons:home">Go Home</UButton>
         </div>
       </div>
     </div>
@@ -81,41 +125,24 @@
         :players
         :chats
         :victor
-        :timer
-        :hasOptions="!!options"
         :turns="htmlTurns"
         @chat="message => $emit('chat', message)"
         @forfeit="$emit('forfeit')"
-        @timer="$emit('timer')"
       />
     </div>
-    <div class="min-[900px]:hidden p-2 flex justify-end items-start" ref="menuDiv">
-      <UChip :show="unseen !== 0" :text="unseen" size="xl">
-        <UButton
-          icon="heroicons:bars-3-16-solid"
-          variant="outline"
-          color="gray"
-          @click="(slideoverOpen = true), (unseen = 0)"
-          ref="menuButton"
-        />
-      </UChip>
 
-      <USlideover v-model="slideoverOpen">
-        <Textbox
-          :players
-          :chats
-          :victor
-          :timer
-          :hasOptions="!!options"
-          :turns="htmlTurns"
-          @chat="message => $emit('chat', message)"
-          @forfeit="$emit('forfeit')"
-          @timer="$emit('timer')"
-          @close="slideoverOpen = false"
-          closable
-        />
-      </USlideover>
-    </div>
+    <USlideover v-model="slideoverOpen">
+      <Textbox
+        :players
+        :chats
+        :victor
+        :turns="htmlTurns"
+        @chat="message => $emit('chat', message)"
+        @forfeit="$emit('forfeit')"
+        @close="slideoverOpen = false"
+        closable
+      />
+    </USlideover>
 
     <audio ref="sfxController"></audio>
   </div>
@@ -155,6 +182,8 @@ import { stageTable } from "#imports";
 import type { ClientVolatileFlag } from "~/utils";
 import type { BattleTimer } from "~/server/utils/gameServer";
 
+let timeLeft = 0;
+
 const emit = defineEmits<{
   (e: "chat", message: string): void;
   (e: "forfeit"): void;
@@ -182,6 +211,8 @@ const isMenuVisible = useElementVisibility(menuButton);
 const unseen = ref(0);
 const slideoverOpen = ref(false);
 const isRunningTurn = ref(false);
+const skippingTurn = ref(false);
+const updateMarker = ref(0);
 
 const activeIndex = ref(0);
 const activeInTeam = computed<Pokemon | undefined>(() => props.team?.[activeIndex.value]);
@@ -196,7 +227,8 @@ const soundQueue = ref<[string, number][]>([]);
 
 useIntervalFn(() => {
   liveEvents.value = liveEvents.value.filter(ev => Date.now() - ev[1] < 1400);
-}, 500);
+  updateMarker.value++;
+}, 400);
 
 effect(() => {
   if (sfxController.value) {
@@ -242,6 +274,8 @@ watch(perspective, () => {
 
   runTurns(props.turns, false);
 });
+
+watch(skippingTurn, () => (liveEvents.value.length = 0));
 
 onMounted(async () => {
   const randChoice = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
@@ -304,7 +338,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
     playSound(`/effects/${track}.mp3`);
   };
 
-  const handleEvent = (e: BattleEvent) => {
+  const handleEvent = (e: BattleEvent, live: boolean) => {
     if (e.type === "switch") {
       const player = props.players[e.src];
       player.active = { ...e, stages: {}, flags: {} };
@@ -433,17 +467,21 @@ const runTurn = async (turn: Turn, live: boolean) => {
     }
   };
 
+  liveEvents.value.length = 0;
+
   htmlTurns.value.push([[], turn.switchTurn]);
   for (const e of turn.events) {
     const html = htmlForEvent(e);
     htmlTurns.value.at(-1)![0].push(...html);
 
-    handleEvent(e);
-    if (live) {
+    handleEvent(e, live && !skippingTurn.value);
+    if (live && !skippingTurn.value) {
       liveEvents.value.push([html, Date.now()]);
       await delay(e.type === "damage" ? 500 : 300);
     }
   }
+
+  skippingTurn.value = false;
 };
 
 let currentTurn: Promise<void> | undefined;

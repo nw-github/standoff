@@ -1,5 +1,5 @@
 <template>
-  <UPopover mode="hover" :popper="{ placement: 'right' }">
+  <UPopover mode="hover" :popper="{ placement: 'auto' }">
     <UButton
       @click="$emit('click')"
       class="w-full"

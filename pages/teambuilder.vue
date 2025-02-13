@@ -5,7 +5,7 @@
       <div class="flex space-x-2">
         <FormatDropdown teamOnly multiple class="w-1/2" placeholder="Filter by format..." />
         <UInput
-          icon="i-heroicons-magnifying-glass-20-solid"
+          icon="heroicons:magnifying-glass-20-solid"
           :trailing="false"
           placeholder="Search..."
           class="w-full"
@@ -41,7 +41,7 @@
       <template #actions-data="{ row }">
         <div class="flex justify-end">
           <UDropdown :items="dropdownItems(row)">
-            <UButton color="gray" variant="ghost" icon="i-heroicons-ellipsis-horizontal-20-solid" />
+            <UButton color="gray" variant="ghost" icon="heroicons:ellipsis-horizontal-20-solid" />
           </UDropdown>
         </div>
       </template>

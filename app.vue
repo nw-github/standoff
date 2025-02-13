@@ -45,7 +45,6 @@
                       :options="musicTrackItems"
                       value-attribute="value"
                       v-model="currentTrack"
-                      class="select-menu"
                     />
                   </div>
                 </div>
@@ -105,7 +104,7 @@ const dark = computed({
 const links = [
   {
     label: "Home",
-    icon: "i-heroicons-home",
+    icon: "heroicons:home",
     to: "/",
   },
   {
