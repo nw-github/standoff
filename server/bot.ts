@@ -1,11 +1,12 @@
 import { io, type Socket } from "socket.io-client";
 import type { JoinRoomResponse } from "./utils/gameServer";
 import type { BattleEvent } from "../game/events";
-import { clamp, randChoice } from "../game/utils";
+import { clamp } from "../game/utils";
 import type { Options, Turn } from "../game/battle";
 import { FormatId } from "~/utils/formats";
 import { ClientPlayer } from "~/utils";
 import { Pokemon } from "~/game/pokemon";
+import random from "random";
 
 export type BotFunction = (
   team: Pokemon[],
@@ -218,8 +219,8 @@ export function randomBot(
   const validSwitches = team!.filter((poke, i) => poke.hp !== 0 && i !== activePokemon);
   const validMoves = options.moves.filter(move => move.valid);
   if (!validMoves.length || (options.canSwitch && validSwitches.length && Math.random() < 0.15)) {
-    return [team.indexOf(randChoice(validSwitches)), "switch"] as const;
+    return [team.indexOf(random.choice(validSwitches)!), "switch"] as const;
   } else {
-    return [options.moves.indexOf(randChoice(validMoves)), "move"] as const;
+    return [options.moves.indexOf(random.choice(validMoves)!), "move"] as const;
   }
 }

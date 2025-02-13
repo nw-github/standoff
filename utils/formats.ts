@@ -1,8 +1,8 @@
 import { Pokemon } from "../game/pokemon";
 import { moveList, type MoveId } from "../game/moveList";
 import { speciesList, type Species, type SpeciesId } from "../game/species";
-import { randChoice } from "../game/utils";
 import { AlwaysFailMove, Move } from "../game/moves";
+import random from "random";
 
 export const battleFormats = [
   "standard",
@@ -31,7 +31,7 @@ const uselessNfe = new Set<SpeciesId>(["weedle", "metapod", "kakuna", "magikarp"
 const getRandomPokemon = (
   count: number,
   validSpecies: (s: Species, id: SpeciesId) => boolean,
-  customize: (s: Species, id: SpeciesId) => Pokemon
+  customize: (s: Species, id: SpeciesId) => Pokemon,
 ) => {
   return speciesIds
     .filter(id => validSpecies(speciesList[id], id))
@@ -43,7 +43,7 @@ const getRandomPokemon = (
 const getRandomMoves = (
   count: number,
   moves: MoveId[],
-  validMove: (m: Move, id: MoveId) => boolean
+  validMove: (m: Move, id: MoveId) => boolean,
 ) => {
   return moves
     .filter(id => validMove(moveList[id], id))
@@ -63,7 +63,7 @@ const randoms = (validSpecies: (s: Species, id: SpeciesId) => boolean, level = 1
       return (move.power ?? 0) > 40 && s.types.includes(move.type) && !moves.includes(m);
     });
     if (stab.length) {
-      moves[0] = randChoice(stab);
+      moves[0] = random.choice(stab)!;
     }
     return new Pokemon(id, {}, {}, level, moves);
   });
@@ -145,8 +145,12 @@ export const formatDescs: Record<FormatId, FormatDesc> = {
             {},
             {},
             100,
-            getRandomMoves(4, Object.keys(moveList) as MoveId[], (move, id) => !isBadMove(move, id))
-          )
+            getRandomMoves(
+              4,
+              Object.keys(moveList) as MoveId[],
+              (move, id) => !isBadMove(move, id),
+            ),
+          ),
       );
     },
   },
@@ -165,7 +169,7 @@ export const formatDescs: Record<FormatId, FormatDesc> = {
       return getRandomPokemon(
         6,
         s => !s.evolves,
-        (_, id) => new Pokemon(id, {}, {}, 100, ["metronome"])
+        (_, id) => new Pokemon(id, {}, {}, 100, ["metronome"]),
       );
     },
   },

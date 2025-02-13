@@ -11,7 +11,7 @@ import {
   UniqueMove,
 } from "./moves";
 import { TransformedPokemon } from "./transformed";
-import { randChoice, randRangeInclusive, stageKeys } from "./utils";
+import { stageKeys } from "./utils";
 
 export type MoveId = keyof typeof moveList;
 
@@ -46,9 +46,9 @@ export const moveList = Object.freeze({
       return target.damage(dmg * 2, user, battle, false, "attacked").dead;
     }
 
-    override execute(_: Battle, user: ActivePokemon, target: ActivePokemon) {
+    override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
       target.v.lastDamage = 0;
-      user.v.bide = { move: this, turns: randRangeInclusive(2, 3), dmg: 0 };
+      user.v.bide = { move: this, turns: battle.rng.int(2, 3), dmg: 0 };
       return false;
     }
   })(),
@@ -86,8 +86,8 @@ export const moveList = Object.freeze({
         return false;
       }
 
-      const indexInMoves = randChoice(options);
-      target.v.disabled = { indexInMoves, turns: randRangeInclusive(1, 8) };
+      const indexInMoves = battle.rng.choice(options)!;
+      target.v.disabled = { indexInMoves, turns: battle.rng.int(1, 8) };
       battle.event({
         type: "disable",
         id: target.owner.id,
@@ -162,10 +162,10 @@ export const moveList = Object.freeze({
 
       let move;
       do {
-        move = randChoice(moves);
+        move = battle.rng.choice(moves);
       } while (move === this || move === moveList.struggle);
 
-      return move.use(battle, user, target);
+      return move!.use(battle, user, target);
     },
   }),
   mimic: new UniqueMove({
@@ -180,7 +180,7 @@ export const moveList = Object.freeze({
 
       user.v.mimic = {
         indexInMoves: indexInMoves ?? user.v.lastMoveIndex ?? -1,
-        move: randChoice(target.base.moves),
+        move: battle.rng.choice(target.base.moves)!,
       };
 
       battle.event({ type: "mimic", id: user.owner.id, move: user.v.mimic.move });
@@ -213,11 +213,11 @@ export const moveList = Object.freeze({
 
       // psywave has a desync glitch that we don't emulate
       return target.damage(
-        randRangeInclusive(1, Math.max(Math.floor(user.base.level * 1.5 - 1), 1)),
+        battle.rng.int(1, Math.max(Math.floor(user.base.level * 1.5 - 1), 1)),
         user,
         battle,
         false,
-        "attacked"
+        "attacked",
       ).dead;
     },
   }),

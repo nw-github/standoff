@@ -1,5 +1,5 @@
 import type { ActivePokemon, Battle } from "../battle";
-import { floatTo255, randChance255, scaleAccuracy255, type Type } from "../utils";
+import { floatTo255, scaleAccuracy255, type Type } from "../utils";
 
 export abstract class Move {
   readonly pp: number;
@@ -10,7 +10,7 @@ export abstract class Move {
     readonly type: Type,
     readonly acc?: number,
     readonly priority?: number,
-    readonly power?: number
+    readonly power?: number,
   ) {
     this.pp = Math.min(Math.floor((pp * 8) / 5), 61);
   }
@@ -27,7 +27,7 @@ export abstract class Move {
       user.v.thrashing.acc = chance;
     }
 
-    if (target.v.invuln || !randChance255(chance)) {
+    if (target.v.invuln || !battle.rand255(chance)) {
       battle.info(user, "miss");
       return false;
     }

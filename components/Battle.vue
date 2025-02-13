@@ -148,7 +148,7 @@ import type { Options, Turn } from "../game/battle";
 import type { Pokemon, Status } from "../game/pokemon";
 import type { BattleEvent, InfoReason } from "../game/events";
 import { speciesList, type SpeciesId } from "../game/species";
-import { clamp, hpPercentExact, randChoice } from "../game/utils";
+import { clamp, hpPercentExact } from "../game/utils";
 import { moveList, type MoveId } from "../game/moveList";
 import { useElementVisibility, useIntervalFn } from "@vueuse/core";
 import { stageTable } from "#imports";
@@ -244,6 +244,8 @@ watch(perspective, () => {
 });
 
 onMounted(async () => {
+  const randChoice = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+
   if (allMusicTracks.length) {
     currentTrack.value = randChoice(allMusicTracks);
   }

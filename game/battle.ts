@@ -1,3 +1,4 @@
+import { Random, type SeedOrRNG } from "random";
 import type {
   HitSubstituteEvent,
   BattleEvent,
@@ -11,16 +12,7 @@ import { moveList, type MoveId } from "./moveList";
 import { Move } from "./moves";
 import { type Pokemon, type Status } from "./pokemon";
 import { TransformedPokemon } from "./transformed";
-import {
-  calcDamage,
-  clamp,
-  floatTo255,
-  randChance255,
-  randRangeInclusive,
-  stageMultipliers,
-  type Stages,
-  type Type,
-} from "./utils";
+import { calcDamage, clamp, floatTo255, stageMultipliers, type Stages, type Type } from "./utils";
 
 export type MoveOption = {
   move: MoveId;
@@ -179,10 +171,12 @@ export class Battle {
   private readonly moveListToId;
   private switchTurn = false;
   _victor?: Player;
+  rng: Random;
 
-  private constructor(player1: Player, player2: Player) {
+  private constructor(player1: Player, player2: Player, seed?: SeedOrRNG) {
     this.players = [player1, player2];
     this.moveListToId = new Map<Move, MoveId>();
+    this.rng = new Random(seed);
     for (const k in moveList) {
       // @ts-ignore
       this.moveListToId.set(moveList[k], k);
@@ -238,7 +232,7 @@ export class Battle {
         const aSpe = a.user.owner.active.getStat("spe");
         const bSpe = b.user.owner.active.getStat("spe");
         if (aSpe === bSpe) {
-          return randChance255(128) ? -1 : 1;
+          return this.rng.bool() ? -1 : 1;
         }
 
         return bSpe - aSpe;
@@ -333,7 +327,7 @@ export class Battle {
       this.info(user, --user.v.confusion === 0 ? "confused_end" : "confused");
     }
 
-    if (user.base.status === "par" && randChance255(floatTo255(25))) {
+    if (user.base.status === "par" && this.rand255(floatTo255(25))) {
       this.info(user, "paralyze");
 
       user.v.charging = undefined;
@@ -342,12 +336,8 @@ export class Battle {
         user.v.thrashing = undefined;
       }
       return false;
-    } else if (user.v.confusion && randChance255(floatTo255(50))) {
-      if (user.handleConfusionDamage(this, target)) {
-        return true;
-      } else {
-        return false;
-      }
+    } else if (user.v.confusion && this.rng.bool()) {
+      return user.handleConfusionDamage(this, target);
     }
 
     return move.use(this, user, target, indexInMoves);
@@ -372,6 +362,10 @@ export class Battle {
     const switchTurn = this.switchTurn;
     this.switchTurn = this.players.some(pl => pl.active.base.hp === 0);
     return { events: this.events.splice(0), switchTurn };
+  }
+
+  rand255(num: number) {
+    return this.rng.int(0, 255) < Math.min(num, 255);
   }
 }
 
@@ -510,7 +504,7 @@ export class ActivePokemon {
 
     if (status === "slp") {
       this.v.recharge = undefined;
-      this.base.sleepTurns = randRangeInclusive(1, 7);
+      this.base.sleepTurns = battle.rng.int(1, 7);
     } else if (status === "tox") {
       this.v.counter = 1;
     }
@@ -560,7 +554,7 @@ export class ActivePokemon {
       return false;
     }
 
-    this.v.confusion = randRangeInclusive(2, 5);
+    this.v.confusion = battle.rng.int(2, 5);
     if (!thrashing) {
       battle.info(this, "became_confused");
     }

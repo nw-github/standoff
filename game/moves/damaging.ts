@@ -4,14 +4,12 @@ import type { Status } from "../pokemon";
 import {
   floatTo255,
   getEffectiveness,
-  randChance255,
-  randRangeInclusive,
   isSpecial,
   calcDamage,
   type Type,
   type Stages,
-  randChoiceWeighted,
 } from "../utils";
+import type { Random } from "random";
 
 type Effect = Status | [Stages, number][] | "confusion" | "flinch";
 type Flag =
@@ -92,7 +90,7 @@ export class DamagingMove extends Move {
 
   override execute(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
     if (this.flag === "multi_turn" && !user.v.thrashing) {
-      user.v.thrashing = { move: this, turns: randRangeInclusive(2, 3) };
+      user.v.thrashing = { move: this, turns: battle.rng.int(2, 3) };
     } else if (user.v.thrashing && user.v.thrashing.turns !== -1) {
       if (--user.v.thrashing.turns === 0) {
         user.v.thrashing = undefined;
@@ -104,13 +102,13 @@ export class DamagingMove extends Move {
       target.v.recharge = undefined;
     }
 
-    const { dmg, isCrit, eff } = this.getDamage(user, target);
+    const { dmg, isCrit, eff } = this.getDamage(battle, user, target);
     if (dmg === 0 || !this.checkAccuracy(battle, user, target)) {
       if (dmg === 0) {
         if (eff === 0) {
           battle.info(target, "immune");
           if (this.flag === "trap") {
-            this.trapTarget(user, target, dmg);
+            this.trapTarget(battle.rng, user, target, dmg);
           }
         } else {
           battle.info(user, "miss");
@@ -149,7 +147,7 @@ export class DamagingMove extends Move {
       isCrit,
       this.flag === "ohko" ? "ohko" : "attacked",
       false,
-      eff
+      eff,
     );
 
     if (this.flag === "multi" || this.flag === "double") {
@@ -165,7 +163,7 @@ export class DamagingMove extends Move {
             battle,
             false,
             "recoil",
-            true
+            true,
           ).dead || dead;
       }
 
@@ -174,7 +172,7 @@ export class DamagingMove extends Move {
       } else if (this.flag === "explosion") {
         dead = user.damage(user.base.hp, user, battle, false, "explosion", true).dead || dead;
       } else if (this.flag === "double" || this.flag === "multi") {
-        const count = this.flag === "double" ? 2 : DamagingMove.multiHitCount();
+        const count = this.flag === "double" ? 2 : DamagingMove.multiHitCount(battle.rng);
         for (let hits = 1; !dead && !brokeSub && hits < count; hits++) {
           event.hitCount = 0;
           ({ dead, brokeSub, event } = target.damage(
@@ -184,7 +182,7 @@ export class DamagingMove extends Move {
             isCrit,
             "attacked",
             false,
-            eff
+            eff,
           ));
           event.hitCount = hits + 1;
         }
@@ -200,7 +198,7 @@ export class DamagingMove extends Move {
     if (this.flag === "recharge") {
       user.v.recharge = this;
     } else if (this.flag === "trap") {
-      this.trapTarget(user, target, dmg);
+      this.trapTarget(battle.rng, user, target, dmg);
     }
 
     if (this.effect) {
@@ -213,7 +211,7 @@ export class DamagingMove extends Move {
         return dead;
       }
 
-      if (!randChance255(floatTo255(chance))) {
+      if (!battle.rand255(floatTo255(chance))) {
         return dead;
       }
 
@@ -240,7 +238,7 @@ export class DamagingMove extends Move {
     return dead;
   }
 
-  private getDamage(user: ActivePokemon, target: ActivePokemon) {
+  private getDamage(battle: Battle, user: ActivePokemon, target: ActivePokemon) {
     // https://bulbapedia.bulbagarden.net/wiki/Damage#Generation_I
     const eff = getEffectiveness(this.type, target.v.types);
     if (this.flag === "dream_eater" && target.base.status !== "slp") {
@@ -270,7 +268,7 @@ export class DamagingMove extends Move {
       chance = Math.floor(user.v.flags.focus ? baseSpe / 8 : baseSpe / 2);
     }
 
-    const isCrit = randChance255(chance);
+    const isCrit = battle.rand255(chance);
     const [atks, defs] = isSpecial(this.type)
       ? (["spc", "spc"] as const)
       : (["atk", "def"] as const);
@@ -290,7 +288,7 @@ export class DamagingMove extends Move {
       return { dmg: 0, isCrit: false, eff };
     }
 
-    const rand = dmg === 1 ? 255 : randRangeInclusive(217, 255);
+    const rand = dmg === 1 ? 255 : battle.rng.int(217, 255);
     return { dmg: Math.floor((dmg * rand) / 255), isCrit, eff };
   }
 
@@ -311,13 +309,29 @@ export class DamagingMove extends Move {
     return user.v.lastDamage * 2;
   }
 
-  private static multiHitCount() {
-    return randChoiceWeighted([2, 3, 4, 5], [37.5, 37.5, 12.5, 12.5]);
+  private static multiHitCount(rng: Random) {
+    return randChoiceWeighted(rng, [2, 3, 4, 5], [37.5, 37.5, 12.5, 12.5]);
   }
 
-  private trapTarget(user: ActivePokemon, target: ActivePokemon, dmg: number) {
-    const turns = DamagingMove.multiHitCount() - 1;
+  private trapTarget(rng: Random, user: ActivePokemon, target: ActivePokemon, dmg: number) {
+    const turns = DamagingMove.multiHitCount(rng) - 1;
     target.v.trapped = true;
     user.v.trapping = { move: this, turns, dmg };
   }
 }
+
+const randChoiceWeighted = <T>(rng: Random, arr: T[], weights: number[]) => {
+  let i;
+  for (i = 1; i < weights.length; i++) {
+    weights[i] += weights[i - 1];
+  }
+
+  const random = rng.float() * weights.at(-1)!;
+  for (i = 0; i < weights.length; i++) {
+    if (weights[i] > random) {
+      break;
+    }
+  }
+
+  return arr[i];
+};
