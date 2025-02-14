@@ -5,25 +5,25 @@
     <div class="flex flex-col w-full items-center">
       <TeamDisplay class="w-full justify-end" v-if="opponent" :player="players[opponent]" />
 
-      <div class="flex">
-        <template v-for="(player, id) in players">
-          <div v-if="id === perspective && player.active" class="order-1 pb-2 sm:pb-0">
-            <div class="h-10 sm:h-14"></div>
-            <ActivePokemon
-              :poke="player.active"
-              :base="id === myId ? activeInTeam : undefined"
-              back
-            />
-          </div>
-          <div v-else-if="player.active" class="order-2">
-            <ActivePokemon :poke="player.active" />
-          </div>
-        </template>
+      <div class="flex" v-if="perspective && opponent">
+        <div v-if="players[opponent].active" class="order-2">
+          <ActivePokemon :poke="players[opponent].active!" ref="frontPokemon" />
+        </div>
+
+        <div v-if="players[perspective].active" class="pb-2 sm:pb-0">
+          <div class="h-10 sm:h-14"></div>
+          <ActivePokemon
+            :poke="players[perspective].active!"
+            :base="perspective === myId ? activeInTeam : undefined"
+            ref="backPokemon"
+            back
+          />
+        </div>
       </div>
 
-      <div class="relative w-full z-10" v-if="liveEvents.length">
+      <div class="relative w-full z-30" v-if="liveEvents.length">
         <div
-          class="events absolute w-full flex flex-col bottom-1 p-2 rounded-lg bg-gray-300 dark:bg-gray-700 bg-opacity-90 dark:bg-opacity-95"
+          class="events absolute w-full flex flex-col bottom-1 p-2 rounded-lg bg-gray-300/90 dark:bg-gray-700/95"
         >
           <div v-for="[events, _] in liveEvents">
             <component :is="() => events" />
@@ -178,6 +178,8 @@ import { moveList, type MoveId } from "../game/moveList";
 import { stageTable } from "#imports";
 import type { ClientVolatileFlag } from "~/utils";
 import type { BattleTimer } from "~/server/utils/gameServer";
+import type { ActivePokemon } from "#build/components";
+import type { AnimationType } from "./ActivePokemon.vue";
 
 let timeLeft = 0;
 
@@ -210,6 +212,9 @@ const isRunningTurn = ref(false);
 const skippingTurn = ref(false);
 const updateMarker = ref(0);
 
+const backPokemon = ref<InstanceType<typeof ActivePokemon>>();
+const frontPokemon = ref<InstanceType<typeof ActivePokemon>>();
+
 const activeIndex = ref(0);
 const activeInTeam = computed<Pokemon | undefined>(() => props.team?.[activeIndex.value]);
 
@@ -219,11 +224,9 @@ const opponent = computed(() => props.battlers.find(v => v != perspective.value)
 const victor = ref<string>();
 const htmlTurns = ref<[VNode[], boolean][]>([]);
 const liveEvents = ref<[VNode[], number][]>([]);
-const soundQueue = ref<[string, boolean][]>([]);
 
 const audioContext = new AudioContext();
 const savedAudio: Record<string, AudioBuffer> = {};
-let audioPaused = true;
 
 useIntervalFn(() => {
   liveEvents.value = liveEvents.value.filter(ev => Date.now() - ev[1] < 1400);
@@ -300,57 +303,113 @@ const cancelMove = () => {
 };
 
 const runTurn = async (turn: Turn, live: boolean) => {
-  selectionText.value = "";
-
-  const playSound = async (path: string, pitchDown = false, useQueue = false) => {
-    if (audioPaused || !useQueue) {
-      rawPlaySound(path, pitchDown);
-    } else {
-      soundQueue.value.push([path, pitchDown]);
+  const playSound = async (path: string, pitchDown = false) => {
+    if (!live || skippingTurn.value) {
+      return;
     }
+
+    if (!savedAudio[path]) {
+      const sound = await $fetch<Blob>(path, { method: "GET" });
+      savedAudio[path] = await audioContext.decodeAudioData(await sound.arrayBuffer());
+    }
+    const source = audioContext.createBufferSource();
+    source.buffer = savedAudio[path];
+
+    const gain = audioContext.createGain();
+    gain.gain.value = sfxVol.value;
+    gain.connect(audioContext.destination);
+
+    source.connect(gain);
+    source.detune.value = pitchDown ? -350 : 0;
+    return new Promise(resolve => {
+      source.onended = resolve;
+      source.start();
+    });
   };
 
   const playCry = (speciesId: SpeciesId, pitchDown = false) => {
     const track = speciesList[speciesId].dexId.toString().padStart(3, "0");
-    playSound(`/effects/cries/${track}.wav`, pitchDown, true);
+    return playSound(`/effects/cries/${track}.wav`, pitchDown);
   };
 
   const playDmg = (eff: number) => {
     const track = eff > 1 ? "supereffective" : eff < 1 ? "ineffective" : "neutral";
-    playSound(`/effects/${track}.mp3`);
+    return playSound(`/effects/${track}.mp3`);
   };
 
-  const handleEvent = (e: BattleEvent, live: boolean) => {
+  const playAnimation = async (id: string, anim: AnimationType, name?: string, cb?: () => void) => {
+    const component = id === perspective.value ? backPokemon.value : frontPokemon.value;
+    if (!live || skippingTurn.value) {
+      if (cb) {
+        cb();
+      }
+
+      if (anim === "faint" && component) {
+        component.reset(false);
+      } else if (anim === "sendin" && component) {
+        component.reset(true);
+      }
+      return;
+    }
+
+    // TODO: interrupt the current animation for skip turn
+    if (component) {
+      await component.playAnimation(anim, name, cb);
+    }
+  };
+
+  const handleEvent = async (e: BattleEvent) => {
     if (e.type === "switch") {
       const player = props.players[e.src];
-      player.active = { ...e, stages: {}, flags: {} };
-      if (e.src === myId.value) {
-        if (activeInTeam.value?.status === "tox") {
-          activeInTeam.value.status = "psn";
+      if (player.active && player.active.hp) {
+        await playAnimation(e.src, "retract", player.active.name);
+      }
+
+      let promise: Promise<unknown> | undefined = undefined;
+      await playAnimation(e.src, "sendin", e.name, () => {
+        player.active = { ...e, stages: {}, flags: {} };
+        if (e.src === myId.value) {
+          if (activeInTeam.value?.status === "tox") {
+            activeInTeam.value.status = "psn";
+          }
+
+          activeIndex.value = e.indexInTeam;
+          player.active.stats = undefined;
         }
-
-        activeIndex.value = e.indexInTeam;
-        player.active.stats = undefined;
-      }
-
-      if (live) {
-        playCry(e.speciesId);
-      }
+        promise = playCry(e.speciesId);
+      });
     } else if (e.type === "damage" || e.type === "recover") {
-      props.players[e.target].active!.hp = e.hpAfter;
-      if (e.target === myId.value) {
-        activeInTeam.value!.hp = e.hpAfter;
+      const update = () => {
+        props.players[e.target].active!.hp = e.hpAfter;
+        if (e.target === myId.value) {
+          activeInTeam.value!.hp = e.hpAfter;
+        }
+      };
+
+      if (e.type === "damage" && (e.why === "attacked" || e.why === "ohko" || e.why === "trap")) {
+        const eff = e.why === "ohko" || !e.eff ? 1 : e.eff;
+        await playAnimation(e.src, "bodyslam", undefined, () => {
+          update();
+          playDmg(eff);
+        });
+      } else {
+        update();
+        if (e.why === "confusion") {
+          await playDmg(e.eff ?? 1);
+        }
       }
 
-      if (
-        live &&
-        e.type === "damage" &&
-        (e.why === "attacked" || e.why === "confusion" || e.why === "ohko" || e.why === "trap")
-      ) {
-        playDmg(e.why === "ohko" || !e.eff ? 1 : e.eff);
+      if (e.why === "substitute") {
+        await playAnimation(e.target, "get_sub", undefined, () => {
+          props.players[e.target].active!.flags.substitute = true;
+        });
+      }
 
-        if (e.hpAfter === 0) {
-          playCry(props.players[e.target].active!.speciesId, true);
+      if (e.hpAfter === 0 && live && !skippingTurn.value) {
+        playCry(props.players[e.target].active!.speciesId, true);
+        await playAnimation(e.target, "faint");
+        if (!skippingTurn.value) {
+          await delay(400);
         }
       }
 
@@ -363,10 +422,6 @@ const runTurn = async (turn: Turn, live: boolean) => {
         if (e.target === myId.value) {
           activeInTeam.value!.status = "slp";
         }
-      }
-
-      if (e.why === "substitute") {
-        props.players[e.target].active!.flags.substitute = true;
       }
     } else if (e.type === "status") {
       props.players[e.id].active!.status = e.status;
@@ -441,11 +496,11 @@ const runTurn = async (turn: Turn, live: boolean) => {
     } else if (e.type === "victory") {
       victor.value = e.id;
     } else if (e.type === "hit_sub") {
+      await playAnimation(e.src, "bodyslam", undefined, () => playDmg(e.eff ?? 1));
       if (e.broken) {
-        props.players[e.target].active!.flags.substitute = false;
-      }
-      if (live) {
-        playDmg(e.eff ?? 1);
+        await playAnimation(e.target, "lose_sub", undefined, () => {
+          props.players[e.target].active!.flags.substitute = false;
+        });
       }
     } else if (e.type === "disable") {
       props.players[e.id].active!.flags.disabled = true;
@@ -457,46 +512,23 @@ const runTurn = async (turn: Turn, live: boolean) => {
   };
 
   liveEvents.value.length = 0;
+  selectionText.value = "";
 
   htmlTurns.value.push([[], turn.switchTurn]);
   for (const e of turn.events) {
     const html = htmlForEvent(e);
     htmlTurns.value.at(-1)![0].push(...html);
 
-    handleEvent(e, live && !skippingTurn.value);
+    await handleEvent(e);
     if (live && !skippingTurn.value) {
       liveEvents.value.push([html, Date.now()]);
-      await delay(e.type === "damage" ? 500 : 300);
+      if (e.type !== "damage" && e.type !== "switch" && e.type !== "hit_sub") {
+        await delay(300);
+      }
     }
   }
 
   skippingTurn.value = false;
-};
-
-const rawPlaySound = async (path: string, pitchDown = false) => {
-  if (!savedAudio[path]) {
-    const sound = await $fetch<Blob>(path, { method: "GET" });
-    savedAudio[path] = await audioContext.decodeAudioData(await sound.arrayBuffer());
-  }
-  const source = audioContext.createBufferSource();
-  source.buffer = savedAudio[path];
-
-  const gain = audioContext.createGain();
-  gain.gain.value = sfxVol.value;
-  gain.connect(audioContext.destination);
-
-  source.connect(gain);
-  source.detune.value = pitchDown ? -350 : 0;
-  source.onended = () => {
-    const res = soundQueue.value.shift();
-    if (res) {
-      rawPlaySound(res[0], res[1]);
-    } else {
-      audioPaused = true;
-    }
-  };
-  source.start();
-  audioPaused = false;
 };
 
 let currentTurn: Promise<void> | undefined;
