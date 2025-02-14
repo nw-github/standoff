@@ -58,7 +58,6 @@
 </template>
 
 <script setup lang="ts">
-import { useLocalStorage } from "@vueuse/core";
 import { serializeTeam } from "~/composables/states";
 import type { RoomDescriptor } from "~/server/utils/gameServer";
 

@@ -26,6 +26,7 @@ export type ClientActivePokemon = {
   transformed?: SpeciesId;
   conversion?: Type[];
   flags: Partial<Record<ClientVolatileFlag, boolean>>;
+  charging?: MoveId;
 };
 
 export type ClientPlayer = {

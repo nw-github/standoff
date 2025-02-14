@@ -21,7 +21,7 @@ export class Pokemon {
     statexp: Partial<Stats>,
     level: number,
     moves: MoveId[],
-    name?: string
+    name?: string,
   ) {
     dvs.atk ??= 15;
     dvs.def ??= 15;
@@ -34,7 +34,7 @@ export class Pokemon {
         this.species.stats[stat],
         level,
         stat === "hp" ? hp : dvs[stat],
-        statexp[stat]
+        statexp[stat],
       );
     };
 
@@ -70,7 +70,7 @@ export class Pokemon {
       result.statexp,
       result.level,
       result.moves,
-      result.name
+      result.name,
     );
   }
 }
@@ -94,7 +94,7 @@ const pokeLevel = /^\s*Level:\s*(\d+)/i;
 const evs = /^EVs:\s*(\d+\s+\w+\s*\/?\s*)+/i;
 const ivs = /^IVs:\s*(\d+\s+\w+\s*\/?\s*)+/i;
 const move = /^\s*-\s*([\w\s]+)/i;
-const statRegex = /\s*(\d+)\s+(\w+)\s*/;
+const statRegex = /\s*(\d+)\s+(\w+)\s*/g;
 
 export const parsePokemon = (src: string) => {
   const moves: MoveId[] = [];

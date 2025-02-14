@@ -27,7 +27,7 @@
         </li>
         <li class="pt-3">{{ describeMove(option.move) }}</li>
         <li class="pt-3 space-x-1">
-          <TypeBadge :typ="move.type" />
+          <TypeBadge :type="move.type" />
           <UBadge :color="categoryColor[category]">{{ toTitleCase(category) }}</UBadge>
         </li>
       </ul>

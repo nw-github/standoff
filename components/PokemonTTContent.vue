@@ -4,7 +4,7 @@
       <span>{{ species.name }}</span>
 
       <div class="flex space-x-1">
-        <TypeBadge v-for="typ in species.types" :typ="typ" />
+        <TypeBadge v-for="type in species.types" :type="type" />
       </div>
     </div>
 

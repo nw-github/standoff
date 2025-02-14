@@ -13,8 +13,14 @@
         <div class="flex gap-1 flex-wrap effects absolute">
           <UBadge color="black" v-if="poke.transformed">Transformed</UBadge>
 
+          <TypeBadge
+            v-if="poke.charging"
+            :type="moveList[poke.charging].type"
+            :label="moveList[poke.charging].name"
+          />
+
           <template v-if="!species.types.every((ty, i) => ty === poke.conversion?.[i])">
-            <TypeBadge v-for="ty in poke.conversion" :typ="ty" />
+            <TypeBadge v-for="type in poke.conversion" :type="type" />
           </template>
 
           <UBadge v-if="poke.status" :style="{ backgroundColor: statusColor[poke.status] }">
@@ -54,7 +60,7 @@
                   </span>
                 </span>
                 <div class="flex space-x-1">
-                  <TypeBadge v-for="typ in species.types" :typ="typ" />
+                  <TypeBadge v-for="type in species.types" :type="type" />
                 </div>
               </div>
 
@@ -68,6 +74,8 @@
 </template>
 
 <style scoped>
+@import "../assets/colors.css";
+
 .hp-fill {
   width: v-bind("hp + '%'");
   background-color: v-bind("hpColor(hp)");
@@ -95,7 +103,7 @@
 import { hpPercent, stageMultipliers } from "../game/utils";
 import { calcStat, type Pokemon } from "../game/pokemon";
 import { speciesList } from "../game/species";
-import "assets/colors.css";
+import { moveList } from "../game/moveList";
 
 const props = defineProps<{ poke: ClientActivePokemon; base?: Pokemon; back?: boolean }>();
 const species = computed(() => speciesList[props.poke.transformed ?? props.poke.speciesId]);

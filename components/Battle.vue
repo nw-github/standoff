@@ -175,7 +175,6 @@ import type { BattleEvent, InfoReason } from "../game/events";
 import { speciesList, type SpeciesId } from "../game/species";
 import { clamp, hpPercentExact } from "../game/utils";
 import { moveList, type MoveId } from "../game/moveList";
-import { useElementVisibility, useIntervalFn } from "@vueuse/core";
 import { stageTable } from "#imports";
 import type { ClientVolatileFlag } from "~/utils";
 import type { BattleTimer } from "~/server/utils/gameServer";
@@ -397,6 +396,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
         reflect: "reflect",
         seeded: "seeded",
         focus: "focus",
+        mist: "mist",
       };
 
       if (e.why === "haze") {
@@ -433,6 +433,8 @@ const runTurn = async (turn: Turn, live: boolean) => {
         props.players[e.id].active!.flags.confused = false;
       } else if (enableFlag[e.why]) {
         props.players[e.id].active!.flags[enableFlag[e.why]!] = true;
+      } else if (e.why === "paralyze") {
+        props.players[e.id].active!.charging = undefined;
       }
     } else if (e.type === "conversion") {
       props.players[e.user].active!.conversion = e.types;
@@ -447,6 +449,10 @@ const runTurn = async (turn: Turn, live: boolean) => {
       }
     } else if (e.type === "disable") {
       props.players[e.id].active!.flags.disabled = true;
+    } else if (e.type === "charge") {
+      props.players[e.id].active!.charging = e.move;
+    } else if (e.type === "move") {
+      props.players[e.src].active!.charging = undefined;
     }
   };
 

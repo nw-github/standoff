@@ -1,11 +1,11 @@
 <template>
-  <UBadge :style="{ backgroundColor: typeColor[props.typ] }">
-    {{ toTitleCase(props.typ) }}
+  <UBadge :style="{ backgroundColor: typeColor[type] }">
+    {{ label ?? toTitleCase(type) }}
   </UBadge>
 </template>
 
 <script setup lang="ts">
 import type { Type } from "~/game/utils";
 
-const props = defineProps<{ typ: Type }>();
+defineProps<{ type: Type; label?: string }>();
 </script>

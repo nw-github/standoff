@@ -1,4 +1,3 @@
-import { useLocalStorage } from "@vueuse/core";
 import { moveList, type MoveId } from "~/game/moveList";
 import { parsePokemon } from "~/game/pokemon";
 import { speciesList, type SpeciesId } from "~/game/species";
