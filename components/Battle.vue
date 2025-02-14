@@ -361,11 +361,15 @@ const runTurn = async (turn: Turn, live: boolean) => {
   const handleEvent = async (e: BattleEvent) => {
     if (e.type === "switch") {
       const player = props.players[e.src];
-      if (player.active && player.active.hp) {
-        await playAnimation(e.src, "retract", player.active.name);
+      if (player.active) {
+        if (player.active.hp) {
+          await playAnimation(e.src, "retract", player.active.name);
+        }
+
+        // preload the image
+        player.active!.speciesId = e.speciesId;
       }
 
-      let promise: Promise<unknown> | undefined = undefined;
       await playAnimation(e.src, "sendin", e.name, () => {
         player.active = { ...e, stages: {}, flags: {} };
         if (e.src === myId.value) {
@@ -376,7 +380,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
           activeIndex.value = e.indexInTeam;
           player.active.stats = undefined;
         }
-        promise = playCry(e.speciesId);
+        playCry(e.speciesId);
       });
     } else if (e.type === "damage" || e.type === "recover") {
       const update = () => {
