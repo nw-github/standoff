@@ -1,6 +1,12 @@
 <template>
-  <template v-if="!loaded">
-    <h1>{{ status }}</h1>
+  <template v-if="status === 'loading'">
+    <div class="flex gap-2">
+      <UIcon name="line-md:loading-loop" class="size-6" />
+      <span class="text-xl">Loading...</span>
+    </div>
+  </template>
+  <template v-else-if="status === 'notfound'">
+    <h1>Room not found.</h1>
   </template>
   <template v-else>
     <Battle
@@ -24,11 +30,12 @@
 <script setup lang="ts">
 import type { Options, Turn } from "~/game/battle";
 import type { Pokemon } from "~/game/pokemon";
-import type { BattleTimer, Chats } from "~/server/utils/gameServer";
+import type { BattleTimer, Chats, JoinRoomResponse } from "~/server/utils/gameServer";
 
 const { $conn } = useNuxtApp();
 const route = useRoute();
-const status = ref("Loading...");
+const currentTrack = useCurrentTrack();
+const status = ref<"loading" | "battle" | "notfound">("loading");
 const players = reactive<Record<string, ClientPlayer>>({});
 const battlers = ref<string[]>([]);
 const turns = ref<Turn[]>([]);
@@ -37,39 +44,36 @@ const chats = reactive<Chats>({});
 const team = ref<Pokemon[]>();
 const timer = ref<BattleTimer>();
 const room = `${route.params.id}`;
-const loaded = ref(false);
 
 let sequenceNo = 0;
 onMounted(() => {
   $conn.emit("joinRoom", room, resp => {
-    if (resp === "bad_room") {
-      status.value = "Room not found...";
-      return;
+    if (allMusicTracks.length) {
+      currentTrack.value = randChoice(allMusicTracks);
     }
+    joinRoom(resp);
+  });
 
-    for (const { isSpectator, id, name, nPokemon } of resp.players) {
-      players[id] = { name, isSpectator, connected: true, nPokemon, nFainted: 0 };
-      if (!isSpectator && !battlers.value.includes(id)) {
-        battlers.value.push(id);
+  $conn.on("connect", () => {
+    const clearObj = (foo: Record<string, any>) => {
+      for (const k in foo) {
+        delete foo[k];
       }
-    }
+    };
 
-    turns.value = resp.turns;
-    team.value = resp.team;
-    options.value = resp.options;
-    timer.value = resp.timer;
-    sequenceNo += resp.turns.length;
+    status.value = "loading";
+    turns.value.length = 0;
+    battlers.value.length = 0;
+    team.value = undefined;
+    options.value = undefined;
+    timer.value = undefined;
+    sequenceNo = 0;
 
-    for (const k in resp.chats) {
-      chats[k] = resp.chats[k];
-    }
+    clearObj(chats);
+    clearObj(players);
 
-    if (resp.timer) {
-      chats[0] ??= [];
-      chats[0].unshift({ player: "", message: "The timer is on." });
-    }
-
-    loaded.value = true;
+    // TODO: instead of rejoining the room, send a 'catch up' request with the sequenceNo
+    $conn.emit("joinRoom", room, joinRoom);
   });
 
   $conn.on("nextTurn", async (roomId, turn, opts, tmr) => {
@@ -88,12 +92,6 @@ onMounted(() => {
   });
 
   $conn.on("userLeave", (roomId, id) => {
-    if (roomId === room) {
-      players[id].connected = false;
-    }
-  });
-
-  $conn.on("userDisconnect", (roomId, id) => {
     if (roomId === room) {
       players[id].connected = false;
     }
@@ -123,6 +121,41 @@ onMounted(() => {
     }
   });
 });
+
+onUnmounted(() => {
+  currentTrack.value = undefined;
+});
+
+const joinRoom = (resp: JoinRoomResponse | "bad_room") => {
+  if (resp === "bad_room") {
+    status.value = "notfound";
+    return;
+  }
+
+  for (const { isSpectator, id, name, nPokemon } of resp.players) {
+    players[id] = { name, isSpectator, connected: true, nPokemon, nFainted: 0 };
+    if (!isSpectator && !battlers.value.includes(id)) {
+      battlers.value.push(id);
+    }
+  }
+
+  turns.value = resp.turns;
+  team.value = resp.team;
+  options.value = resp.options;
+  timer.value = resp.timer;
+  sequenceNo += resp.turns.length;
+
+  for (const k in resp.chats) {
+    chats[k] = resp.chats[k];
+  }
+
+  if (resp.timer) {
+    chats[0] ??= [];
+    chats[0].unshift({ player: "", message: "The timer is on." });
+  }
+
+  status.value = "battle";
+};
 
 const sendChat = (message: string) => {
   $conn.emit("chat", room, message, err => {

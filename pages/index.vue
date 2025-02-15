@@ -1,7 +1,9 @@
 <template>
   <div class="grid grid-rows-2 sm:grid-cols-2">
     <div class="space-y-2 px-5">
-      <h1 class="text-center">{{ status }}</h1>
+      <h1 class="text-center">
+        {{ user ? `Welcome ${user.name}!` : "You must first log in to find a battle" }}
+      </h1>
       <FormatDropdown v-model="format" :disabled="findingMatch" />
       <USelectMenu
         searchable
@@ -11,9 +13,11 @@
         :disabled="!formatInfo[format].needsTeam"
         option-attribute="name"
       />
+      <span class="text-sm text-red-600" v-if="status">{{ status }}</span>
+
       <UButton
         @click="enterMatchmaking"
-        :disabled="!myId.length || (formatInfo[format].needsTeam && !selectedTeam)"
+        :disabled="!user || (formatInfo[format].needsTeam && !selectedTeam)"
         :color="findingMatch ? 'red' : 'primary'"
       >
         {{ cancelling ? "Cancelling..." : findingMatch ? "Cancel" : "Find Match" }}
@@ -62,9 +66,8 @@ import { serializeTeam } from "~/composables/states";
 import type { RoomDescriptor } from "~/server/utils/gameServer";
 
 const { $conn } = useNuxtApp();
-const status = ref("Logging in...");
-const username = useState<string>("username", () => `Guest ${Math.round(Math.random() * 10000)}`);
-const myId = useMyId();
+const { user } = useUserSession();
+const status = ref("");
 const findingMatch = ref(false);
 const cancelling = ref(false);
 const rooms = ref<RoomDescriptor[]>([]);
@@ -93,17 +96,6 @@ const filterFormats = ref<string[]>([]);
 const battleQuery = ref<string>();
 
 onMounted(() => {
-  status.value = `Logging in as ${username.value}...`;
-
-  $conn.emit("login", username.value, resp => {
-    if (resp === "bad_username") {
-      status.value = `Login error: ${resp}`;
-    } else {
-      status.value = `Logged in as ${username.value}`;
-      myId.value = resp.id;
-    }
-  });
-
   $conn.emit("getRooms", result => {
     rooms.value = result;
   });
@@ -129,7 +121,6 @@ const enterMatchmaking = () => {
     findingMatch.value = false;
     $conn.emit("exitMatchmaking", () => {
       cancelling.value = false;
-      status.value = `Logged in as ${username.value}`;
     });
   }
 };

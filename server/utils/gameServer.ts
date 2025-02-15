@@ -6,6 +6,7 @@ import { hpPercent } from "../../game/utils";
 import { Battle, Options, Player, Turn } from "../../game/battle";
 import { BattleEvent } from "../../game/events";
 import { type FormatId, type TeamProblems, formatDescs } from "../../utils/formats";
+import { User } from "#auth-utils";
 
 export type LoginResponse = {
   id: string;
@@ -36,9 +37,6 @@ export type RoomDescriptor = {
 
 export interface ClientMessage {
   getRooms: (ack: (rooms: RoomDescriptor[]) => void) => void;
-
-  login: (name: string, ack: (resp: LoginResponse | "bad_username") => void) => void;
-  logout: (ack: () => void) => void;
 
   enterMatchmaking: (
     team: string | undefined,
@@ -82,7 +80,6 @@ export interface ServerMessage {
     nPokemon: number,
   ) => void;
   userLeave: (room: string, id: string) => void;
-  userDisconnect: (room: string, id: string) => void;
   userChat: (room: string, id: string, message: string, turn: number) => void;
 }
 
@@ -169,13 +166,12 @@ class Room {
 }
 
 class Account {
-  id = uuid();
   battles = new Set<Room>();
   rooms = new Set<Room>();
   matchmaking?: FormatId;
   userRoom: string;
 
-  constructor(public name: string) {
+  constructor(public id: string, public name: string) {
     this.userRoom = `user:${this.id}`;
   }
 
@@ -205,7 +201,7 @@ class Account {
   leaveRoom(room: Room, server: GameServer) {
     if (this.battles.has(room)) {
       // TODO: start room disconnect timer
-      server.to(room.id).emit("userDisconnect", room.id, this.id);
+      server.to(room.id).emit("userLeave", room.id, this.id);
       return;
     }
 
@@ -216,15 +212,13 @@ class Account {
   }
 
   addSocket(socket: Socket) {
-    socket.account = this;
     socket.join(this.userRoom);
     for (const room of this.rooms) {
-      socket.join(room.id);
+      socket.join(room.id); // XXXX --------------------------------------------------------
     }
   }
 
   async removeSocket(socket: Socket, server: GameServer) {
-    delete socket.account;
     socket.leave(this.userRoom);
 
     const sockets = await server.in(this.userRoom).fetchSockets();
@@ -239,7 +233,7 @@ class Account {
 }
 
 export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
-  /** Name -> Account */
+  /** User ID -> Account */
   private accounts: Record<string, Account> = {};
   private mmWaiting: Partial<Record<FormatId, [Player, Account]>> = {};
   rooms: Record<string, Room> = {};
@@ -252,36 +246,16 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
   }
 
   private newConnection(socket: Socket) {
-    console.log(`new connection: ${socket.id}`);
+    // @ts-expect-error property does not exist
+    const user: User | undefined = socket.request.__SOCKETIO_USER__;
+    if (user) {
+      console.log(`new connection: ${socket.id} from user: '${user.name}' (${user.id})`);
+      socket.account = this.accounts[user.id] ??= new Account(user.id, user.name);
+      socket.account.addSocket(socket);
+    } else {
+      console.log(`new connection: ${socket.id}`);
+    }
 
-    socket.on("login", (name, ack) => {
-      if (name.length < 3) {
-        return ack("bad_username");
-      }
-
-      if (socket.account) {
-        if (socket.account.name !== name) {
-          this.logout(socket);
-        } else {
-          return ack({ id: socket.account.id });
-        }
-      }
-
-      const account = (this.accounts[name] ??= new Account(name));
-      for (const roomId of [...socket.rooms]) {
-        if (roomId.startsWith(ANON_SPECTATE)) {
-          socket.leave(roomId);
-          account.joinRoom(this.rooms[roomId.slice(ANON_SPECTATE.length)], this, true);
-        }
-      }
-
-      account.addSocket(socket);
-      return ack({ id: account.id });
-    });
-    socket.on("logout", ack => {
-      this.logout(socket);
-      ack();
-    });
     socket.on("enterMatchmaking", (team, format, ack) => {
       const account = socket.account;
       if (!account) {
@@ -430,14 +404,12 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
           })),
       ),
     );
-    socket.on("disconnect", () => this.logout(socket));
-  }
-
-  private async logout(socket: Socket) {
-    const account = socket.account;
-    if (account && (await account.removeSocket(socket, this))) {
-      this.leaveMatchmaking(account);
-    }
+    socket.on("disconnect", async () => {
+      const account = socket.account;
+      if (account && (await account.removeSocket(socket, this))) {
+        this.leaveMatchmaking(account);
+      }
+    });
   }
 
   private enterMatchmaking(account: Account, format: FormatId, team?: string) {

@@ -47,6 +47,8 @@ export const roundTo = (num: number, places: number = 1) => {
   return Math.round(num * pow) / pow;
 };
 
+export const randChoice = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+
 const dmgStatusTable: Record<Status, string> = {
   brn: "burn the target. ",
   par: "paralyze the target. ",

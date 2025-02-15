@@ -50,16 +50,7 @@
                 </div>
               </template>
             </UPopover>
-            <UPopover mode="hover" :popper="{ placement: 'bottom-start' }">
-              <UAvatar icon="material-symbols:account-circle-full" />
-              <template #panel>
-                <div class="p-4">
-                  <h2>Username</h2>
-                  <div class="h-2"></div>
-                  <UCheckbox label="Announce presence when spectating" />
-                </div>
-              </template>
-            </UPopover>
+            <AccountButton />
           </div>
         </nav>
       </template>

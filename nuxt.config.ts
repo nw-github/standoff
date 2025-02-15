@@ -2,7 +2,7 @@
 export default defineNuxtConfig({
   devtools: { enabled: true },
   compatibilityDate: "2025-02-08",
-  modules: ["@nuxt/ui", "@nuxt/image", "@vueuse/nuxt", "@hypernym/nuxt-anime"],
+  modules: ["@nuxt/ui", "@nuxt/image", "@vueuse/nuxt", "@hypernym/nuxt-anime", "nuxt-auth-utils"],
   nitro: {
     experimental: {
       websocket: true,

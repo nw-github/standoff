@@ -3,7 +3,10 @@ import { parsePokemon } from "~/game/pokemon";
 import { speciesList, type SpeciesId } from "~/game/species";
 import type { Stats } from "~/game/utils";
 
-export const useMyId = () => useState<string>("myId", () => "");
+export const useMyId = () => {
+  const { user } = useUserSession();
+  return computed(() => user.value?.id ?? "");
+};
 
 export type Team = {
   name: string;

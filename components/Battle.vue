@@ -100,7 +100,7 @@
         </div>
         <template v-else-if="!victor">
           <div v-if="!isBattler && !isRunningTurn">
-            <UButton @click="perspective = opponent" icon="mi:switch">Switch Sides</UButton>
+            <UButton @click="chosenPerspective = opponent" icon="mi:switch">Switch Sides</UButton>
           </div>
           <div v-else-if="!isRunningTurn" class="italic">Waiting for opponent...</div>
           <div v-else>
@@ -202,7 +202,6 @@ const props = defineProps<{
 }>();
 const myId = useMyId();
 const sfxVol = useSfxVolume();
-const currentTrack = useCurrentTrack();
 const selectionText = ref("");
 const menuButton = ref<HTMLElement>();
 const isMenuVisible = useElementVisibility(menuButton);
@@ -219,7 +218,8 @@ const activeIndex = ref(0);
 const activeInTeam = computed<Pokemon | undefined>(() => props.team?.[activeIndex.value]);
 
 const isBattler = computed(() => props.battlers.includes(myId.value));
-const perspective = ref<string>("");
+const chosenPerspective = ref(randChoice(props.battlers));
+const perspective = computed(() => (isBattler.value ? myId.value : chosenPerspective.value));
 const opponent = computed(() => props.battlers.find(v => v != perspective.value));
 const victor = ref<string>();
 const htmlTurns = ref<[VNode[], boolean][]>([]);
@@ -254,31 +254,7 @@ watch(props.chats, () => {
   }
 });
 
-watch(perspective, () => {
-  htmlTurns.value.length = 0;
-  liveEvents.value.length = 0;
-  for (const k in props.players) {
-    props.players[k].nFainted = 0;
-  }
-
-  runTurns(props.turns, false);
-});
-
 watch(skippingTurn, () => (liveEvents.value.length = 0));
-
-onMounted(async () => {
-  const randChoice = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
-
-  if (allMusicTracks.length) {
-    currentTrack.value = randChoice(allMusicTracks);
-  }
-
-  perspective.value = isBattler.value ? myId.value : randChoice(props.battlers);
-});
-
-onUnmounted(() => {
-  currentTrack.value = undefined;
-});
 
 const selectMove = (index: number) => {
   selectionText.value = `${props.players[myId.value].active!.name} will use ${
@@ -773,4 +749,14 @@ const htmlForEvent = (e: BattleEvent) => {
 
   return res;
 };
+
+watchImmediate(perspective, () => {
+  htmlTurns.value.length = 0;
+  liveEvents.value.length = 0;
+  for (const k in props.players) {
+    props.players[k].nFainted = 0;
+  }
+
+  runTurns(props.turns, false);
+});
 </script>

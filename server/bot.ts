@@ -7,6 +7,7 @@ import { FormatId } from "~/utils/formats";
 import { ClientPlayer } from "~/utils";
 import { Pokemon } from "~/game/pokemon";
 import random from "random";
+import { USERS } from "./api/login.post";
 
 export type BotFunction = (
   team: Pokemon[],
@@ -16,27 +17,26 @@ export type BotFunction = (
   activePokemon: number,
 ) => readonly [number, "switch" | "move"];
 
-export function startBot(format: FormatId = "randoms", botFunction: BotFunction = randomBot) {
+export async function startBot(
+  format: FormatId = "randoms",
+  name: string,
+  botFunction: BotFunction = randomBot,
+) {
+  console.log(`[${name}] initializing bot...`);
+
+  await $fetch("/api/login", {
+    method: "POST",
+    body: { username: name, password: USERS[name].password },
+  });
+
   const $conn = io("ws://localhost:3000") as Socket<ServerMessage, ClientMessage>;
   const games: Record<string, (turn: Turn, opts?: Options) => void> = {};
-  let myId = "";
-  let name = "Bot " + Math.floor(Math.random() * 10000);
+  const myId = USERS[name].id;
 
-  console.log(`[${name}] initializing bot...`);
+  console.log(`[${name}] Logged in! My ID: ${myId}`);
 
   $conn.on("connect", () => {
     console.log(`[${name}] Connected! Logging in...`);
-
-    $conn.emit("login", name, resp => {
-      if (resp === "bad_username") {
-        console.error(`[${name}] got bad username!`);
-        return;
-      }
-      console.log(`[${name}] Logged in! My ID: ${resp.id}`);
-
-      myId = resp.id;
-      findMatch(format);
-    });
 
     $conn.on("foundMatch", roomId => {
       $conn.emit("joinRoom", roomId, resp => {
@@ -62,11 +62,17 @@ export function startBot(format: FormatId = "randoms", botFunction: BotFunction 
         games[roomId](turn, opts);
       }
     });
+
+    findMatch(format);
   });
 
   function findMatch(format: FormatId) {
     console.log(`[${name}] queueing for a ${format}`);
-    $conn.emit("enterMatchmaking", undefined, format, () => {});
+    $conn.emit("enterMatchmaking", undefined, format, (err, problems) => {
+      if (err) {
+        console.error(`[${name}] enter matchmaking failed: '${err}', `, problems);
+      }
+    });
   }
 
   function playGame(
