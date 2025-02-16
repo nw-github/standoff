@@ -26,9 +26,6 @@ export default defineEventHandler(async event => {
     throw createError({ statusCode: 401, message: "Bad credentials" });
   }
 
-  // set the user session in the cookie
-  // this server util is auto-imported by the auth-utils module
   await setUserSession(event, { user: { name: username, id: USERS[username].id } });
-
   return {};
 });

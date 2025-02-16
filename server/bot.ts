@@ -1,11 +1,11 @@
 import { io, type Socket } from "socket.io-client";
 import type { JoinRoomResponse } from "./utils/gameServer";
 import type { BattleEvent } from "../game/events";
-import { clamp } from "../game/utils";
 import type { Options, Turn } from "../game/battle";
-import { FormatId } from "~/utils/formats";
-import { ClientPlayer } from "~/utils";
-import { Pokemon } from "~/game/pokemon";
+import type { FormatId } from "~/utils/formats";
+import type { ClientPlayer } from "~/utils";
+import type { Pokemon } from "~/game/pokemon";
+import { clamp } from "../game/utils";
 import random from "random";
 import { USERS } from "./api/login.post";
 
@@ -24,17 +24,25 @@ export async function startBot(
 ) {
   console.log(`[${name}] initializing bot...`);
 
-  await $fetch("/api/login", {
+  await $fetch("/api/_auth/session", { method: "DELETE" }).catch(() => {});
+  const resp = await $fetch.raw("/api/login", {
     method: "POST",
     body: { username: name, password: USERS[name].password },
   });
+  const cookie = resp.headers.getSetCookie().at(-1)!.split(";")[0];
+  const { user } = await $fetch("/api/_auth/session", { method: "GET", headers: { cookie } });
+  if (!user) {
+    console.log(`[${name}] Login failed!...`);
+    return;
+  }
 
-  const $conn = io("ws://localhost:3000") as Socket<ServerMessage, ClientMessage>;
-  const games: Record<string, (turn: Turn, opts?: Options) => void> = {};
-  const myId = USERS[name].id;
-
+  const myId = user!.id;
   console.log(`[${name}] Logged in! My ID: ${myId}`);
 
+  const $conn: Socket<ServerMessage, ClientMessage> = io("ws://localhost:3000", {
+    extraHeaders: { cookie },
+  });
+  const games: Record<string, (turn: Turn, opts?: Options) => void> = {};
   $conn.on("connect", () => {
     console.log(`[${name}] Connected! Logging in...`);
 
