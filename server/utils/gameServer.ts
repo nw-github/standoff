@@ -257,15 +257,14 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       }
 
       if (account.matchmaking) {
-        ack();
         this.leaveMatchmaking(account);
+      }
+
+      const problems = this.enterMatchmaking(account, format, team);
+      if (problems) {
+        ack("invalid_team", problems);
       } else {
-        const problems = this.enterMatchmaking(account, format, team);
-        if (problems) {
-          ack("invalid_team", problems);
-        } else {
-          ack();
-        }
+        ack();
       }
     });
     socket.on("exitMatchmaking", ack => {
@@ -288,9 +287,8 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       }
 
       const player = socket.account && room.battle.findPlayer(socket.account.id);
-      // FIXME: this team needs to be the one at the start of the battle
       return ack({
-        team: player?.team,
+        team: player?.originalTeam,
         options: player?.options,
         players: room.accounts
           .keys()

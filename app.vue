@@ -13,7 +13,7 @@
           </UPopover>
 
           <div class="flex items-center space-x-3">
-            <UTooltip v-if="!connected" text="Disconnected from server...">
+            <UTooltip v-if="!connected" text="Disconnected from server">
               <UIcon
                 name="fluent:plug-disconnected-16-regular"
                 class="animate-pulse size-5 bg-primary"

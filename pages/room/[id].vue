@@ -10,6 +10,7 @@
   </template>
   <template v-else>
     <Battle
+      ref="battle"
       :team
       :options
       :players
@@ -28,6 +29,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Battle } from "#components";
 import type { Options, Turn } from "~/game/battle";
 import type { Pokemon } from "~/game/pokemon";
 import type { BattleTimer, Chats, JoinRoomResponse } from "~/server/utils/gameServer";
@@ -35,6 +37,7 @@ import type { BattleTimer, Chats, JoinRoomResponse } from "~/server/utils/gameSe
 const { $conn } = useNuxtApp();
 const route = useRoute();
 const currentTrack = useCurrentTrack();
+const battle = ref<InstanceType<typeof Battle>>();
 const status = ref<"loading" | "battle" | "notfound">("loading");
 const players = reactive<Record<string, ClientPlayer>>({});
 const battlers = ref<string[]>([]);
@@ -61,22 +64,11 @@ onMounted(() => {
   }
 
   $conn.on("connect", () => {
-    const clearObj = (foo: Record<string, any>) => {
-      for (const k in foo) {
-        delete foo[k];
-      }
-    };
-
     status.value = "loading";
     turns.value.length = 0;
-    battlers.value.length = 0;
     team.value = undefined;
     options.value = undefined;
     timer.value = undefined;
-    sequenceNo = 0;
-
-    clearObj(chats);
-    clearObj(players);
 
     // TODO: instead of rejoining the room, send a 'catch up' request with the sequenceNo
     $conn.emit("joinRoom", room, joinRoom);
@@ -88,6 +80,7 @@ onMounted(() => {
       turns.value.push(turn);
       options.value = opts || undefined;
       sequenceNo++;
+      battle.value!.onTurnReceived();
     }
   });
 
@@ -100,7 +93,9 @@ onMounted(() => {
 
   $conn.on("userReconnect", (roomId, id) => {
     if (roomId === room) {
-      pushChat("", `${players[id].name} reconnected.`);
+      if (players[id]) {
+        pushChat("", `${players[id].name} reconnected.`);
+      }
     }
   });
 
@@ -142,6 +137,12 @@ onUnmounted(() => {
 });
 
 const joinRoom = (resp: JoinRoomResponse | "bad_room") => {
+  const clearObj = (foo: Record<string, any>) => {
+    for (const k in foo) {
+      delete foo[k];
+    }
+  };
+
   if (resp === "bad_room") {
     status.value = "notfound";
     return;
@@ -158,12 +159,13 @@ const joinRoom = (resp: JoinRoomResponse | "bad_room") => {
     }
   }
 
+  sequenceNo = resp.turns.length;
   turns.value = resp.turns;
   team.value = resp.team;
   options.value = resp.options;
   timer.value = resp.timer;
-  sequenceNo += resp.turns.length;
 
+  clearObj(chats);
   for (const k in resp.chats) {
     chats[k] = resp.chats[k];
   }
@@ -174,6 +176,11 @@ const joinRoom = (resp: JoinRoomResponse | "bad_room") => {
   }
 
   status.value = "battle";
+  if (battle.value) {
+    battle.value.onConnect();
+  } else {
+    watchOnce(battle, battle => battle!.onConnect());
+  }
 };
 
 const sendChat = (message: string) => {

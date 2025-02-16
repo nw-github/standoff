@@ -1,16 +1,19 @@
 <template>
   <div class="w-full flex flex-col items-center">
-    <div class="w-11/12 sm:w-3/4 flex flex-col gap-0.5 sm:gap-1 text-sm z-30">
+    <div
+      class="w-11/12 sm:w-3/4 flex flex-col gap-0.5 sm:gap-1 text-sm z-30"
+      :class="{ invisible: !poke }"
+    >
       <div class="flex justify-between flex-col sm:flex-row">
-        <span class="font-bold">{{ poke.name }}</span>
-        <span class="text-[0.75rem] sm:text-sm">Lv. {{ poke.level }}</span>
+        <span class="font-bold">{{ poke?.name ?? "--" }}</span>
+        <span class="text-[0.75rem] sm:text-sm" v-if="poke">Lv. {{ poke.level }}</span>
       </div>
       <div class="relative overflow-hidden rounded-md bg-[#333] flex">
         <div class="hp-fill absolute h-full rounded-md"></div>
         <div class="w-full text-center text-gray-100 text-xs sm:text-sm z-30">{{ hp }}%</div>
       </div>
       <div class="relative">
-        <div class="flex gap-1 flex-wrap effects absolute">
+        <div class="flex gap-1 flex-wrap effects absolute" v-if="poke">
           <UBadge color="black" v-if="poke.transformed">Transformed</UBadge>
 
           <TypeBadge
@@ -19,7 +22,7 @@
             :label="moveList[poke.charging].name"
           />
 
-          <template v-if="!species.types.every((ty, i) => ty === poke.conversion?.[i])">
+          <template v-if="!species!.types.every((ty, i) => ty === poke!.conversion?.[i])">
             <TypeBadge v-for="type in poke.conversion" :type="type" />
           </template>
 
@@ -49,7 +52,7 @@
             <div class="block sm:hidden">
               <Sprite
                 :species="species"
-                :substitute="poke.flags.substitute"
+                :substitute="poke?.flags.substitute"
                 :kind="back ? 'back' : 'front'"
                 :scale="1"
               />
@@ -57,14 +60,14 @@
             <div class="hidden sm:block">
               <Sprite
                 :species="species"
-                :substitute="poke.flags.substitute"
+                :substitute="poke?.flags.substitute"
                 :kind="back ? 'back' : 'front'"
                 :scale="2"
               />
             </div>
           </div>
 
-          <template #panel>
+          <template #panel v-if="poke">
             <div class="p-2">
               <template v-if="base && !poke.transformed">
                 <PokemonTTContent :poke="base" :active="poke" />
@@ -73,13 +76,13 @@
                 <div class="flex flex-col gap-5">
                   <div class="flex justify-between space-x-4">
                     <span>
-                      {{ species.name }}
+                      {{ species!.name }}
                       <span v-if="poke.transformed">
                         (Was: {{ speciesList[poke.speciesId].name }})
                       </span>
                     </span>
                     <div class="flex space-x-1">
-                      <TypeBadge v-for="type in species.types" :type="type" />
+                      <TypeBadge v-for="type in species!.types" :type="type" />
                     </div>
                   </div>
 
@@ -117,7 +120,7 @@
 }
 
 .status {
-  background-color: v-bind("poke.status ? statusColor[poke.status] : 'transparent'");
+  background-color: v-bind("poke?.status ? statusColor[poke.status] : 'transparent'");
 }
 
 .down {
@@ -148,12 +151,18 @@ import { speciesList } from "../game/species";
 import { moveList, type MoveId } from "../game/moveList";
 import tailwindColors from "tailwindcss/colors";
 
-const props = defineProps<{ poke: ClientActivePokemon; base?: Pokemon; back?: boolean }>();
-const species = computed(() => speciesList[props.poke.transformed ?? props.poke.speciesId]);
-const minSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 0, 0));
-const maxSpe = computed(() => calcStat(species.value.stats.spe, props.poke.level, 15, 65535));
+const props = defineProps<{ poke?: ClientActivePokemon; base?: Pokemon; back?: boolean }>();
+const species = computed(
+  () => props.poke && speciesList[props.poke.transformed ?? props.poke.speciesId],
+);
+const minSpe = computed(
+  () => props.poke && calcStat(species.value!.stats.spe, props.poke.level, 0, 0),
+);
+const maxSpe = computed(
+  () => props.poke && calcStat(species.value!.stats.spe, props.poke.level, 15, 65535),
+);
 const hp = computed(() =>
-  props.base ? hpPercent(props.base.hp, props.base.stats.hp) : props.poke.hp,
+  props.base ? hpPercent(props.base.hp, props.base.stats.hp) : props.poke?.hp ?? 0,
 );
 
 const sprite = ref<HTMLDivElement>();
@@ -226,6 +235,7 @@ export type AnimationType = "faint" | "sendin" | "retract" | "get_sub" | "lose_s
 const remToPx = (rem: number) =>
   parseFloat(getComputedStyle(document.documentElement).fontSize) * rem;
 
+let timeline: anime.AnimeTimelineInstance;
 const playAnimation = (anim: AnimationType, name?: string, cb?: () => void) => {
   return new Promise<void>(resolve => {
     const other = document.querySelector(`.sprite${props.back ? ".front" : ".back"}`)!;
@@ -237,7 +247,8 @@ const playAnimation = (anim: AnimationType, name?: string, cb?: () => void) => {
 
     pbCol.value = name ? [...name].reduce((acc, x) => x.charCodeAt(0) + acc, 0) % 17 : 3;
 
-    const timeline = useAnime.timeline();
+    skipAnimation();
+    timeline = useAnime.timeline();
     if (anim === "faint") {
       timeline.add({
         targets: sprite.value,
@@ -277,7 +288,7 @@ const playAnimation = (anim: AnimationType, name?: string, cb?: () => void) => {
           { value: y - 60, duration: 450, easing: "easeOutQuad" },
           { value: y, duration: 250, easing: "easeInQuad" },
         ],
-        rotateZ: { value: 360 * 4, duration: 800, easing: "linear" },
+        rotateZ: { value: 360 * 4 * (props.back ? 1 : -1), duration: 800, easing: "linear" },
         opacity: [
           { value: 100, duration: 800 },
           { value: 0, duration: 0 },
@@ -293,7 +304,7 @@ const playAnimation = (anim: AnimationType, name?: string, cb?: () => void) => {
         complete: () => resolve(),
       });
     } else if (anim === "retract") {
-      if (!props.poke.flags.substitute) {
+      if (!props.poke?.flags.substitute) {
         reset(true);
       }
       useAnime.set(pokeBall.value, { translateX: 0, translateY: 0, opacity: 1 });
@@ -390,14 +401,14 @@ const playAnimation = (anim: AnimationType, name?: string, cb?: () => void) => {
       const midYRel = oppRect.top < sprRect.top ? y - 50 : -50;
       const duration = 240;
       let ran = false;
-      useAnime({
+      timeline.direction = "alternate";
+      timeline.add({
         targets: sprite.value,
         translateX: { value: x, duration, easing: "linear" },
         translateY: [
           { value: midYRel, duration: duration * (3 / 4), easing: "easeOutQuart" },
           { value: y, duration: duration * (1 / 4), easing: "easeInQuart" },
         ],
-        direction: "alternate",
         loopComplete: () => {
           if (!ran && cb) {
             cb();
@@ -419,5 +430,11 @@ const reset = (visible: boolean) => {
   }
 };
 
-defineExpose({ playAnimation, reset });
+const skipAnimation = () => {
+  if (timeline && !timeline.paused) {
+    timeline.seek(timeline.duration);
+  }
+};
+
+defineExpose({ playAnimation, skipAnimation, reset });
 </script>

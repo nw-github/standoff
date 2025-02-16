@@ -5,12 +5,12 @@
     <div class="flex flex-col w-full items-center">
       <TeamDisplay class="w-full justify-end" v-if="opponent" :player="players[opponent]" />
 
-      <div class="flex" v-if="perspective && opponent">
-        <div v-if="players[opponent].active" class="order-2">
-          <ActivePokemon :poke="players[opponent].active!" ref="frontPokemon" />
+      <div class="flex">
+        <div class="order-2">
+          <ActivePokemon :poke="players[opponent ?? '']?.active" ref="frontPokemon" />
         </div>
 
-        <div v-if="players[perspective].active" class="pb-2 sm:pb-0">
+        <div class="pb-2 sm:pb-0">
           <div class="h-10 sm:h-14"></div>
           <ActivePokemon
             :poke="players[perspective].active!"
@@ -103,13 +103,16 @@
             <UButton @click="chosenPerspective = opponent" icon="mi:switch">Switch Sides</UButton>
           </div>
           <div v-else-if="!isRunningTurn" class="italic">Waiting for opponent...</div>
-          <div v-else>
+          <div v-else class="flex space-x-2">
             <UButton
-              icon="material-symbols:skip-next-outline"
+              icon="material-symbols:skip-next"
               @click="skippingTurn = true"
               v-if="!skippingTurn"
             >
-              Skip Turn
+              Skip
+            </UButton>
+            <UButton icon="material-symbols:fast-forward" @click="skippingToTurn = turns.length">
+              Skip All
             </UButton>
           </div>
         </template>
@@ -209,6 +212,7 @@ const unseen = ref(0);
 const slideoverOpen = ref(false);
 const isRunningTurn = ref(false);
 const skippingTurn = ref(false);
+const skippingToTurn = ref(0);
 const updateMarker = ref(0);
 
 const backPokemon = ref<InstanceType<typeof ActivePokemon>>();
@@ -228,6 +232,8 @@ const liveEvents = ref<[VNode[], number][]>([]);
 const audioContext = new AudioContext();
 const savedAudio: Record<string, AudioBuffer> = {};
 
+onUnmounted(() => audioContext.close());
+
 useIntervalFn(() => {
   liveEvents.value = liveEvents.value.filter(ev => Date.now() - ev[1] < 1400);
   updateMarker.value++;
@@ -246,15 +252,32 @@ watch(
   },
 );
 
-watch(props.turns, () => runTurns(props.turns.slice(htmlTurns.value.length), true));
-
 watch(props.chats, () => {
   if (isMenuVisible.value && !slideoverOpen.value) {
     unseen.value++;
   }
 });
 
-watch(skippingTurn, () => (liveEvents.value.length = 0));
+watch([skippingTurn, skippingToTurn], () => {
+  if (frontPokemon.value) {
+    frontPokemon.value.skipAnimation();
+  }
+  if (backPokemon.value) {
+    backPokemon.value.skipAnimation();
+  }
+  // TODO: mute current sounds
+  liveEvents.value.length = 0;
+});
+
+watch(perspective, () => {
+  htmlTurns.value.length = 0;
+  liveEvents.value.length = 0;
+  for (const k in props.players) {
+    props.players[k].nFainted = 0;
+  }
+
+  onConnect();
+});
 
 watchImmediate(props.battlers, () => (chosenPerspective.value = randChoice(props.battlers)));
 
@@ -280,9 +303,11 @@ const cancelMove = () => {
   emit("cancel");
 };
 
-const runTurn = async (turn: Turn, live: boolean) => {
+const runTurn = async (turn: Turn, live: boolean, turnNo: number) => {
+  const isLive = () => live && !skippingTurn.value && skippingToTurn.value <= turnNo;
+
   const playSound = async (path: string, pitchDown = false) => {
-    if (!live || skippingTurn.value) {
+    if (!isLive()) {
       return;
     }
 
@@ -317,7 +342,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
 
   const playAnimation = async (id: string, anim: AnimationType, name?: string, cb?: () => void) => {
     const component = id === perspective.value ? backPokemon.value : frontPokemon.value;
-    if (!live || skippingTurn.value) {
+    if (!isLive()) {
       if (cb) {
         cb();
       }
@@ -330,7 +355,6 @@ const runTurn = async (turn: Turn, live: boolean) => {
       return;
     }
 
-    // TODO: interrupt the current animation for skip turn
     if (component) {
       await component.playAnimation(anim, name, cb);
     }
@@ -387,7 +411,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
         });
       }
 
-      if (e.hpAfter === 0 && live && !skippingTurn.value) {
+      if (e.hpAfter === 0 && isLive()) {
         playCry(props.players[e.target].active!.speciesId, true);
         await playAnimation(e.target, "faint");
         if (!skippingTurn.value) {
@@ -493,6 +517,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
     }
   };
 
+  isRunningTurn.value = true;
   liveEvents.value.length = 0;
   selectionText.value = "";
 
@@ -502,7 +527,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
     htmlTurns.value.at(-1)![0].push(...html);
 
     await handleEvent(e);
-    if (live && !skippingTurn.value) {
+    if (isLive()) {
       liveEvents.value.push([html, Date.now()]);
       if (e.type !== "damage" && e.type !== "switch" && e.type !== "hit_sub") {
         await delay(300);
@@ -511,23 +536,7 @@ const runTurn = async (turn: Turn, live: boolean) => {
   }
 
   skippingTurn.value = false;
-};
-
-let currentTurn: Promise<void> | undefined;
-const runTurns = (turns: Turn[], live: boolean) => {
-  const task = async () => {
-    for (const turn of turns) {
-      await runTurn(turn, live);
-    }
-  };
-
-  if (currentTurn) {
-    currentTurn = currentTurn
-      .then(() => ((isRunningTurn.value = true), task()))
-      .then(() => void (isRunningTurn.value = false));
-  } else {
-    currentTurn = task().then(() => void (isRunningTurn.value = false));
-  }
+  isRunningTurn.value = false;
 };
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -752,13 +761,43 @@ const htmlForEvent = (e: BattleEvent) => {
   return res;
 };
 
-watchImmediate(perspective, () => {
-  htmlTurns.value.length = 0;
-  liveEvents.value.length = 0;
-  for (const k in props.players) {
-    props.players[k].nFainted = 0;
+let currentTurnPromise: Promise<void> | undefined;
+let reconnecting = false;
+let currentTurn = 0;
+
+const onTurnReceived = () => {
+  if (reconnecting) {
+    return;
   }
 
-  runTurns(props.turns, false);
-});
+  const turnNo = currentTurn++;
+  const turn = props.turns[turnNo];
+  const task = () => runTurn(turn, true, turnNo);
+
+  currentTurnPromise = currentTurnPromise ? currentTurnPromise.then(task) : task();
+};
+
+const onConnect = async () => {
+  if (reconnecting) {
+    return;
+  }
+
+  reconnecting = true;
+  if (currentTurnPromise) {
+    await currentTurnPromise;
+  }
+
+  for (let i = 0; i < currentTurn; i++) {
+    await runTurn(props.turns[i], false, i);
+  }
+
+  reconnecting = false;
+  // do not inline, currentTurn changes
+  const amount = props.turns.length - currentTurn;
+  for (let i = 0; i < amount; i++) {
+    onTurnReceived();
+  }
+};
+
+defineExpose({ onTurnReceived, onConnect });
 </script>
