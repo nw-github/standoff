@@ -19,21 +19,30 @@
                 class="animate-pulse size-5 bg-primary"
               />
             </UTooltip>
-            <UToggle
-              v-model="dark"
-              off-icon="material-symbols:light-mode"
-              on-icon="material-symbols:dark-mode"
-            />
-            <UPopover mode="hover" :popper="{ placement: 'bottom-start' }">
+            <ColorScheme>
               <UButton
-                :icon="
-                  musicVol === 0
-                    ? 'heroicons-outline:speaker-x-mark'
-                    : 'heroicons-outline:speaker-wave'
-                "
-                variant="ghost"
                 color="gray"
+                variant="ghost"
+                :icon="
+                  $colorMode.value === 'dark'
+                    ? 'material-symbols:dark-mode'
+                    : 'material-symbols:light-mode'
+                "
+                @click="$colorMode.preference = $colorMode.value === 'dark' ? 'light' : 'dark'"
               />
+            </ColorScheme>
+            <UPopover mode="hover" :popper="{ placement: 'bottom-start' }">
+              <ClientOnly>
+                <UButton
+                  :icon="
+                    musicVol === 0
+                      ? 'heroicons-outline:speaker-x-mark'
+                      : 'heroicons-outline:speaker-wave'
+                  "
+                  variant="ghost"
+                  color="gray"
+                />
+              </ClientOnly>
               <template #panel>
                 <div class="p-4 w-80 space-y-2">
                   <div>
@@ -87,16 +96,6 @@ const musicTrackItems = allMusicTracks.map(track => ({
   value: track,
 }));
 const connected = ref($conn.connected);
-
-const colorMode = useColorMode();
-const dark = computed({
-  get() {
-    return colorMode.preference === "dark";
-  },
-  set(v) {
-    colorMode.preference = v ? "dark" : "light";
-  },
-});
 
 const links = [
   {
