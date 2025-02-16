@@ -218,7 +218,7 @@ const activeIndex = ref(0);
 const activeInTeam = computed<Pokemon | undefined>(() => props.team?.[activeIndex.value]);
 
 const isBattler = computed(() => props.battlers.includes(myId.value));
-const chosenPerspective = ref(randChoice(props.battlers));
+const chosenPerspective = ref("");
 const perspective = computed(() => (isBattler.value ? myId.value : chosenPerspective.value));
 const opponent = computed(() => props.battlers.find(v => v != perspective.value));
 const victor = ref<string>();
@@ -255,6 +255,8 @@ watch(props.chats, () => {
 });
 
 watch(skippingTurn, () => (liveEvents.value.length = 0));
+
+watchImmediate(props.battlers, () => (chosenPerspective.value = randChoice(props.battlers)));
 
 const selectMove = (index: number) => {
   selectionText.value = `${props.players[myId.value].active!.name} will use ${

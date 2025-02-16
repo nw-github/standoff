@@ -10,9 +10,17 @@ import type {
 } from "./events";
 import { moveList, type MoveId } from "./moveList";
 import { Move } from "./moves";
-import { type Pokemon, type Status } from "./pokemon";
+import type { Pokemon, Status } from "./pokemon";
 import { TransformedPokemon } from "./transformed";
-import { calcDamage, clamp, floatTo255, stageMultipliers, type Stages, type Type } from "./utils";
+import {
+  calcDamage,
+  clamp,
+  floatTo255,
+  hpPercent,
+  stageMultipliers,
+  type Stages,
+  type Type,
+} from "./utils";
 
 export type MoveOption = {
   move: MoveId;
@@ -278,9 +286,9 @@ export class Battle {
     return this.players.find(pl => pl.id === id);
   }
 
-  forfeit(player: Player, why: "forfeit" | "forfeit_timer") {
+  forfeit(player: Player, timer: boolean) {
     this._victor = this.opponentOf(player);
-    this.event({ type: "info", id: player.id, why });
+    this.event({ type: "info", id: player.id, why: timer ? "forfeit_timer" : "forfeit" });
     return this.endTurn();
   }
 
@@ -366,6 +374,36 @@ export class Battle {
 
   rand255(num: number) {
     return this.rng.int(0, 255) < Math.min(num, 255);
+  }
+
+  static censorEvents(events: BattleEvent[], player?: Player) {
+    const result = [...events];
+    for (let i = 0; i < result.length; i++) {
+      const e = result[i];
+      if ((e.type === "damage" || e.type === "recover") && e.target !== player?.id) {
+        result[i] = {
+          ...e,
+          hpBefore: hpPercent(e.hpBefore, e.maxHp),
+          hpAfter: hpPercent(e.hpAfter, e.maxHp),
+          maxHp: 100,
+        };
+      } else if (e.type === "switch" && e.src !== player?.id) {
+        result[i] = {
+          ...e,
+          hp: hpPercent(e.hp, e.maxHp),
+          maxHp: 100,
+          indexInTeam: -1,
+        };
+      } else if ((e.type === "stages" || e.type === "status") && e.id !== player?.id) {
+        // FIXME: this might not be accurate if two status moves were used in the same turn.
+        result[i] = {
+          ...e,
+          stats: player ? { ...player.active.v.stats } : { atk: 0, def: 0, spc: 0, spe: 0 },
+        };
+      }
+    }
+
+    return result;
   }
 }
 

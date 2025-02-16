@@ -4,7 +4,7 @@ import { GameServer } from "../utils/gameServer";
 import { startBot } from "../bot";
 
 export default defineNitroPlugin(nitro => {
-  const engine = new Engine();
+  const engine = new Engine({ pingInterval: 5000, pingTimeout: 5000 });
   const io = new GameServer();
   io.bind(engine);
 

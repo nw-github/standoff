@@ -22,19 +22,13 @@ const bodySchema = z.object({
 export default defineEventHandler(async event => {
   const { username, password } = await readValidatedBody(event, bodySchema.parse);
 
-  if (USERS[username].password === password) {
-    // set the user session in the cookie
-    // this server util is auto-imported by the auth-utils module
-    await setUserSession(event, {
-      user: {
-        name: username,
-        id: USERS[username].id,
-      },
-    });
-    return {};
+  if (USERS[username].password !== password) {
+    throw createError({ statusCode: 401, message: "Bad credentials" });
   }
-  throw createError({
-    statusCode: 401,
-    message: "Bad credentials",
-  });
+
+  // set the user session in the cookie
+  // this server util is auto-imported by the auth-utils module
+  await setUserSession(event, { user: { name: username, id: USERS[username].id } });
+
+  return {};
 });

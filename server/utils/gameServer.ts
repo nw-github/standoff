@@ -46,7 +46,7 @@ export interface ClientMessage {
   exitMatchmaking: (ack: () => void) => void;
 
   joinRoom: (room: string, ack: (resp: JoinRoomResponse | "bad_room") => void) => void;
-  leaveRoom: (room: string, ack: (resp?: "bad_room" | "must_login") => void) => void;
+  leaveRoom: (room: string, ack: (resp?: "bad_room") => void) => void;
   choose: (
     room: string,
     idx: number,
@@ -80,6 +80,7 @@ export interface ServerMessage {
     nPokemon: number,
   ) => void;
   userLeave: (room: string, id: string) => void;
+  userReconnect: (room: string, id: string) => void;
   userChat: (room: string, id: string, message: string, turn: number) => void;
 }
 
@@ -93,7 +94,6 @@ type Socket = SocketIoClient<ClientMessage, ServerMessage>;
 
 const ROOM_CLEANUP_DELAY_MS = 15 * 60 * 1000;
 const TURN_DECISION_TIME_MS = 45 * 1000;
-const ANON_SPECTATE = "spectate:";
 
 class Room {
   turns: Turn[];
@@ -101,6 +101,7 @@ class Room {
   chats: Chats = [];
   timer?: NodeJS.Timeout;
   lastTurn: number = Date.now();
+  spectatorRoom: string;
 
   constructor(
     public id: string,
@@ -110,18 +111,14 @@ class Room {
     public server: GameServer,
   ) {
     this.turns = [init];
+    this.spectatorRoom = `spectator:${this.id}`;
   }
 
   endTurn() {
     if (this.battle.victor) {
       clearInterval(this.timer);
       this.timer = undefined;
-      setTimeout(() => {
-        for (const account of this.accounts) {
-          account.leaveRoom(this, this.server);
-        }
-        delete this.server.rooms[this.id];
-      }, ROOM_CLEANUP_DELAY_MS);
+      setTimeout(() => this.server.destroyRoom(this), ROOM_CLEANUP_DELAY_MS);
       return;
     }
 
@@ -141,7 +138,7 @@ class Room {
       for (const account of this.accounts) {
         const player = this.battle.findPlayer(account.id);
         if (player && !player.choice && player.options) {
-          this.server.broadcastTurn(this, this.battle.forfeit(player, "forfeit_timer"));
+          this.server.broadcastTurn(this, this.battle.forfeit(player, true));
           return;
         }
       }
@@ -166,24 +163,25 @@ class Room {
 }
 
 class Account {
-  battles = new Set<Room>();
-  rooms = new Set<Room>();
   matchmaking?: FormatId;
   userRoom: string;
+  disconnectedRooms = new Set<Room>();
 
   constructor(public id: string, public name: string) {
     this.userRoom = `user:${this.id}`;
   }
 
   joinBattle(room: Room, server: GameServer) {
-    this.joinRoom(room, server, false);
-    this.battles.add(room);
+    this.onSocketJoinRoom(room, server, true);
 
     server.to(this.userRoom).emit("foundMatch", room.id);
   }
 
-  joinRoom(room: Room, server: GameServer, notifyJoin: boolean) {
-    if (this.rooms.has(room)) {
+  onSocketJoinRoom(room: Room, server: GameServer, notifyJoin: boolean) {
+    if (room.accounts.has(this)) {
+      if (this.disconnectedRooms.delete(room)) {
+        server.to(room.id).emit("userReconnect", room.id, this.id);
+      }
       return;
     }
 
@@ -194,49 +192,45 @@ class Account {
         .emit("userJoin", room.id, this.name, this.id, !player, player?.team.length ?? 0);
     }
     room.accounts.add(this);
-    this.rooms.add(room);
-    server.in(this.userRoom).socketsJoin(room.id);
   }
 
-  leaveRoom(room: Room, server: GameServer) {
-    if (this.battles.has(room)) {
-      // TODO: start room disconnect timer
-      server.to(room.id).emit("userLeave", room.id, this.id);
-      return;
+  /** @returns true if this account still has one or more sockets connected in this room */
+  async onSocketLeaveRoom(room: Room, server: GameServer, forced: boolean, sockets?: Socket[]) {
+    if (!room.accounts.has(this)) {
+      return false;
     }
 
-    room.accounts.delete(this);
-    this.rooms.delete(room);
-    server.in(this.userRoom).socketsLeave(room.id);
-    server.to(room.id).emit("userLeave", room.id, this.id);
-  }
-
-  addSocket(socket: Socket) {
-    socket.join(this.userRoom);
-    for (const room of this.rooms) {
-      socket.join(room.id); // XXXX --------------------------------------------------------
-    }
-  }
-
-  async removeSocket(socket: Socket, server: GameServer) {
-    socket.leave(this.userRoom);
-
-    const sockets = await server.in(this.userRoom).fetchSockets();
-    if (!sockets.length) {
-      for (const room of [...this.rooms]) {
-        this.leaveRoom(room, server);
+    sockets ??= (await server.in(this.userRoom).fetchSockets()) as unknown as Socket[];
+    if (forced) {
+      for (const socket of sockets) {
+        socket.leave(room.id);
+        socket.leave(room.spectatorRoom);
       }
+
+      room.accounts.delete(this);
+      this.disconnectedRooms.delete(room);
+    } else if (sockets.some(s => s.rooms.has(room.id))) {
       return true;
+    } else {
+      const player = room.battle.findPlayer(this.id);
+      if (player) {
+        // TODO: start room disconnect timer
+        this.disconnectedRooms.add(room);
+      } else {
+        room.accounts.delete(this);
+      }
+
+      server.to(room.id).emit("userLeave", room.id, this.id);
+      return !!player;
     }
     return false;
   }
 }
 
 export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
-  /** User ID -> Account */
   private accounts: Record<string, Account> = {};
   private mmWaiting: Partial<Record<FormatId, [Player, Account]>> = {};
-  rooms: Record<string, Room> = {};
+  private rooms: Record<string, Room> = {};
 
   constructor(server?: any) {
     super(server);
@@ -251,7 +245,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
     if (user) {
       console.log(`new connection: ${socket.id} from user: '${user.name}' (${user.id})`);
       socket.account = this.accounts[user.id] ??= new Account(user.id, user.name);
-      socket.account.addSocket(socket);
+      socket.join(socket.account.userRoom);
     } else {
       console.log(`new connection: ${socket.id}`);
     }
@@ -286,44 +280,49 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
         return ack("bad_room");
       }
 
-      const account = socket.account;
-      const player = account && room.battle.findPlayer(account.id);
-      if (account) {
-        account.joinRoom(room, this, true);
+      socket.join(roomId);
+      if (socket.account) {
+        socket.account.onSocketJoinRoom(room, this, true);
       } else {
-        socket.join([roomId, `${ANON_SPECTATE}${roomId}`]);
+        socket.join(room.spectatorRoom);
       }
 
+      const player = socket.account && room.battle.findPlayer(socket.account.id);
       // FIXME: this team needs to be the one at the start of the battle
       return ack({
         team: player?.team,
         options: player?.options,
-        players: [...room.accounts].map(account => ({
-          name: account.name,
-          id: account.id,
-          isSpectator: !account.battles.has(room),
-          nPokemon: room.battle.findPlayer(account.id)?.team.length ?? 0,
-        })),
+        players: room.accounts
+          .keys()
+          .map(acc => ({
+            name: acc.name,
+            id: acc.id,
+            isSpectator: !room.battle.findPlayer(acc.id),
+            nPokemon: room.battle.findPlayer(acc.id)?.team.length ?? 0,
+          }))
+          .toArray(),
         turns: room.turns.map(({ events, switchTurn }) => ({
-          events: GameServer.censorEvents(events, player),
+          events: Battle.censorEvents(events, player),
           switchTurn,
         })),
         chats: room.chats,
         format: room.format,
-        timer: account && room.timerInfo(account),
+        timer: socket.account && room.timerInfo(socket.account),
       });
     });
-    socket.on("leaveRoom", (roomId, ack) => {
+    socket.on("leaveRoom", async (roomId, ack) => {
       const room = this.rooms[roomId];
       if (!room) {
         return ack("bad_room");
       }
 
-      if (!socket.account) {
-        return ack("must_login");
+      socket.leave(roomId);
+      if (socket.account) {
+        await socket.account.onSocketLeaveRoom(room, this, false);
+      } else {
+        socket.leave(room.spectatorRoom);
       }
-
-      socket.account.leaveRoom(room, this);
+      return ack();
     });
     socket.on("choose", (roomId, index, type, sequenceNo, ack) => {
       const info = this.validatePlayer(socket, roomId, sequenceNo);
@@ -345,8 +344,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       }
 
       ack();
-      const turn =
-        type === "forfeit" ? room.battle.forfeit(player, "forfeit") : room.battle.nextTurn();
+      const turn = type === "forfeit" ? room.battle.forfeit(player, false) : room.battle.nextTurn();
       if (turn) {
         this.broadcastTurn(room, turn);
       }
@@ -364,34 +362,28 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
       const room = this.rooms[roomId];
       if (!room) {
         return ack("bad_room");
-      }
-
-      const account = socket.account;
-      if (!account || !account.rooms.has(room)) {
+      } else if (!socket.account || !room.accounts.has(socket.account)) {
         return ack("not_in_room");
-      } else if (!room.battle.findPlayer(account.id)) {
+      } else if (!room.battle.findPlayer(socket.account.id)) {
         return ack("not_in_battle");
       }
 
-      ack(room.startTimer(account, this) ? "already_on" : undefined);
+      ack(room.startTimer(socket.account, this) ? "already_on" : undefined);
     });
     socket.on("chat", (roomId, message, ack) => {
-      if (!message.trim().length) {
-        return ack("bad_message");
-      }
+      message = message.trim();
 
       const room = this.rooms[roomId];
       if (!room) {
         return ack("bad_room");
-      }
-
-      const account = socket.account;
-      if (!account || !account.rooms.has(room)) {
+      } else if (!message.length) {
+        return ack("bad_message");
+      } else if (!socket.account || !room.accounts.has(socket.account)) {
         return ack("not_in_room");
       }
 
       ack();
-      this.sendChat(room, message, account.id, true);
+      this.sendChat(room, message, socket.account.id, true);
     });
     socket.on("getRooms", ack =>
       ack(
@@ -399,15 +391,40 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
           .filter(([, room]) => !room.battle.victor)
           .map(([id, room]) => ({
             id,
-            players: [...room.accounts].filter(acc => acc.battles.has(room)).map(acc => acc.name),
+            players: room.accounts
+              .keys()
+              .filter(acc => room.battle.findPlayer(acc.id))
+              .map(acc => acc.name)
+              .toArray(),
             format: room.format,
           })),
       ),
     );
-    socket.on("disconnect", async () => {
+    socket.on("disconnecting", async () => {
       const account = socket.account;
-      if (account && (await account.removeSocket(socket, this))) {
+      if (!account) {
+        return;
+      }
+
+      socket.leave(account.userRoom);
+
+      const rooms = [...socket.rooms];
+      // across this await point SocketIO might clean up this socket and clear rooms
+      const sockets = (await this.in(account.userRoom).fetchSockets()) as unknown as Socket[];
+
+      let stillInRooms = false;
+      for (const id of rooms) {
+        const room = this.rooms[id];
+        if (room && (await account.onSocketLeaveRoom(room, this, false, sockets))) {
+          stillInRooms = true;
+        }
+      }
+
+      if (!sockets.length) {
         this.leaveMatchmaking(account);
+        if (!stillInRooms) {
+          delete this.accounts[account.id];
+        }
       }
     });
   }
@@ -460,19 +477,14 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
     const room = this.rooms[roomId];
     if (!room) {
       return "bad_room";
-    }
-
-    const account = socket.account;
-    if (!account || !account.battles.has(room)) {
+    } else if (!socket.account) {
       return "not_in_battle";
     }
 
-    const player = room.battle.findPlayer(account.id);
+    const player = room.battle.findPlayer(socket.account.id);
     if (!player) {
       return "not_in_battle";
-    }
-
-    if (sequenceNo !== room.turns.length) {
+    } else if (sequenceNo !== room.turns.length) {
       return "too_late";
     }
 
@@ -486,19 +498,21 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
     const { switchTurn, events } = turn;
     for (const account of room.accounts) {
       const player = room.battle.findPlayer(account.id);
-      const result = { switchTurn, events: GameServer.censorEvents(events, player) };
-      this.to(account.userRoom).emit(
-        "nextTurn",
-        room.id,
-        result,
-        player?.options,
-        room.timerInfo(account),
-      );
+      if (player) {
+        const result = { switchTurn, events: Battle.censorEvents(events, player) };
+        this.to(account.userRoom).emit(
+          "nextTurn",
+          room.id,
+          result,
+          player?.options,
+          room.timerInfo(account),
+        );
+      }
     }
 
-    this.to(`${ANON_SPECTATE}${room.id}`).emit("nextTurn", room.id, {
+    this.to(room.spectatorRoom).emit("nextTurn", room.id, {
       switchTurn,
-      events: GameServer.censorEvents(events),
+      events: Battle.censorEvents(events),
     });
   }
 
@@ -513,33 +527,8 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
     this.to(room.id).emit("userChat", room.id, player, message, turn);
   }
 
-  static censorEvents(events: BattleEvent[], player?: Player) {
-    const result = [...events];
-    for (let i = 0; i < result.length; i++) {
-      const e = result[i];
-      if ((e.type === "damage" || e.type === "recover") && e.target !== player?.id) {
-        result[i] = {
-          ...e,
-          hpBefore: hpPercent(e.hpBefore, e.maxHp),
-          hpAfter: hpPercent(e.hpAfter, e.maxHp),
-          maxHp: 100,
-        };
-      } else if (e.type === "switch" && e.src !== player?.id) {
-        result[i] = {
-          ...e,
-          hp: hpPercent(e.hp, e.maxHp),
-          maxHp: 100,
-          indexInTeam: -1,
-        };
-      } else if ((e.type === "stages" || e.type === "status") && e.id !== player?.id) {
-        // FIXME: this might not be accurate if two status moves were used in the same turn.
-        result[i] = {
-          ...e,
-          stats: player ? { ...player.active.v.stats } : { atk: 0, def: 0, spc: 0, spe: 0 },
-        };
-      }
-    }
-
-    return result;
+  async destroyRoom(room: Room) {
+    await Promise.allSettled(room.accounts.keys().map(a => a.onSocketLeaveRoom(room, this, true)));
+    delete this.rooms[room.id];
   }
 }

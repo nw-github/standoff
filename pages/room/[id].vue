@@ -47,12 +47,18 @@ const room = `${route.params.id}`;
 
 let sequenceNo = 0;
 onMounted(() => {
-  $conn.emit("joinRoom", room, resp => {
-    if (allMusicTracks.length) {
-      currentTrack.value = randChoice(allMusicTracks);
+  const pushChat = (id: string, message: string, turn?: number) => {
+    turn ??= Math.max(turns.value.length - 1, 0);
+    if (!chats[turn]) {
+      chats[turn] = [];
     }
-    joinRoom(resp);
-  });
+
+    chats[turn].push({ message, player: id });
+  };
+
+  if ($conn.connected) {
+    $conn.emit("joinRoom", room, joinRoom);
+  }
 
   $conn.on("connect", () => {
     const clearObj = (foo: Record<string, any>) => {
@@ -88,22 +94,30 @@ onMounted(() => {
   $conn.on("userJoin", (roomId, name, id, isSpectator, nPokemon) => {
     if (roomId === room) {
       players[id] = { name, isSpectator, nPokemon, connected: true, nFainted: 0 };
+      pushChat("", `${players[id].name} joined the room.`);
+    }
+  });
+
+  $conn.on("userReconnect", (roomId, id) => {
+    if (roomId === room) {
+      pushChat("", `${players[id].name} reconnected.`);
     }
   });
 
   $conn.on("userLeave", (roomId, id) => {
     if (roomId === room) {
       players[id].connected = false;
+      if (players[id].isSpectator) {
+        pushChat("", `${players[id].name} disconnected from the room.`);
+      } else {
+        pushChat("", `${players[id].name} left the room.`);
+      }
     }
   });
 
   $conn.on("userChat", (roomId, id, message, turn) => {
     if (roomId === room) {
-      if (!chats[turn]) {
-        chats[turn] = [];
-      }
-
-      chats[turn].push({ message, player: id });
+      pushChat(id, message, turn);
     }
   });
 
@@ -111,10 +125,7 @@ onMounted(() => {
     if (roomId === room) {
       const turn = Math.max(turns.value.length - 1, 0);
       if (timer.value === undefined) {
-        if (!chats[turn]) {
-          chats[turn] = [];
-        }
-        chats[turn].push({ message: `${players[who].name} started the timer.`, player: "" });
+        pushChat("", `${players[who].name} started the timer.`, turn);
       }
 
       timer.value = tmr || undefined;
@@ -124,12 +135,20 @@ onMounted(() => {
 
 onUnmounted(() => {
   currentTrack.value = undefined;
+
+  if (status.value === "battle" && $conn.connected) {
+    $conn.emit("leaveRoom", room, () => {});
+  }
 });
 
 const joinRoom = (resp: JoinRoomResponse | "bad_room") => {
   if (resp === "bad_room") {
     status.value = "notfound";
     return;
+  }
+
+  if (allMusicTracks.length && !currentTrack.value) {
+    currentTrack.value = randChoice(allMusicTracks);
   }
 
   for (const { isSpectator, id, name, nPokemon } of resp.players) {
