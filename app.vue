@@ -13,6 +13,12 @@
           </UPopover>
 
           <div class="flex items-center space-x-3">
+            <UTooltip v-if="!connected" text="Disconnected from server...">
+              <UIcon
+                name="fluent:plug-disconnected-16-regular"
+                class="animate-pulse size-5 bg-primary"
+              />
+            </UTooltip>
             <UToggle
               v-model="dark"
               off-icon="material-symbols:light-mode"
@@ -72,6 +78,7 @@
 </style>
 
 <script setup lang="ts">
+const { $conn } = useNuxtApp();
 const musicVol = useMusicVolume();
 const sfxVol = useSfxVolume();
 const currentTrack = useCurrentTrack();
@@ -79,6 +86,7 @@ const musicTrackItems = allMusicTracks.map(track => ({
   label: musicTrackName(track),
   value: track,
 }));
+const connected = ref($conn.connected);
 
 const colorMode = useColorMode();
 const dark = computed({
@@ -106,4 +114,7 @@ const links = [
     icon: "material-symbols:swords-outline",
   },
 ];
+
+$conn.on("connect", () => (connected.value = true));
+$conn.on("disconnect", () => (connected.value = false));
 </script>
