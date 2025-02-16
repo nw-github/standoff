@@ -1,5 +1,5 @@
 <template>
-  <UPopover mode="click" :popper="{ placement: 'bottom-start' }">
+  <UPopover mode="click" :popper="{ placement: 'bottom-end' }">
     <UAvatar icon="material-symbols:account-circle-full" />
     <template #panel>
       <div class="p-4">
