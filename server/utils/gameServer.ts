@@ -31,7 +31,7 @@ export type Chats = Record<number, { player: string; message: string }[]>;
 export type RoomDescriptor = {
   id: string;
   /** Name[], not Id[] */
-  players: string[];
+  battlers: string[];
   format: FormatId;
 };
 
@@ -391,7 +391,7 @@ export class GameServer extends SocketIoServer<ClientMessage, ServerMessage> {
           .filter(([, room]) => !room.battle.victor)
           .map(([id, room]) => ({
             id,
-            players: room.accounts
+            battlers: room.accounts
               .keys()
               .filter(acc => room.battle.findPlayer(acc.id))
               .map(acc => acc.name)

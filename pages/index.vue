@@ -79,7 +79,7 @@ watch(format, () => (selectedTeam.value = validTeams.value[0]));
 
 const roomsRows = computed(() =>
   rooms.value.map(room => ({
-    name: room.players.join(" vs. "),
+    name: room.battlers.join(" vs. "),
     to: "/room/" + room.id,
     format: room.format,
   })),
