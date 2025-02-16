@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { v4 as uuid } from "uuid";
+import { userSchema } from "~/utils/schema";
 
 declare module "#auth-utils" {
   interface User {
@@ -14,15 +14,10 @@ export const USERS: Record<string, { password: string; id: string }> = {
   bot1: { password: uuid(), id: "bot-1" },
 };
 
-const bodySchema = z.object({
-  username: z.string(), // .max(16).regex(/[a-zA-Z0-9]+/)
-  password: z.string(), // .min(8)
-});
-
 export default defineEventHandler(async event => {
-  const { username, password } = await readValidatedBody(event, bodySchema.parse);
+  const { username, password } = await readValidatedBody(event, userSchema.parse);
 
-  if (USERS[username].password !== password) {
+  if (USERS[username]?.password !== password) {
     throw createError({ statusCode: 401, message: "Bad credentials" });
   }
 
